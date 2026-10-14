@@ -59,7 +59,7 @@ Successfully created and executed a basic n8n workflow using Manual Trigger and 
 
 **Status:** Completed
 
-## 6. Evidence
+## 6. Attached
 - n8n workflow editor screenshot
 - Successful workflow execution screenshot
 
