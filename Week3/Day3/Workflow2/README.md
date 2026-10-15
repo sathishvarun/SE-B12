@@ -226,6 +226,9 @@ Based on the visible execution in the screenshot:
   If -- true branch                16 items
   If -- false branch               34 items
 
+
+https://n8n-2fqi.srv2061895.hstgr.cloud/workflow/eKxykMZ7QSlR1xfA?projectId=J7Gtn8p6q7qFLIsv
+
 The screenshot shows both `Convert to File` nodes completed
 successfully. It displays **1 item** after each conversion node; this
 generally represents the generated file item, not the number of
@@ -334,14 +337,4 @@ The workflow can reduce manual effort, but the final output should be
 validated before being used for HR, payroll, or other business
 decisions.
 
-## 11. References
 
--   [n8n Documentation](https://docs.n8n.io/)
--   [n8n Core Nodes: Extract From
-    File](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.extractfromfile/)
--   [n8n Core Nodes: Convert to
-    File](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.converttofile/)
--   [n8n Core Nodes: Loop Over
-    Items](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.splitinbatches/)
--   [n8n Core Nodes:
-    If](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.if/)
