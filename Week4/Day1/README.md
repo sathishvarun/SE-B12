@@ -246,11 +246,6 @@ The workflows demonstrate these core concepts:
 -   **Multimodal interaction:** Jarvis combines text processing, audio
     transcription, and audio generation.
 
-The AI Agent node in n8n uses a connected chat model and tools to decide
-which actions can help complete a request. See the [official n8n AI
-Agent
-documentation](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.agent/)
-for more information.
 
 ## Prerequisites and setup notes
 
@@ -279,17 +274,6 @@ Before running these workflows, confirm that:
 -   [ ] Review execution logs and confirm that each node succeeds.
 -   [ ] Verify credentials, permissions, and output before using real or
     sensitive data.
-
-## Security notes
-
--   Do not commit API keys, bot tokens, OAuth secrets, or other
-    credentials to GitHub.
--   Use n8n credentials management rather than hard-coding secrets in
-    node fields.
--   Give connected Google accounts only the permissions needed for the
-    workflow.
--   Test write actions carefully, especially email sending, calendar
-    event creation, and spreadsheet updates.
 
 ## Project links
 
