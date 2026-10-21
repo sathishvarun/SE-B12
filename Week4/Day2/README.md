@@ -4,7 +4,7 @@ Three AI-agent workflows built in n8n (self-hosted on Hostinger), all using Open
 
 | # | Workflow | Trigger | Status |
 |---|----------|---------|--------|
-| 1 | LinkedIn Post Approval | n8n Form | Draft (not published) |
+| 1 | LinkedIn Post Approval | n8n Form | Published|
 | 2 | Gmail Chat Agent (Emergent) | Webhook (POST) | Published |
 | 3 | Tamil Nadu Weather – Telegram Bot | Telegram message | Published |
 
