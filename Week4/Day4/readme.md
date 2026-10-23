@@ -25,7 +25,6 @@ The project uses SerperDevTool for web search and the OpenAI API for language mo
 - OpenAI API
 - python-dotenv
 - Visual Studio Code
-- Git and GitHub
 
 ## Project Structure
 
