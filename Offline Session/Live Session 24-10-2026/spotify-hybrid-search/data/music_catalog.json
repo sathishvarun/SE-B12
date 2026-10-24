@@ -1,0 +1,55 @@
+
+[
+  {
+    "id": "track_001",
+    "type": "track",
+    "title": "Morning Sunrise",
+    "artist": "The Blue Waves",
+    "album": "New Beginnings",
+    "genre": "Pop",
+    "description": "An uplifting song for a positive and energetic morning."
+  },
+  {
+    "id": "track_002",
+    "type": "track",
+    "title": "Quiet Rain",
+    "artist": "Luna Grey",
+    "album": "Peaceful Nights",
+    "genre": "Ambient",
+    "description": "A calm, relaxing instrumental for studying and sleeping."
+  },
+  {
+    "id": "track_003",
+    "type": "track",
+    "title": "Electric Roads",
+    "artist": "Neon Drive",
+    "album": "City Lights",
+    "genre": "Electronic",
+    "description": "An energetic electronic track for workouts and driving."
+  },
+  {
+    "id": "artist_001",
+    "type": "artist",
+    "title": "The Blue Waves",
+    "description": "A pop music group known for uplifting and cheerful music."
+  },
+  {
+    "id": "album_001",
+    "type": "album",
+    "title": "Peaceful Nights",
+    "artist": "Luna Grey",
+    "description": "A collection of ambient music for relaxation and sleep."
+  },
+  {
+    "id": "playlist_001",
+    "type": "playlist",
+    "title": "Focus and Study",
+    "description": "A playlist of calm instrumental music for concentration."
+  },
+  {
+    "id": "podcast_001",
+    "type": "podcast",
+    "title": "The AI Explorer",
+    "description": "A podcast exploring artificial intelligence, machine learning, and technology."
+  }
+]

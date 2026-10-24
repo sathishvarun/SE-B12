@@ -1,0 +1,30 @@
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: spotify-hybrid-backend
+    ports:
+      - "8000:8000"
+    environment:
+      VECTOR_DIR: /app/vector_db/qdrant
+    volumes:
+      - qdrant_data:/app/vector_db/qdrant
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: spotify-hybrid-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      API_URL: http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
