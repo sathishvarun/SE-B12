@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HR Assistant Agent</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a65;
+    --line: #e4e2db; --accent: #2f5d50; --accent-ink: #ffffff;
+    --soft: #eef3f1; --err-bg: #fdeceb; --err: #a3332b;
+    --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161716; --card: #1f201f; --ink: #ecebe6; --muted: #a09f99;
+      --line: #33342f; --accent: #7fbfa9; --accent-ink: #10201b;
+      --soft: #1e2a26; --err-bg: #3a1f1d; --err: #f2a29b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  header p.kicker {
+    margin: 0 0 6px; font-size: 13px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  h1 { margin: 0 0 6px; font-size: 30px; line-height: 1.2; }
+  header p.sub { margin: 0 0 28px; color: var(--muted); }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 22px; margin-bottom: 18px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  input, select {
+    width: 100%; padding: 10px 12px; font: inherit; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer; border-radius: 8px;
+    padding: 11px 18px; border: 1px solid var(--accent);
+    background: var(--accent); color: var(--accent-ink);
+  }
+  button.ghost { background: transparent; color: var(--accent); padding: 6px 12px; font-size: 14px; }
+  button:disabled { opacity: .6; cursor: progress; }
+  .actions { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
+  .status { font-size: 14px; color: var(--muted); }
+  .banner {
+    background: var(--err-bg); color: var(--err); border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 18px; font-size: 14px; display: none;
+  }
+  dl { display: grid; grid-template-columns: 140px 1fr; gap: 8px 14px; margin: 0; font-size: 14px; }
+  dt { color: var(--muted); }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  .out-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .out-head h2 { margin: 0; font-size: 16px; }
+  .console {
+    font-family: var(--mono); font-size: 14px; color: var(--muted);
+    margin-bottom: 8px;
+  }
+  pre.output {
+    margin: 0; white-space: pre-wrap; font-family: var(--mono); font-size: 14.5px;
+    background: var(--soft); border-radius: 8px; padding: 16px; line-height: 1.7;
+  }
+  .hidden { display: none; }
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    dl { grid-template-columns: 1fr; gap: 2px; }
+    dd { margin-bottom: 8px; }
+    h1 { font-size: 25px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="kicker">Week 5 · Day 1 · AutoGen</p>
+    <h1>HR Assistant Agent</h1>
+    <p class="sub">An AutoGen AssistantAgent that writes a 5-line job description.</p>
+  </header>
+
+  <div id="banner" class="banner"></div>
+
+  <section class="card">
+    <form id="form" class="grid">
+      <div class="full">
+        <label for="job">Job title</label>
+        <input id="job" maxlength="80" value="Junior Python Developer" required>
+      </div>
+      <div>
+        <label for="role">Agent role (system message)</label>
+        <select id="role"></select>
+        <div class="hint">"HR assistant" is the assignment default.</div>
+      </div>
+      <div>
+        <label for="model">Model</label>
+        <select id="model"></select>
+        <div class="hint">Default comes from your .env file.</div>
+      </div>
+      <div class="full actions">
+        <button id="go" type="submit">Generate job description</button>
+        <span id="status" class="status"></span>
+      </div>
+    </form>
+  </section>
+
+  <section id="details" class="card hidden">
+    <dl>
+      <dt>Model</dt><dd id="d-model"></dd>
+      <dt>Agent name</dt><dd id="d-agent"></dd>
+      <dt>Agent role</dt><dd id="d-role"></dd>
+      <dt>Responsibility</dt><dd id="d-resp"></dd>
+      <dt>Output format</dt><dd>Title + exactly 5 numbered lines</dd>
+      <dt>Tokens used</dt><dd id="d-tokens"></dd>
+    </dl>
+  </section>
+
+  <section id="result" class="card hidden">
+    <div class="out-head">
+      <h2>Agent reply</h2>
+      <button id="copy" class="ghost" type="button">Copy</button>
+    </div>
+    <div class="console" id="console-line"></div>
+    <pre class="output" id="output"></pre>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const roleLabels = { hr: "HR assistant", recruiter: "Recruiter", lawyer: "Lawyer" };
+
+  function showError(msg) {
+    $("banner").textContent = msg;
+    $("banner").style.display = msg ? "block" : "none";
+  }
+
+  async function loadInfo() {
+    try {
+      const res = await fetch("/api/info");
+      const info = await res.json();
+      $("job").value = info.default_job_title;
+      for (const [key, msg] of Object.entries(info.roles)) {
+        const o = new Option(`${roleLabels[key] || key} — "${msg}"`, key);
+        $("role").add(o);
+      }
+      for (const m of info.models) $("model").add(new Option(m, m));
+      $("model").value = info.default_model;
+      if (!info.api_key_configured) {
+        showError("OPENAI_API_KEY is not set. Open the .env file, paste your key, save it, then click Generate.");
+      }
+    } catch (e) {
+      showError("Could not reach the local server. Is app.py still running?");
+    }
+  }
+
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    showError("");
+    const btn = $("go");
+    btn.disabled = true;
+    $("status").textContent = "The agent is writing…";
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          job_title: $("job").value,
+          role: $("role").value,
+          model: $("model").value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.detail || "Request failed.");
+      $("d-model").textContent = data.model;
+      $("d-agent").textContent = data.agent_name;
+      $("d-role").textContent = data.system_message;
+      $("d-resp").textContent = data.responsibility;
+      $("d-tokens").textContent = data.tokens ?? "—";
+      $("console-line").textContent = `---------- TextMessage (${data.agent_name}) ----------`;
+      $("output").textContent = data.output;
+      $("details").classList.remove("hidden");
+      $("result").classList.remove("hidden");
+      $("status").textContent = "Done.";
+    } catch (err) {
+      showError(err.message);
+      $("status").textContent = "";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $("copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText($("output").textContent);
+      $("copy").textContent = "Copied";
+      setTimeout(() => ($("copy").textContent = "Copy"), 1500);
+    } catch (e) { /* clipboard not available */ }
+  });
+
+  loadInfo();
+</script>
+</body>
+</html>
