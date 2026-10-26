@@ -1,0 +1,6 @@
+crewai[tools]>=1.15
+chromadb>=1.0
+pypdf>=4.0
+python-dotenv>=1.0
+streamlit>=1.40
+pandas>=2.0
