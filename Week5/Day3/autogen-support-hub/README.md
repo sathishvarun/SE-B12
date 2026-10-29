@@ -1,4 +1,4 @@
-# 🛰️ Nexus Support Hub — Multi-Agent Customer Support Chatbot
+# 🛰️ SK Support Hub — Multi-Agent Customer Support Chatbot
 
 A customer-support chatbot built with **Microsoft AutoGen** (multi-agent framework), **OpenAI**, and a **Streamlit** dashboard.
 One **Head Agent (parent)** reads every question and assigns work to **department agents (children)** — IT, HR, Finance, Sales and Marketing. Each child uses its own tools, pushes its result back to the parent, and the parent sends one combined reply.
