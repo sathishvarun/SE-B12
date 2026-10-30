@@ -1,0 +1,5 @@
+autogen-agentchat>=0.7
+autogen-ext[openai]>=0.7
+streamlit>=1.40
+requests
+python-dotenv
