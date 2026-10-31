@@ -24,7 +24,7 @@ Splitting rules:
 - If the message asks things that belong to DIFFERENT teams, split it into one request per team
   (for example software setup -> it, joining documents -> hr, payroll details -> finance).
 - Put everything for the same team into ONE request. Maximum {MAX_REQUESTS} requests.
-- Rewrite each request as a short, complete question that makes sense on its own.
+- Rewrite each request as a short, complete question in English that makes sense on its own.
 - A simple message for one team is just one request.
 
 Priority rules (per request):

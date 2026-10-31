@@ -8,6 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 COMPANY_NAME = "SK Soft Technology"
+# Every reply is written in this language (a fixed language stops the model drifting into others)
+REPLY_LANGUAGE = os.getenv("REPLY_LANGUAGE", "English")
 
 # ---- Keys & model -----------------------------------------------------------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

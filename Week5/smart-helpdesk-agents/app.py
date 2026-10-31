@@ -538,7 +538,7 @@ def page_review():
             name = st.text_input("Your name and team *", placeholder="e.g. Anitha (Finance)")
             pwd = st.text_input("Reviewer password *", type="password")
             if st.form_submit_button("Open review queue", type="primary"):
-                if pwd == REVIEWER_PASSWORD and name.strip():
+                if pwd.strip() == REVIEWER_PASSWORD.strip() and name.strip():
                     st.session_state.reviewer_ok = True
                     st.session_state.reviewer_name = name.strip()
                     st.rerun()

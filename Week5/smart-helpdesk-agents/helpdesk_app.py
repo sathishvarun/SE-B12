@@ -47,7 +47,7 @@ import streamlit.components.v1 as components
 # First-run bootstrap: create .env, theme settings and knowledge base files if missing
 # ============================================================================
 _HERE = Path(__file__).resolve().parent
-_ENV_TEMPLATE = '# Copy this file to .env and fill in your own keys.  NEVER commit .env to GitHub.\n\n# Required: OpenAI key from https://platform.openai.com/api-keys\nOPENAI_API_KEY=sk-your-key-here\nOPENAI_MODEL=gpt-4o-mini\n\n# Optional: live web search for Marketing/Sales agents (https://serpapi.com/manage-api-key)\nSERPAPI_API_KEY=\n\n# Optional: use another OpenAI-compatible provider instead (Groq, Gemini, Ollama...)\n# OPENAI_BASE_URL=https://api.groq.com/openai/v1\n\n# Optional but recommended on a VPS: password to open the app\nAPP_PASSWORD=\n\n# Optional: show source file names and every agent\'s step in the chat (demo / assignment screenshots).\n# Keep false for real employees - they only see the answer.\nSHOW_AGENT_STEPS=false\n\n# Human-in-the-loop: password for the staff-only "Review queue" page (empty = page locked)\nREVIEWER_PASSWORD=\n\n# Knowledge search: "vector" = ChromaDB + OpenAI embeddings (by meaning), "keyword" = word matching\nSEARCH_MODE=vector\nEMBEDDING_MODEL=text-embedding-3-small\n'
+_ENV_TEMPLATE = '# Copy this file to .env and fill in your own keys.  NEVER commit .env to GitHub.\n\n# Required: OpenAI key from https://platform.openai.com/api-keys\nOPENAI_API_KEY=sk-your-key-here\nOPENAI_MODEL=gpt-4o-mini\n\n# Optional: live web search for Marketing/Sales agents (https://serpapi.com/manage-api-key)\nSERPAPI_API_KEY=\n\n# Optional: use another OpenAI-compatible provider instead (Groq, Gemini, Ollama...)\n# OPENAI_BASE_URL=https://api.groq.com/openai/v1\n\n# Optional but recommended on a VPS: password to open the app\nAPP_PASSWORD=\n\n# Optional: show source file names and every agent\'s step in the chat (demo / assignment screenshots).\n# Keep false for real employees - they only see the answer.\nSHOW_AGENT_STEPS=false\n\n# Human-in-the-loop: password for the staff-only "Review queue" page (empty = page locked)\nREVIEWER_PASSWORD=\n\n# Knowledge search: "vector" = ChromaDB + OpenAI embeddings (by meaning), "keyword" = word matching\nSEARCH_MODE=vector\nEMBEDDING_MODEL=text-embedding-3-small\n\n# Language for every reply\nREPLY_LANGUAGE=English\n'
 _STREAMLIT_CONFIG = '[server]\nheadless = true\nport = 8501\n\n[browser]\ngatherUsageStats = false\n\n[theme]\nprimaryColor = "#FF6B1A"\n\n[client]\ntoolbarMode = "minimal"\n'
 _KB_FILES = {
     "customer_support/client_portal_and_releases.md": "# SK Soft Technology Client Portal, Access and Releases\n\n## Client portal login problems\n1. On the portal login page click Forgot Password and enter your registered work email.\n2. Use the reset link within 30 minutes.\n3. The new password needs at least 12 characters with upper case, lower case, a number and a symbol.\n4. After 5 wrong attempts the account is locked for 30 minutes.\n5. Single sign-on (SSO) users must reset their password with their own company IT team.\n\n## Adding or removing client users\n- Only the client's named admin can request new portal users or removal of users, by raising a P4 ticket.\n- Requests are completed within 1 business day.\n\n## Reporting a bug\n- Raise a ticket with the steps to reproduce, the expected result, the actual result, the browser or app version and screenshots.\n- Confirmed bugs are given a bug ID and planned into a release based on severity.\n\n## Releases and maintenance windows\n- Planned releases happen every second Saturday between 10 PM and 2 AM IST.\n- Clients are informed by email 5 business days before each release, with release notes.\n- Emergency hotfixes for P1 issues can be deployed at any time after client approval.\n",
@@ -77,6 +77,8 @@ BASE_DIR = _HERE
 load_dotenv(BASE_DIR / ".env")
 
 COMPANY_NAME = "SK Soft Technology"
+# Every reply is written in this language (a fixed language stops the model drifting into others)
+REPLY_LANGUAGE = os.getenv("REPLY_LANGUAGE", "English")
 
 # ---- Keys & model -----------------------------------------------------------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -500,7 +502,7 @@ Splitting rules:
 - If the message asks things that belong to DIFFERENT teams, split it into one request per team
   (for example software setup -> it, joining documents -> hr, payroll details -> finance).
 - Put everything for the same team into ONE request. Maximum {MAX_REQUESTS} requests.
-- Rewrite each request as a short, complete question that makes sense on its own.
+- Rewrite each request as a short, complete question in English that makes sense on its own.
 - A simple message for one team is just one request.
 
 Priority rules (per request):
@@ -607,7 +609,8 @@ FACTS:
 - <fact copied from the documents>
 - <fact>
 SOURCES: <comma separated file names, e.g. {department}/policy.md> or NONE
-If nothing relevant was found write "FACTS: none" and "SOURCES: NONE". Never invent facts."""
+If nothing relevant was found write "FACTS: none" and "SOURCES: NONE". Never invent facts.
+Write in {REPLY_LANGUAGE} only."""
 
     return AssistantAgent(
         name=f"{label.replace(' ', '_')}_Agent",
@@ -622,7 +625,7 @@ If nothing relevant was found write "FACTS: none" and "SOURCES: NONE". Never inv
 # ============================================================================
 # agents/resolution_agent.py
 # ============================================================================
-SYSTEM_MESSAGE = """You are the Resolution Agent.
+SYSTEM_MESSAGE = f"""You are the Resolution Agent.
 Write a short, polite, helpful reply to the person who raised the ticket.
 Rules:
 - Use ONLY the FACTS given by the department agent. Do not invent policies, numbers or dates.
@@ -630,7 +633,8 @@ Rules:
   team member will follow up. Do not guess.
 - If the person is upset, start with one line of empathy.
 - Use numbered steps when there is a process. Keep it under 150 words.
-- Reply in the same language the person used.
+- Write the whole reply in {REPLY_LANGUAGE} ONLY. Never switch to another language, even if the question,
+  the facts or Indian terms (PAN, IFSC, UAN, Aadhaar, 80C) look unfamiliar.
 - If the task says it is ONE part of a bigger message, answer only that team's part: no greeting, no sign-off.
 - Speak as the help desk. NEVER mention file names, documents, sources, the knowledge base, agents,
   tools, FACTS or anything about how the answer was found. Just give the answer.
@@ -1350,7 +1354,7 @@ def page_review():
             name = st.text_input("Your name and team *", placeholder="e.g. Anitha (Finance)")
             pwd = st.text_input("Reviewer password *", type="password")
             if st.form_submit_button("Open review queue", type="primary"):
-                if pwd == REVIEWER_PASSWORD and name.strip():
+                if pwd.strip() == REVIEWER_PASSWORD.strip() and name.strip():
                     st.session_state.reviewer_ok = True
                     st.session_state.reviewer_name = name.strip()
                     st.rerun()

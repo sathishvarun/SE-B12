@@ -5,7 +5,7 @@ so Marketing answers from marketing docs, HR from HR docs, and so on.
 """
 from autogen_agentchat.agents import AssistantAgent
 
-from config import DEPARTMENT_LABELS, DEPARTMENTS, SERPAPI_API_KEY
+from config import DEPARTMENT_LABELS, DEPARTMENTS, REPLY_LANGUAGE, SERPAPI_API_KEY
 from tools.kb_search import format_results, search
 from tools.web_search import serpapi_search
 
@@ -43,7 +43,8 @@ FACTS:
 - <fact copied from the documents>
 - <fact>
 SOURCES: <comma separated file names, e.g. {department}/policy.md> or NONE
-If nothing relevant was found write "FACTS: none" and "SOURCES: NONE". Never invent facts."""
+If nothing relevant was found write "FACTS: none" and "SOURCES: NONE". Never invent facts.
+Write in {REPLY_LANGUAGE} only."""
 
     return AssistantAgent(
         name=f"{label.replace(' ', '_')}_Agent",
