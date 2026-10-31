@@ -49,9 +49,9 @@ _STREAMLIT_CONFIG = '[server]\nheadless = true\nport = 8501\n\n[browser]\ngather
 _KB_FILES = {
     "customer_support/client_portal_and_releases.md": "# SK Soft Technology Client Portal, Access and Releases\n\n## Client portal login problems\n1. On the portal login page click Forgot Password and enter your registered work email.\n2. Use the reset link within 30 minutes.\n3. The new password needs at least 12 characters with upper case, lower case, a number and a symbol.\n4. After 5 wrong attempts the account is locked for 30 minutes.\n5. Single sign-on (SSO) users must reset their password with their own company IT team.\n\n## Adding or removing client users\n- Only the client's named admin can request new portal users or removal of users, by raising a P4 ticket.\n- Requests are completed within 1 business day.\n\n## Reporting a bug\n- Raise a ticket with the steps to reproduce, the expected result, the actual result, the browser or app version and screenshots.\n- Confirmed bugs are given a bug ID and planned into a release based on severity.\n\n## Releases and maintenance windows\n- Planned releases happen every second Saturday between 10 PM and 2 AM IST.\n- Clients are informed by email 5 business days before each release, with release notes.\n- Emergency hotfixes for P1 issues can be deployed at any time after client approval.\n",
     "customer_support/client_support_sla.md": "# SK Soft Technology Client Support and SLA Policy\n\n## Severity levels and response times\n- P1 Critical: production is down or no users can log in. First response within 15 minutes, 24x7. Target fix or workaround within 4 hours.\n- P2 High: a major feature is broken for many users, no workaround. First response within 1 hour. Target fix within 1 business day.\n- P3 Medium: a feature is broken but a workaround exists. First response within 4 business hours. Target fix within 5 business days.\n- P4 Low: questions, how-to requests and small UI issues. First response within 1 business day. Fixed in a planned release.\n\n## How to raise a support ticket\n1. Log in to the SK Soft Client Support Portal and click New Ticket.\n2. Choose the product, the environment (Production, UAT or Dev) and the severity.\n3. Describe the problem, the steps to reproduce it, the time it started and attach screenshots or error logs.\n4. You receive a ticket number by email immediately. All updates are posted on the ticket.\n5. For a P1 outage, also call the 24x7 support hotline so the on-call engineer is paged at once.\n\n## Production outage (P1) process\n- The on-call engineer joins a bridge call within 15 minutes and shares updates every 30 minutes.\n- The client's account manager and the delivery head are informed automatically.\n- After the fix, a Root Cause Analysis (RCA) report is shared within 3 business days.\n\n## Escalation matrix\n- Level 1: Support engineer on the ticket.\n- Level 2: Support team lead, if there is no response within the SLA time.\n- Level 3: Delivery manager and account manager for repeated SLA misses.\n\n## SLA service credits\n- If the monthly uptime falls below the 99.5% committed in the contract, the client receives a service credit of 5% of that month's support fee for every 0.5% below target, up to 25%.\n",
-    "finance/invoices_and_expenses.md": "# SK Soft Technology Finance: Client Invoices, Payments and Employee Expenses\n\n## Client invoicing\n- Time-and-material (T&M) projects are invoiced monthly on the 3rd working day, based on approved timesheets.\n- Fixed-price projects are invoiced on each milestone the client signs off.\n- Payment terms are Net 30 days from the invoice date unless the contract says otherwise.\n- Every invoice carries the PO number, the GSTIN of both parties and the SOW reference.\n\n## Duplicate or wrong charge on an invoice\n1. The client shares the invoice number and the payment reference (UTR or transaction ID).\n2. Finance checks the bank statement and the payment gateway within 2 business days.\n3. If a duplicate payment is confirmed, the extra amount is refunded within 5 business days, or adjusted against the next invoice if the client prefers.\n4. A credit note is issued for every refund or adjustment.\n\n## Employee expense claims and reimbursements\n1. Submit claims in the Expense Portal within 30 days of the expense.\n2. Attach a clear photo or PDF of each bill. Claims above Rs 5,000 need project manager approval.\n3. Approved claims are paid with the next monthly salary.\n- Travel limits for client visits: hotel up to Rs 4,000 per night in metro cities and Rs 2,500 elsewhere; daily food allowance Rs 1,000; local cab travel is reimbursed at actuals with receipts.\n- Onsite (abroad) assignments get a daily allowance as per the country table in the Travel Policy.\n\n## Vendor payments\n- Vendor invoices are paid within 45 days of receiving a valid invoice with a PO number.\n",
-    "hr/leave_wfh_and_policies.md": "# SK Soft Technology HR: Leave, Hybrid Work, Onboarding, Appraisals and Workplace Policies\n\n## Leave types per year\n- Casual leave: 12 days. Sick leave: 10 days. Earned (privilege) leave: 18 days.\n- Maternity leave: 26 weeks. Paternity leave: 10 working days.\n- Up to 10 unused earned leaves can be carried forward to the next year.\n\n## How to apply for leave\n1. Log in to the HR Portal (SK People) and open Leave > Apply.\n2. Choose the leave type and dates and add a short reason.\n3. Casual and earned leave must be applied at least 3 working days in advance; inform your project manager so client deliverables are planned.\n4. Sick leave of more than 2 days needs a medical certificate.\n5. Your reporting manager approves or rejects within 2 working days.\n\n## Hybrid work (work from home)\n- Employees work from the office at least 3 days a week and may work from home up to 2 days a week.\n- Client-facing projects may require more office days as per the client contract.\n- Full remote work for longer periods needs approval from the delivery head and HR.\n\n## Onboarding for new joiners\n- Day 1: laptop handover, ID card, HR induction and policy acceptance in SK People.\n- Week 1: mandatory security and POSH trainings, and project allocation by the resource management team.\n- A buddy from the project team is assigned to every new joiner for the first 30 days.\n\n## Appraisals and bench\n- The appraisal cycle runs every April, with a mid-year review in October.\n- Employees not allocated to a project (bench) must complete assigned upskilling courses and stay available for client interviews.\n\n## Notice period\n- 60 days for all employees, and 90 days for managers and above.\n\n## Workplace complaints\n- Complaints about harassment, discrimination or unsafe behaviour are handled confidentially by the Internal Committee (IC) under the POSH policy.\n- Email ic@sksoft.example or speak to any HR business partner. The committee responds within 2 working days.\n",
-    "it/it_support_guide.md": "# SK Soft Technology IT Support Guide\n\n## Access to GitHub, Jira, Confluence and AWS\n1. Raise an Access Request in the IT Service Portal and select the tools you need (GitHub organisation, Jira project, Confluence space, AWS dev account).\n2. Mention the project code and your project manager's name.\n3. Your project manager approves the request in the portal.\n4. Standard access is provided within 1 working day after approval.\n- Production (AWS prod, production databases) access needs extra approval from the delivery head and is given only for a limited time.\n- Access is removed automatically when you are released from a project.\n\n## VPN not connecting or disconnecting\n1. Make sure you have the latest SK Soft VPN client (updates are pushed every month).\n2. Restart the VPN client and sign in again with multi-factor authentication (MFA).\n3. Switch to another network (for example a mobile hotspot) to check whether your home Wi-Fi is the problem.\n4. If it still drops, raise an IT ticket with a screenshot of the error and the time it happened.\n\n## Reset your office password\n1. Go to the Self-Service Password Portal and enter your employee ID.\n2. Verify with the code sent to your registered mobile or the authenticator app.\n3. Choose a password with at least 12 characters, including upper case, lower case, a number and a symbol.\n4. Passwords expire every 90 days and the last 5 cannot be reused.\n\n## Laptops and software\n- Developer laptops have 32 GB RAM and are replaced every 4 years.\n- Hardware faults are fixed within 3 working days; a spare laptop is given if it takes longer.\n- Install licensed software (IDEs, Docker Desktop, database tools) only from the Software Center or by raising a request. Pirated or personal-licence software is not allowed.\n\n## Security incidents\n- Report a lost or stolen laptop to IT and your manager within 2 hours so it can be locked and wiped remotely.\n- Never share passwords or MFA codes, even with IT staff.\n- Report phishing emails with the Report Phishing button in Outlook.\n- Never commit secrets, passwords or API keys to GitHub; if it happens, inform the security team immediately so the key is rotated.\n",
+    "finance/invoices_and_expenses.md": "# SK Soft Technology Finance: Client Invoices, Payments and Employee Expenses\n\n## Client invoicing\n- Time-and-material (T&M) projects are invoiced monthly on the 3rd working day, based on approved timesheets.\n- Fixed-price projects are invoiced on each milestone the client signs off.\n- Payment terms are Net 30 days from the invoice date unless the contract says otherwise.\n- Every invoice carries the PO number, the GSTIN of both parties and the SOW reference.\n\n## Duplicate or wrong charge on an invoice\n1. The client shares the invoice number and the payment reference (UTR or transaction ID).\n2. Finance checks the bank statement and the payment gateway within 2 business days.\n3. If a duplicate payment is confirmed, the extra amount is refunded within 5 business days, or adjusted against the next invoice if the client prefers.\n4. A credit note is issued for every refund or adjustment.\n\n## Payroll details new joiners must provide\nSubmit these in the Payroll section of SK People before the 20th of your joining month, so your first salary is not delayed:\n1. Salary bank account: bank name, account number, IFSC code and a cancelled cheque or bank passbook front page. The account must be in your own name.\n2. PAN card number (mandatory for income tax / TDS).\n3. UAN (Universal Account Number) from your previous employer, for Provident Fund (PF) transfer. Freshers get a new UAN created by Finance.\n4. Investment / tax declaration (old or new tax regime choice, rent, 80C investments) for the financial year.\n5. Form 12B with salary details from your previous employer if you joined in the middle of the financial year.\n- Salary is credited on the last working day of each month. Payslips are in SK People > Payroll > Payslips.\n- Form 16 is issued every year by 15 June.\n\n## Employee expense claims and reimbursements\n1. Submit claims in the Expense Portal within 30 days of the expense.\n2. Attach a clear photo or PDF of each bill. Claims above Rs 5,000 need project manager approval.\n3. Approved claims are paid with the next monthly salary.\n- Travel limits for client visits: hotel up to Rs 4,000 per night in metro cities and Rs 2,500 elsewhere; daily food allowance Rs 1,000; local cab travel is reimbursed at actuals with receipts.\n- Onsite (abroad) assignments get a daily allowance as per the country table in the Travel Policy.\n\n## Vendor payments\n- Vendor invoices are paid within 45 days of receiving a valid invoice with a PO number.\n",
+    "hr/leave_wfh_and_policies.md": "# SK Soft Technology HR: Leave, Hybrid Work, Onboarding, Appraisals and Workplace Policies\n\n## Leave types per year\n- Casual leave: 12 days. Sick leave: 10 days. Earned (privilege) leave: 18 days.\n- Maternity leave: 26 weeks. Paternity leave: 10 working days.\n- Up to 10 unused earned leaves can be carried forward to the next year.\n\n## How to apply for leave\n1. Log in to the HR Portal (SK People) and open Leave > Apply.\n2. Choose the leave type and dates and add a short reason.\n3. Casual and earned leave must be applied at least 3 working days in advance; inform your project manager so client deliverables are planned.\n4. Sick leave of more than 2 days needs a medical certificate.\n5. Your reporting manager approves or rejects within 2 working days.\n\n## Joining documents to submit to HR\nUpload these in SK People within 3 working days of joining (scanned copies; bring originals for verification on day 1):\n1. Signed offer letter and appointment letter.\n2. Identity and address proof: Aadhaar card and PAN card (passport if available).\n3. Education certificates: 10th, 12th and degree/diploma mark sheets and certificates.\n4. Experience documents from previous employers: relieving letter, experience letter and last 3 months' payslips.\n5. Two recent passport-size photos.\n6. Filled forms in SK People: personal details, emergency contact, nominee details and the code of conduct acceptance.\n- For payroll details (bank account, PF/UAN, tax declaration) see the Finance team's payroll checklist.\n\n## Hybrid work (work from home)\n- Employees work from the office at least 3 days a week and may work from home up to 2 days a week.\n- Client-facing projects may require more office days as per the client contract.\n- Full remote work for longer periods needs approval from the delivery head and HR.\n\n## Onboarding for new joiners\n- Day 1: laptop handover, ID card, HR induction and policy acceptance in SK People.\n- Week 1: mandatory security and POSH trainings, and project allocation by the resource management team.\n- A buddy from the project team is assigned to every new joiner for the first 30 days.\n\n## Appraisals and bench\n- The appraisal cycle runs every April, with a mid-year review in October.\n- Employees not allocated to a project (bench) must complete assigned upskilling courses and stay available for client interviews.\n\n## Notice period\n- 60 days for all employees, and 90 days for managers and above.\n\n## Workplace complaints\n- Complaints about harassment, discrimination or unsafe behaviour are handled confidentially by the Internal Committee (IC) under the POSH policy.\n- Email ic@sksoft.example or speak to any HR business partner. The committee responds within 2 working days.\n",
+    "it/it_support_guide.md": "# SK Soft Technology IT Support Guide\n\n## New joiner laptop setup (software to install)\nYour laptop comes with Windows/macOS, the antivirus and the Software Center already installed. On day 1:\n1. Sign in with your SK Soft email and set up multi-factor authentication (MFA) with the Microsoft Authenticator app on your phone.\n2. Install the SK Soft VPN client from the Software Center and connect once to check it works.\n3. From the Software Center install the standard tools: Microsoft Outlook and Teams, Slack, Google Chrome, 7-Zip and Zoom.\n4. Developers also install, from the Software Center: Git, Visual Studio Code (or IntelliJ IDEA), Docker Desktop, Postman, and Python or Node.js as your project needs.\n5. Raise an Access Request in the IT Service Portal for GitHub, Jira, Confluence and the AWS dev account (see below).\n6. Do not install personal or pirated software; anything not in the Software Center needs an IT request.\n- IT runs a 30-minute \"Laptop Ready\" session for new joiners every Monday at 11 AM on Teams.\n\n## Access to GitHub, Jira, Confluence and AWS\n1. Raise an Access Request in the IT Service Portal and select the tools you need (GitHub organisation, Jira project, Confluence space, AWS dev account).\n2. Mention the project code and your project manager's name.\n3. Your project manager approves the request in the portal.\n4. Standard access is provided within 1 working day after approval.\n- Production (AWS prod, production databases) access needs extra approval from the delivery head and is given only for a limited time.\n- Access is removed automatically when you are released from a project.\n\n## VPN not connecting or disconnecting\n1. Make sure you have the latest SK Soft VPN client (updates are pushed every month).\n2. Restart the VPN client and sign in again with multi-factor authentication (MFA).\n3. Switch to another network (for example a mobile hotspot) to check whether your home Wi-Fi is the problem.\n4. If it still drops, raise an IT ticket with a screenshot of the error and the time it happened.\n\n## Reset your office password\n1. Go to the Self-Service Password Portal and enter your employee ID.\n2. Verify with the code sent to your registered mobile or the authenticator app.\n3. Choose a password with at least 12 characters, including upper case, lower case, a number and a symbol.\n4. Passwords expire every 90 days and the last 5 cannot be reused.\n\n## Laptops and software\n- Developer laptops have 32 GB RAM and are replaced every 4 years.\n- Hardware faults are fixed within 3 working days; a spare laptop is given if it takes longer.\n- Install licensed software (IDEs, Docker Desktop, database tools) only from the Software Center or by raising a request. Pirated or personal-licence software is not allowed.\n\n## Security incidents\n- Report a lost or stolen laptop to IT and your manager within 2 hours so it can be locked and wiped remotely.\n- Never share passwords or MFA codes, even with IT staff.\n- Report phishing emails with the Report Phishing button in Outlook.\n- Never commit secrets, passwords or API keys to GitHub; if it happens, inform the security team immediately so the key is rotated.\n",
     "marketing/brand_case_studies_webinars.md": "# SK Soft Technology Marketing: Brand, Case Studies, Webinars and Social Media\n\n## Brand guidelines\n- Primary colour: SK Soft Blue #1D4ED8. Accent: Signal Orange #FF6B1A. Text: Graphite #1F2937.\n- Fonts: Poppins for headings, Inter for body text.\n- Do not stretch, recolour or add effects to the logo. Keep clear space around it equal to the height of the letters SK.\n- Use the official slide template from the Marketing Hub for all client presentations.\n\n## Publishing a client case study\n1. Fill in the Case Study Request form in the Marketing Hub with the project summary, technology used and measurable results (for example cost saved, time reduced).\n2. Get written approval from the client to use their name and logo. Without approval, the case study is published as anonymous (\"a leading bank\").\n3. The content team drafts the case study within 7 working days.\n4. The delivery manager checks technical accuracy and the account manager gives final sign-off.\n5. Approved case studies go on the website, LinkedIn and sales decks.\n\n## Hosting a webinar or tech talk\n- Submit the webinar request at least 21 days before the event with the topic, speakers, target audience and date.\n- Marketing creates the registration page and sends reminders 7 days, 1 day and 1 hour before the event.\n- A dry run with all speakers is mandatory 2 days before the event.\n- Registrant and attendee leads are shared with Sales within 2 working days after the event.\n\n## Social media and blogs\n- Only the marketing team posts on official SK Soft Technology accounts.\n- Employees can write technical blogs; submit drafts to the content team for a 3 working day review.\n- Never share client names, code, architecture diagrams or project details publicly without approval.\n",
     "sales/rate_card_rfp_and_contracts.md": "# SK Soft Technology Sales: Rate Card, Discounts, RFPs and Contracts\n\n## Standard monthly rate card (India offshore, per resource)\n- Junior developer (0-2 years): Rs 1,80,000 per month.\n- Developer (3-5 years, Java, .NET, Python, React): Rs 2,60,000 per month.\n- Senior developer / tech lead (6+ years): Rs 3,60,000 per month.\n- QA engineer: Rs 2,00,000 per month. DevOps / cloud engineer: Rs 3,00,000 per month.\n- Onsite resources are priced separately by the pricing team.\n\n## Discount approval limits\n- Account managers can approve up to 5% discount.\n- Sales heads can approve up to 10%.\n- Discounts above 10%, or any deal with 10 or more resources for 12 months or longer, need approval from the pricing committee (decision within 3 working days).\n- Volume guide: 5 to 9 resources for 12 months or more can receive up to 7%.\n\n## Responding to an RFP\n1. Log the RFP in the CRM within 1 working day and share it with the pre-sales team.\n2. Hold a bid / no-bid meeting within 2 working days.\n3. Send clarification questions to the client before their question deadline.\n4. Pre-sales prepares the solution and effort estimate; pricing team prepares the commercials.\n5. The delivery head and sales head review the final proposal at least 2 days before submission.\n\n## Contracts\n- An NDA must be signed before receiving any confidential client documents.\n- Every engagement needs a signed MSA (master agreement) and a SOW (statement of work) before work starts.\n- Proof of Concept (POC) work of up to 2 weeks can be offered free with sales head approval.\n"
 }
@@ -328,37 +328,53 @@ def load_tickets() -> pd.DataFrame:
 # ============================================================================
 # agents/router_agent.py
 # ============================================================================
+MAX_REQUESTS = 4
 _dept_lines = "\n".join(f"- {key}: {desc}" for key, desc in DEPARTMENTS.items())
 
 SYSTEM_MESSAGE = f"""You are the Router Agent (the main agent) of the {COMPANY_NAME} help desk (an IT services company).
-Read the query from an employee (or a client) and decide which team should handle it.
+Read the message from an employee (or a client) and decide which team or teams must handle it.
 
 Departments:
 {_dept_lines}
 
-Priority rules:
+Splitting rules:
+- If the message asks things that belong to DIFFERENT teams, split it into one request per team
+  (for example software setup -> it, joining documents -> hr, payroll details -> finance).
+- Put everything for the same team into ONE request. Maximum {MAX_REQUESTS} requests.
+- Rewrite each request as a short, complete question that makes sense on its own.
+- A simple message for one team is just one request.
+
+Priority rules (per request):
 - High: production outage / P1, client system down, security breach or leaked secrets, money charged wrongly,
   legal threats, fraud, harassment, very angry person, or anything blocking client delivery today.
 - Medium: needs action in 1-2 days (P2/P3 bugs, invoice queries, access or VPN problem for one person).
-- Low: general questions, how-to, information requests.
+- Low: general questions, how-to, information requests, new joiner questions.
 
 Reply with ONLY a JSON object, no extra text:
-{{"department": "<one key from the list>", "category": "<short label, e.g. Production Incident, Access, Leave, Expenses, RFP>",
-  "priority": "High|Medium|Low", "sentiment": "Positive|Neutral|Negative|Angry",
-  "summary": "<one line summary>"}}"""
+{{"sentiment": "Positive|Neutral|Negative|Angry",
+  "summary": "<one line summary of the whole message>",
+  "requests": [
+    {{"department": "<one key from the list>", "category": "<short label, e.g. Laptop Setup, Joining Documents, Payroll>",
+      "priority": "High|Medium|Low", "question": "<the part of the message for this team>"}}
+  ]}}"""
 
 
 def create_router_agent(model_client) -> AssistantAgent:
     return AssistantAgent(
         name="Router_Agent",
-        description="Main agent: classifies the query and routes it to the right department.",
+        description="Main agent: splits the message into one request per team and routes each to that team.",
         model_client=model_client,
         system_message=SYSTEM_MESSAGE,
     )
 
 
-def parse_route(text: str) -> dict:
-    """Read the JSON the Router Agent produced, with safe defaults if it is messy."""
+def _clean(value, allowed, default):
+    value = str(value or default).strip().capitalize()
+    return value if value in allowed else default
+
+
+def parse_route(text: str, original: str = "") -> dict:
+    """Read the Router's JSON safely. Returns {sentiment, summary, requests: [...]} with at least one request."""
     match = re.search(r"\{.*\}", text, re.DOTALL)
     data = {}
     if match:
@@ -366,17 +382,34 @@ def parse_route(text: str) -> dict:
             data = json.loads(match.group(0))
         except json.JSONDecodeError:
             data = {}
-    dept = str(data.get("department", "customer_support")).lower().strip().replace(" ", "_")
-    if dept not in DEPARTMENTS:
-        dept = "customer_support"
-    priority = str(data.get("priority", "Medium")).capitalize()
-    sentiment = str(data.get("sentiment", "Neutral")).capitalize()
+
+    raw = data.get("requests")
+    if not isinstance(raw, list) or not raw:          # older single-team format, or messy output
+        raw = [data] if data.get("department") else [{}]
+
+    merged: dict[str, dict] = {}                      # one request per team
+    for item in raw[:MAX_REQUESTS]:
+        if not isinstance(item, dict):
+            continue
+        dept = str(item.get("department", "customer_support")).lower().strip().replace(" ", "_")
+        if dept not in DEPARTMENTS:
+            dept = "customer_support"
+        question = str(item.get("question") or original).strip()
+        priority = _clean(item.get("priority"), ("High", "Medium", "Low"), "Medium")
+        if dept in merged:                            # same team twice -> join the questions
+            merged[dept]["question"] += " " + question
+            if priority == "High":
+                merged[dept]["priority"] = "High"
+        else:
+            merged[dept] = {"department_key": dept, "category": item.get("category") or "General",
+                            "priority": priority, "question": question}
+    if not merged:
+        merged["customer_support"] = {"department_key": "customer_support", "category": "General",
+                                      "priority": "Medium", "question": original}
     return {
-        "department_key": dept,
-        "category": data.get("category", "General"),
-        "priority": priority if priority in ("High", "Medium", "Low") else "Medium",
-        "sentiment": sentiment if sentiment in ("Positive", "Neutral", "Negative", "Angry") else "Neutral",
-        "summary": data.get("summary", ""),
+        "sentiment": _clean(data.get("sentiment"), ("Positive", "Neutral", "Negative", "Angry"), "Neutral"),
+        "summary": str(data.get("summary", "")).strip(),
+        "requests": list(merged.values()),
     }
 
 # ============================================================================
@@ -439,6 +472,7 @@ Rules:
 - If the person is upset, start with one line of empathy.
 - Use numbered steps when there is a process. Keep it under 150 words.
 - Reply in the same language the person used.
+- If the task says it is ONE part of a bigger message, answer only that team's part: no greeting, no sign-off.
 - Speak as the help desk. NEVER mention file names, documents, sources, the knowledge base, agents,
   tools, FACTS or anything about how the answer was found. Just give the answer.
 Finish with exactly one last line:
@@ -510,57 +544,85 @@ def _message_text(msg) -> tuple[str, str] | None:
     return None
 
 
-async def run_ticket(complaint: str, employee_name: str = "", employee_id: str = "",
-                     on_event: EventFn | None = None, model_client=None) -> dict:
-    on_event = on_event or (lambda *a: None)
-    client = model_client or make_model_client()
-    ctx = {"ticket_id": next_ticket_id(), "employee_name": employee_name,
-           "employee_id": employee_id, "complaint": complaint.strip()}
-    try:
-        # ---- Step 1: main Router agent -------------------------------------
-        router = create_router_agent(client)
-        routed = await router.run(task=complaint)
-        router_text = routed.messages[-1].content
-        ctx.update(parse_route(router_text))
-        ctx["department"] = DEPARTMENT_LABELS[ctx["department_key"]]
-        on_event("Router_Agent", "message",
-                 f"Department: {ctx['department']} | Category: {ctx['category']} | "
-                 f"Priority: {ctx['priority']} | Sentiment: {ctx['sentiment']}\nSummary: {ctx['summary']}")
+async def _run_team(client, request: dict, base: dict, original: str, multi: bool, on_event: EventFn) -> dict:
+    """Team agent -> Resolution -> Log for ONE request. Returns the saved ticket row."""
+    ctx = dict(base)
+    ctx.update({
+        "ticket_id": next_ticket_id(),
+        "department_key": request["department_key"],
+        "department": DEPARTMENT_LABELS[request["department_key"]],
+        "category": request["category"],
+        "priority": request["priority"],
+        "complaint": request["question"],
+    })
+    on_event("Router_Agent", "part", ctx["department"])
 
-        # ---- Step 2: department sub-agent -> resolution -> log ---------------
-        dept_agent = create_department_agent(ctx["department_key"], client, ctx)
-        team = RoundRobinGroupChat(
-            [dept_agent, create_resolution_agent(client), create_log_agent(client, ctx)],
-            termination_condition=TextMentionTermination("LOGGED", sources=["Log_Agent"])
-            | MaxMessageTermination(12),
-        )
-        task = (f"Ticket {ctx['ticket_id']} for the {ctx['department']} team\n"
-                f"From: {employee_name or 'unknown'} | Employee ID: {employee_id or '-'}\n"
-                f"Category: {ctx['category']} | Priority: {ctx['priority']} | Sentiment: {ctx['sentiment']}\n"
-                f"Summary: {ctx['summary']}\n"
-                f"Original message: {complaint}")
-        last_reply = ""
-        async for msg in team.run_stream(task=task):
-            if isinstance(msg, TaskResult) or getattr(msg, "source", "") == "user":
-                continue
-            item = _message_text(msg)
-            if item:
-                on_event(msg.source, *item)
-                if msg.source == "Resolution_Agent" and item[0] == "message":
-                    last_reply = item[1]
-    finally:
-        await client.close()
+    team = RoundRobinGroupChat(
+        [create_department_agent(ctx["department_key"], client, ctx),
+         create_resolution_agent(client), create_log_agent(client, ctx)],
+        termination_condition=TextMentionTermination("LOGGED", sources=["Log_Agent"]) | MaxMessageTermination(12),
+    )
+    part_note = ("\nNOTE: this is ONE part of a bigger message that other teams are answering. "
+                 "Answer ONLY the question for your team. No greeting and no sign-off.") if multi else ""
+    task = (f"Ticket {ctx['ticket_id']} for the {ctx['department']} team\n"
+            f"From: {ctx['employee_name'] or 'unknown'} | Employee ID: {ctx['employee_id'] or '-'}\n"
+            f"Category: {ctx['category']} | Priority: {ctx['priority']} | Sentiment: {ctx['sentiment']}\n"
+            f"Question for this team: {request['question']}\n"
+            f"Full original message (for context only): {original}{part_note}")
+
+    last_reply = ""
+    async for msg in team.run_stream(task=task):
+        if isinstance(msg, TaskResult) or getattr(msg, "source", "") == "user":
+            continue
+        item = _message_text(msg)
+        if item:
+            on_event(msg.source, *item)
+            if msg.source == "Resolution_Agent" and item[0] == "message":
+                last_reply = item[1]
 
     # Safety net: if the Log Agent never called its tool, log the ticket ourselves.
     if "result" not in ctx:
         conf = re.search(r"CONFIDENCE:\s*(High|Medium|Low)", last_reply, re.I)
         reply = re.sub(r"CONFIDENCE:.*", "", last_reply, flags=re.I).strip()
-        ctx.setdefault("department", "Client Support")
         row = build_row(ctx, reply or "No reply generated.", conf.group(1).capitalize() if conf else "Low",
                         "NONE", True, "Agents did not finish the workflow")
         ctx["result"] = save_ticket(row)
         on_event("Log_Agent", "message", f"LOGGED {row['ticket_id']} (fallback) | status={row['status']}")
     return ctx["result"]
+
+
+async def run_request(message: str, employee_name: str = "", employee_id: str = "",
+                      on_event: EventFn | None = None, model_client=None) -> list[dict]:
+    """Handle one message from a user. Returns one ticket row per team that was involved."""
+    on_event = on_event or (lambda *a: None)
+    client = model_client or make_model_client()
+    try:
+        # ---- Step 1: main Router agent splits the message by team ------------
+        routed = await create_router_agent(client).run(task=message)
+        route = parse_route(routed.messages[-1].content, message)
+        teams = [DEPARTMENT_LABELS[r["department_key"]] for r in route["requests"]]
+        on_event("Router_Agent", "message",
+                 f"Teams: {', '.join(teams)} | Sentiment: {route['sentiment']}\nSummary: {route['summary']}\n"
+                 + "\n".join(f"- {DEPARTMENT_LABELS[r['department_key']]} ({r['priority']}): {r['question']}"
+                             for r in route["requests"]))
+
+        # ---- Step 2: each team handles its own part ---------------------------
+        base = {"employee_name": employee_name, "employee_id": employee_id,
+                "sentiment": route["sentiment"], "summary": route["summary"]}
+        multi = len(route["requests"]) > 1
+        results = []
+        for request in route["requests"]:
+            part_base = dict(base, summary=request["question"] if multi else (route["summary"] or request["question"]))
+            results.append(await _run_team(client, request, part_base, message, multi, on_event))
+        return results
+    finally:
+        await client.close()
+
+
+async def run_ticket(complaint: str, employee_name: str = "", employee_id: str = "",
+                     on_event: EventFn | None = None, model_client=None) -> dict:
+    """Older single-answer helper (first team's ticket). New code should use run_request."""
+    return (await run_request(complaint, employee_name, employee_id, on_event, model_client))[0]
 
 # ============================================================================
 # app.py
@@ -572,6 +634,13 @@ st.set_page_config(page_title=f"{COMPANY_NAME} Help Desk", page_icon="🎧", lay
 # ----------------------------------------------------------------------------
 # (icon, team, what they handle, [(short button label, full question sent), ...])
 DEPT_CARDS = [
+    ("🚀", "New Joiner", "One question for several teams at once (IT + HR + Finance)",
+     [("Day-1: software + documents + payroll",
+       "I am new to this company. What software do I need to install on my computer? What documents do I need "
+       "to submit to HR? What basic details must I give Finance for my payroll?"),
+      ("Project start: access + leave",
+       "I'm joining a client project next week. How do I get GitHub, Jira and AWS access, and how do I apply "
+       "for 2 days of casual leave the week after?")]),
     ("🛟", "Client Support", "Production incidents, SLAs, support tickets and releases",
      [("Production is down!", "Our client's production application is down and no users can log in. This is a P1 – please help now!"),
       ("Raise a support ticket", "How do I raise a support ticket for a bug and how fast will the support team respond?")]),
@@ -591,6 +660,8 @@ DEPT_CARDS = [
      [("GitHub, Jira & AWS access", "I just joined a project. How do I get access to GitHub, Jira and the AWS dev account?"),
       ("VPN keeps dropping", "My VPN keeps disconnecting every 10 minutes and I can't reach the dev server.")]),
 ]
+
+TEAM_ICONS = {name: icon for icon, name, _, _ in DEPT_CARDS}
 
 FRIENDLY_STEP = {
     "Router_Agent": "🧭 Understood your request",
@@ -637,6 +708,7 @@ h1, h2, h3, .hero-title { font-family: 'Poppins', sans-serif !important; }
 .chip-id   { background:#f3f4f6; color:#374151; }
 .handoff { background:#fff7ed; border-left:4px solid #FF6B1A; padding:10px 14px; border-radius:8px;
            color:#7c2d12; font-size:.9rem; margin-top:8px; }
+.part-head { font-family:'Poppins',sans-serif; font-weight:600; font-size:1.05rem; margin-bottom:6px; }
 .source { color:#6b7280; font-size:.82rem; margin-top:6px; }
 .mini-hero { background: linear-gradient(135deg, #14213D 0%, #23407a 70%, #FF6B1A 160%); border-radius: 16px;
              padding: 14px 20px; color: #fff; margin-bottom: 12px; font-size: .95rem; }
@@ -677,8 +749,10 @@ def chips(r: dict) -> str:
             + f"<span class='chip chip-id'>🎫 {r['ticket_id']}</span>")
 
 
-def render_answer(msg: dict):
-    r = msg["result"]
+def render_part(r: dict, multi: bool):
+    if multi:
+        st.markdown(f"<div class='part-head'>{TEAM_ICONS.get(r['department'], '🎧')} {r['department']} team</div>",
+                    unsafe_allow_html=True)
     st.markdown(chips(r), unsafe_allow_html=True)
     st.markdown(r["response"])
     if r["status"] == "Escalated":
@@ -686,15 +760,31 @@ def render_answer(msg: dict):
         st.markdown(f"<div class='handoff'>🙋 A person from the <b>{r['assigned_to'].replace(' human team', ' team')}</b> will follow up on this "
                     f"shortly. Please keep your ticket number <b>{r['ticket_id']}</b> handy.{why}</div>",
                     unsafe_allow_html=True)
-    if not SHOW_AGENT_STEPS:  # employees only see the answer, nothing about files or agents
-        return
-    src = r["kb_sources"] if r["kb_sources"] != "NONE" else "no matching company document"
-    st.markdown(f"<div class='source'>📄 Based on: {src}</div>", unsafe_allow_html=True)
-    if msg.get("steps"):
+    if SHOW_AGENT_STEPS:
+        src = r["kb_sources"] if r["kb_sources"] != "NONE" else "no matching company document"
+        st.markdown(f"<div class='source'>📄 Based on: {src}</div>", unsafe_allow_html=True)
+
+
+def render_answer(msg: dict):
+    results = msg.get("results") or [msg["result"]]
+    multi = len(results) > 1
+    if multi:
+        names = ", ".join(r["department"] for r in results[:-1]) + f" and {results[-1]['department']}"
+        st.markdown(f"Your message had questions for **{len(results)} teams** ({names}). "
+                    "Each team has answered its part below:")
+    for r in results:
+        if multi:
+            with st.container(border=True):
+                render_part(r, multi)
+        else:
+            render_part(r, multi)
+    if SHOW_AGENT_STEPS and msg.get("steps"):  # employees only see the answer, nothing about files or agents
         with st.expander("🔍 Behind the scenes — how the AI team handled this"):
             for agent, kind, text in msg["steps"]:
                 label = agent.replace("_", " ")
-                if kind == "tool_call":
+                if kind == "part":
+                    st.markdown(f"**➡️ {text} team starts its part**")
+                elif kind == "tool_call":
                     st.caption(f"**{label}** · using a tool")
                     st.code(text, language=None)
                 elif kind == "tool_result":
@@ -750,7 +840,7 @@ def page_ask():
         with st.chat_message(msg["role"], avatar="🙂" if msg["role"] == "user" else "🎧"):
             if msg["role"] == "user":
                 st.markdown(msg["text"])
-            elif "result" in msg:
+            elif "result" in msg or "results" in msg:
                 render_answer(msg)
             else:
                 st.markdown(msg["text"])
@@ -844,25 +934,24 @@ def handle_question(question: str):
 
         def on_event(agent: str, kind: str, text: str):
             steps.append((agent, kind, text))
-            if agent == "Router_Agent":
-                dept = text.split("|")[0].replace("Department:", "").strip()
-                status.update(label=f"Sending it to the {dept} team…")
-                status.write(f"🧭 Routed to **{dept}**")
+            if agent == "Router_Agent" and kind == "message":
+                teams = text.split("|")[0].replace("Teams:", "").strip()
+                status.update(label=f"Sending it to: {teams}…")
+                status.write(f"🧭 Sent to **{teams}**")
+            elif agent == "Router_Agent" and kind == "part":
+                status.update(label=f"{TEAM_ICONS.get(text, '🎧')} {text} team is working on its part…")
+                status.write(f"{TEAM_ICONS.get(text, '🎧')} **{text} team** is checking company policy")
             elif agent.endswith("_Agent") and agent not in FRIENDLY_STEP:
-                if kind == "tool_call":
-                    status.update(label="Checking company policy…")
-                    status.write("🔎 Checking company policy")
-                elif kind == "message":
+                if kind == "message":
                     status.write("📄 Found what we need")
             elif agent == "Resolution_Agent":
-                status.update(label="Writing your answer…")
                 status.write("✍️ Answer written")
             elif agent == "Log_Agent" and kind == "tool_result":
                 status.write("🗂️ Ticket saved")
 
         try:
-            result = asyncio.run(run_ticket(question, st.session_state.get("user_name", ""),
-                                            st.session_state.get("user_ref", ""), on_event))
+            results = asyncio.run(run_request(question, st.session_state.get("user_name", ""),
+                                              st.session_state.get("user_ref", ""), on_event))
         except Exception as exc:
             status.update(label="Something went wrong", state="error")
             text = f"😕 Sorry, I couldn't process that right now. ({exc})"
@@ -871,7 +960,7 @@ def handle_question(question: str):
             return
 
         progress.empty()
-        msg = {"role": "assistant", "result": result, "steps": steps}
+        msg = {"role": "assistant", "results": results, "steps": steps}
         render_answer(msg)
         history.append(msg)
 

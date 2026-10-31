@@ -8,7 +8,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from config import COMPANY_NAME, SHOW_AGENT_STEPS, APP_PASSWORD, LOG_CSV, LOG_TXT, OPENAI_API_KEY, OPENAI_MODEL, SERPAPI_API_KEY
-from team import run_ticket
+from team import run_request
 from tools.ticket_store import load_tickets
 
 st.set_page_config(page_title=f"{COMPANY_NAME} Help Desk", page_icon="🎧", layout="wide")
@@ -18,6 +18,13 @@ st.set_page_config(page_title=f"{COMPANY_NAME} Help Desk", page_icon="🎧", lay
 # ----------------------------------------------------------------------------
 # (icon, team, what they handle, [(short button label, full question sent), ...])
 DEPT_CARDS = [
+    ("🚀", "New Joiner", "One question for several teams at once (IT + HR + Finance)",
+     [("Day-1: software + documents + payroll",
+       "I am new to this company. What software do I need to install on my computer? What documents do I need "
+       "to submit to HR? What basic details must I give Finance for my payroll?"),
+      ("Project start: access + leave",
+       "I'm joining a client project next week. How do I get GitHub, Jira and AWS access, and how do I apply "
+       "for 2 days of casual leave the week after?")]),
     ("🛟", "Client Support", "Production incidents, SLAs, support tickets and releases",
      [("Production is down!", "Our client's production application is down and no users can log in. This is a P1 – please help now!"),
       ("Raise a support ticket", "How do I raise a support ticket for a bug and how fast will the support team respond?")]),
@@ -37,6 +44,8 @@ DEPT_CARDS = [
      [("GitHub, Jira & AWS access", "I just joined a project. How do I get access to GitHub, Jira and the AWS dev account?"),
       ("VPN keeps dropping", "My VPN keeps disconnecting every 10 minutes and I can't reach the dev server.")]),
 ]
+
+TEAM_ICONS = {name: icon for icon, name, _, _ in DEPT_CARDS}
 
 FRIENDLY_STEP = {
     "Router_Agent": "🧭 Understood your request",
@@ -83,6 +92,7 @@ h1, h2, h3, .hero-title { font-family: 'Poppins', sans-serif !important; }
 .chip-id   { background:#f3f4f6; color:#374151; }
 .handoff { background:#fff7ed; border-left:4px solid #FF6B1A; padding:10px 14px; border-radius:8px;
            color:#7c2d12; font-size:.9rem; margin-top:8px; }
+.part-head { font-family:'Poppins',sans-serif; font-weight:600; font-size:1.05rem; margin-bottom:6px; }
 .source { color:#6b7280; font-size:.82rem; margin-top:6px; }
 .mini-hero { background: linear-gradient(135deg, #14213D 0%, #23407a 70%, #FF6B1A 160%); border-radius: 16px;
              padding: 14px 20px; color: #fff; margin-bottom: 12px; font-size: .95rem; }
@@ -123,8 +133,10 @@ def chips(r: dict) -> str:
             + f"<span class='chip chip-id'>🎫 {r['ticket_id']}</span>")
 
 
-def render_answer(msg: dict):
-    r = msg["result"]
+def render_part(r: dict, multi: bool):
+    if multi:
+        st.markdown(f"<div class='part-head'>{TEAM_ICONS.get(r['department'], '🎧')} {r['department']} team</div>",
+                    unsafe_allow_html=True)
     st.markdown(chips(r), unsafe_allow_html=True)
     st.markdown(r["response"])
     if r["status"] == "Escalated":
@@ -132,15 +144,31 @@ def render_answer(msg: dict):
         st.markdown(f"<div class='handoff'>🙋 A person from the <b>{r['assigned_to'].replace(' human team', ' team')}</b> will follow up on this "
                     f"shortly. Please keep your ticket number <b>{r['ticket_id']}</b> handy.{why}</div>",
                     unsafe_allow_html=True)
-    if not SHOW_AGENT_STEPS:  # employees only see the answer, nothing about files or agents
-        return
-    src = r["kb_sources"] if r["kb_sources"] != "NONE" else "no matching company document"
-    st.markdown(f"<div class='source'>📄 Based on: {src}</div>", unsafe_allow_html=True)
-    if msg.get("steps"):
+    if SHOW_AGENT_STEPS:
+        src = r["kb_sources"] if r["kb_sources"] != "NONE" else "no matching company document"
+        st.markdown(f"<div class='source'>📄 Based on: {src}</div>", unsafe_allow_html=True)
+
+
+def render_answer(msg: dict):
+    results = msg.get("results") or [msg["result"]]
+    multi = len(results) > 1
+    if multi:
+        names = ", ".join(r["department"] for r in results[:-1]) + f" and {results[-1]['department']}"
+        st.markdown(f"Your message had questions for **{len(results)} teams** ({names}). "
+                    "Each team has answered its part below:")
+    for r in results:
+        if multi:
+            with st.container(border=True):
+                render_part(r, multi)
+        else:
+            render_part(r, multi)
+    if SHOW_AGENT_STEPS and msg.get("steps"):  # employees only see the answer, nothing about files or agents
         with st.expander("🔍 Behind the scenes — how the AI team handled this"):
             for agent, kind, text in msg["steps"]:
                 label = agent.replace("_", " ")
-                if kind == "tool_call":
+                if kind == "part":
+                    st.markdown(f"**➡️ {text} team starts its part**")
+                elif kind == "tool_call":
                     st.caption(f"**{label}** · using a tool")
                     st.code(text, language=None)
                 elif kind == "tool_result":
@@ -196,7 +224,7 @@ def page_ask():
         with st.chat_message(msg["role"], avatar="🙂" if msg["role"] == "user" else "🎧"):
             if msg["role"] == "user":
                 st.markdown(msg["text"])
-            elif "result" in msg:
+            elif "result" in msg or "results" in msg:
                 render_answer(msg)
             else:
                 st.markdown(msg["text"])
@@ -290,25 +318,24 @@ def handle_question(question: str):
 
         def on_event(agent: str, kind: str, text: str):
             steps.append((agent, kind, text))
-            if agent == "Router_Agent":
-                dept = text.split("|")[0].replace("Department:", "").strip()
-                status.update(label=f"Sending it to the {dept} team…")
-                status.write(f"🧭 Routed to **{dept}**")
+            if agent == "Router_Agent" and kind == "message":
+                teams = text.split("|")[0].replace("Teams:", "").strip()
+                status.update(label=f"Sending it to: {teams}…")
+                status.write(f"🧭 Sent to **{teams}**")
+            elif agent == "Router_Agent" and kind == "part":
+                status.update(label=f"{TEAM_ICONS.get(text, '🎧')} {text} team is working on its part…")
+                status.write(f"{TEAM_ICONS.get(text, '🎧')} **{text} team** is checking company policy")
             elif agent.endswith("_Agent") and agent not in FRIENDLY_STEP:
-                if kind == "tool_call":
-                    status.update(label="Checking company policy…")
-                    status.write("🔎 Checking company policy")
-                elif kind == "message":
+                if kind == "message":
                     status.write("📄 Found what we need")
             elif agent == "Resolution_Agent":
-                status.update(label="Writing your answer…")
                 status.write("✍️ Answer written")
             elif agent == "Log_Agent" and kind == "tool_result":
                 status.write("🗂️ Ticket saved")
 
         try:
-            result = asyncio.run(run_ticket(question, st.session_state.get("user_name", ""),
-                                            st.session_state.get("user_ref", ""), on_event))
+            results = asyncio.run(run_request(question, st.session_state.get("user_name", ""),
+                                              st.session_state.get("user_ref", ""), on_event))
         except Exception as exc:
             status.update(label="Something went wrong", state="error")
             text = f"😕 Sorry, I couldn't process that right now. ({exc})"
@@ -317,7 +344,7 @@ def handle_question(question: str):
             return
 
         progress.empty()
-        msg = {"role": "assistant", "result": result, "steps": steps}
+        msg = {"role": "assistant", "results": results, "steps": steps}
         render_answer(msg)
         history.append(msg)
 

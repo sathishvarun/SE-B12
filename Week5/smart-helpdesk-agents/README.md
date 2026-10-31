@@ -28,6 +28,8 @@ Runs on your Mac at `http://localhost:8501` and deploys to any VPS.
                  → Resolved ✅  or  Escalated 🚨 to "<Department> human team"
 ```
 
+* **One message can involve several teams.** The Router splits it (e.g. software setup → IT, joining
+  documents → HR, payroll details → Finance); each team's agent answers its own part and logs its own ticket.
 * Step 1 runs the Router alone (so we know which sub-agent to call).
 * Step 2 is an AutoGen **RoundRobinGroupChat**: Department → Resolution → Log.
   It stops on `TextMentionTermination("LOGGED")` with `MaxMessageTermination(12)` as a safety net.

@@ -12,6 +12,16 @@
 4. Sick leave of more than 2 days needs a medical certificate.
 5. Your reporting manager approves or rejects within 2 working days.
 
+## Joining documents to submit to HR
+Upload these in SK People within 3 working days of joining (scanned copies; bring originals for verification on day 1):
+1. Signed offer letter and appointment letter.
+2. Identity and address proof: Aadhaar card and PAN card (passport if available).
+3. Education certificates: 10th, 12th and degree/diploma mark sheets and certificates.
+4. Experience documents from previous employers: relieving letter, experience letter and last 3 months' payslips.
+5. Two recent passport-size photos.
+6. Filled forms in SK People: personal details, emergency contact, nominee details and the code of conduct acceptance.
+- For payroll details (bank account, PF/UAN, tax declaration) see the Finance team's payroll checklist.
+
 ## Hybrid work (work from home)
 - Employees work from the office at least 3 days a week and may work from home up to 2 days a week.
 - Client-facing projects may require more office days as per the client contract.

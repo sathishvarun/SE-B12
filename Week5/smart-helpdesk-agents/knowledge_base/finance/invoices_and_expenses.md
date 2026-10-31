@@ -12,6 +12,16 @@
 3. If a duplicate payment is confirmed, the extra amount is refunded within 5 business days, or adjusted against the next invoice if the client prefers.
 4. A credit note is issued for every refund or adjustment.
 
+## Payroll details new joiners must provide
+Submit these in the Payroll section of SK People before the 20th of your joining month, so your first salary is not delayed:
+1. Salary bank account: bank name, account number, IFSC code and a cancelled cheque or bank passbook front page. The account must be in your own name.
+2. PAN card number (mandatory for income tax / TDS).
+3. UAN (Universal Account Number) from your previous employer, for Provident Fund (PF) transfer. Freshers get a new UAN created by Finance.
+4. Investment / tax declaration (old or new tax regime choice, rent, 80C investments) for the financial year.
+5. Form 12B with salary details from your previous employer if you joined in the middle of the financial year.
+- Salary is credited on the last working day of each month. Payslips are in SK People > Payroll > Payslips.
+- Form 16 is issued every year by 15 June.
+
 ## Employee expense claims and reimbursements
 1. Submit claims in the Expense Portal within 30 days of the expense.
 2. Attach a clear photo or PDF of each bill. Claims above Rs 5,000 need project manager approval.
