@@ -52,9 +52,12 @@ EP_WEB="$(printf '%s\n' "$ARGS" | sed -n 's/^--entrypoints\.\([^.]*\)\.address=:
 # Network: one Traefik is attached to (prefer a non-default one).
 NETWORK="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' "$TRAEFIK" | grep -v '^$' | grep -vx 'bridge' | head -1)"
 [ -z "$NETWORK" ] && NETWORK=bridge
+# Traefik in "host" network mode reaches containers on the normal bridge network.
+# Never run the app itself in host mode: its port 8501 would clash with other apps on the server.
+if [ "$NETWORK" = host ]; then RUN_NET=bridge; else RUN_NET="$NETWORK"; fi
 
 echo "    Traefik container : $TRAEFIK"
-echo "    Docker network    : $NETWORK"
+echo "    Docker network    : $RUN_NET   (Traefik network: $NETWORK)"
 echo "    HTTPS entrypoint  : $EP_SECURE   (HTTP entrypoint: $EP_WEB)"
 echo "    Certificate       : ${RESOLVER:-none found - HTTPS will use the Traefik default certificate}"
 
@@ -86,14 +89,14 @@ TLS_LABELS=(--label "traefik.http.routers.$NAME.tls=true")
 [ -n "$RESOLVER" ] && TLS_LABELS+=(--label "traefik.http.routers.$NAME.tls.certresolver=$RESOLVER")
 
 docker run -d --name $NAME --restart unless-stopped \
-  --network "$NETWORK" \
+  --network "$RUN_NET" \
   -p "$HOST_PORT:8501" \
   -e TZ=Asia/Kolkata \
   -v "$APP_DIR/.env:/app/.env:ro" \
   -v "$APP_DIR/logs:/app/logs" \
   -v "$APP_DIR/knowledge_base:/app/knowledge_base:ro" \
   --label "traefik.enable=true" \
-  --label "traefik.docker.network=$NETWORK" \
+  --label "traefik.docker.network=$RUN_NET" \
   --label "traefik.http.services.$NAME.loadbalancer.server.port=8501" \
   --label "traefik.http.routers.$NAME.rule=Host(\`$DOMAIN\`)" \
   --label "traefik.http.routers.$NAME.entrypoints=$EP_SECURE" \
