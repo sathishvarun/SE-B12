@@ -1,0 +1,15 @@
+# secrets
+.env
+
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# runtime logs (keep the folder, not the data)
+logs/*
+!logs/.gitkeep
+
+# mac
+.DS_Store

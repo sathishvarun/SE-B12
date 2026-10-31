@@ -1,0 +1,15 @@
+# Option B (without Docker). Copy to /etc/systemd/system/smart-helpdesk.service
+# Replace "ubuntu" with your VPS user name if different.
+[Unit]
+Description=Smart Help Desk (AutoGen + Streamlit)
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/smart-helpdesk-agents
+Environment=TZ=Asia/Kolkata
+ExecStart=/home/ubuntu/smart-helpdesk-agents/.venv/bin/streamlit run app.py --server.address=127.0.0.1 --server.port=8501
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

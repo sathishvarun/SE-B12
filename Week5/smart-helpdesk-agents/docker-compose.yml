@@ -1,0 +1,11 @@
+services:
+  helpdesk:
+    build: .
+    container_name: smart-helpdesk
+    env_file: .env
+    ports:
+      - "127.0.0.1:8501:8501"   # only reachable through Nginx on the VPS
+    volumes:
+      - ./logs:/app/logs        # tickets survive restarts and rebuilds
+      - ./knowledge_base:/app/knowledge_base
+    restart: unless-stopped

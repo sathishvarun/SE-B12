@@ -1,0 +1,41 @@
+SMART HELP DESK - START HERE
+===========================
+
+Everything is inside this one folder. You can run it in TWO ways - pick one.
+
+------------------------------------------------------------
+OPTION 1 (easiest): the single-file version  -> helpdesk_app.py
+------------------------------------------------------------
+Open Terminal and run:
+
+  cd ~/Desktop/smart-helpdesk-agents
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+  cp .env.example .env
+  open -e .env            # paste your OPENAI_API_KEY, save, close
+  streamlit run helpdesk_app.py
+
+Open http://localhost:8501 in your browser.
+
+------------------------------------------------------------
+OPTION 2: the full project version  -> app.py
+------------------------------------------------------------
+Same steps as above, but the last command is:
+
+  streamlit run app.py
+
+Use this version for GitHub / the assignment submission, because each agent
+has its own file (agents/ folder) as the assignment asks.
+
+------------------------------------------------------------
+Next time you open Terminal
+------------------------------------------------------------
+  cd ~/Desktop/smart-helpdesk-agents
+  source .venv/bin/activate
+  streamlit run app.py        (or helpdesk_app.py)
+
+Stop the app with Ctrl + C.
+
+Full guide (VPS hosting, GitHub, troubleshooting): README.md
+Preview pictures: screenshots/ folder
