@@ -46,9 +46,27 @@ Runs on your Mac at `http://localhost:8501` and deploys to any VPS.
 
 Anti-hallucination: the Log Agent can only record source files that `search_kb` really returned.
 
+### Vector search (ChromaDB + embeddings)
+Every section of every document in `knowledge_base/` is turned into an embedding with OpenAI
+`text-embedding-3-small` and stored in a local ChromaDB index (`vector_store/`). A question is matched
+**by meaning** ("get my laptop ready" finds "New joiner software setup"), filtered to the asking team's own
+documents, and passages further than `VECTOR_MAX_DISTANCE` (0.75 cosine distance) count as "not relevant",
+so unknown topics are still escalated honestly. The index rebuilds itself when a document changes.
+If embeddings are unavailable the app falls back to keyword search automatically (`SEARCH_MODE=keyword` forces it).
+
+### Human-in-the-loop review (escalated tickets)
+1. An escalated ticket's AI reply is **held as a draft** (`review_status = Pending review`); the employee sees
+   "a person is reviewing this".
+2. A team member opens **🧑‍💼 Review queue** (password `REVIEWER_PASSWORD` in `.env`), edits the draft, and clicks
+   **Approve & send** or **Handled directly**.
+3. The decision is given to AutoGen's **`UserProxyAgent` ("Human_Reviewer")** through its `input_func`, so the
+   human's answer is a normal agent message; it is saved on the ticket (`reviewer`, `final_response`, `reviewed_at`).
+4. The employee sees the approved reply under **📬 Replies from our team** (matched by Employee ID).
+
 ### Log columns
 `ticket_id, timestamp, employee_name, employee_id, department, category, priority, sentiment,
-summary, complaint, kb_sources, response, confidence, status, escalation_reason, assigned_to`
+summary, complaint, kb_sources, response, confidence, status, escalation_reason, assigned_to,
+review_status, reviewer, final_response, reviewed_at`
 (priority = urgency).
 
 ---
@@ -97,6 +115,8 @@ open -e .env                       # opens in TextEdit
 * `SERPAPI_API_KEY` — optional. Get it at https://serpapi.com/manage-api-key
   (when set, department agents can also search the public web for non-policy facts).
 * `APP_PASSWORD` — optional locally, **recommended on the VPS**.
+* `REVIEWER_PASSWORD` — password for the staff **Review queue** page (empty = the page stays locked).
+* `SEARCH_MODE` — `vector` (default, ChromaDB) or `keyword`.
 * `SHOW_AGENT_STEPS` — `false` (default): employees see **only the answer** — no file names, no agent steps.
   Set it to `true` for demos and assignment screenshots: each answer then shows its source file and a
   **Behind the scenes** panel with every agent's step, and the sidebar shows the AI model status.

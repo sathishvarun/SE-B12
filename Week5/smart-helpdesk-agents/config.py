@@ -17,6 +17,16 @@ SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY", "")   # optional: live web search
 APP_PASSWORD = os.getenv("APP_PASSWORD", "")         # optional: protects the app on a VPS
 # Show file names and each agent's steps in the chat (for demos / assignment screenshots only)
 SHOW_AGENT_STEPS = os.getenv("SHOW_AGENT_STEPS", "false").strip().lower() in ("1", "true", "yes", "on")
+# Password for the staff-only "Review queue" page (human-in-the-loop). Empty = page is locked.
+REVIEWER_PASSWORD = os.getenv("REVIEWER_PASSWORD", "")
+
+# ---- Knowledge search -------------------------------------------------------
+# "vector"  = ChromaDB + OpenAI embeddings (search by meaning), falls back to keywords if unavailable
+# "keyword" = simple keyword matching only
+SEARCH_MODE = os.getenv("SEARCH_MODE", "vector").strip().lower()
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+# Cosine distance limit: smaller = stricter. Passages further away than this count as "not relevant".
+VECTOR_MAX_DISTANCE = float(os.getenv("VECTOR_MAX_DISTANCE", "0.75"))
 
 # ---- Paths ------------------------------------------------------------------
 KB_DIR = BASE_DIR / "knowledge_base"
@@ -24,6 +34,7 @@ LOG_DIR = BASE_DIR / "logs"
 LOG_CSV = LOG_DIR / "tickets.csv"
 LOG_TXT = LOG_DIR / "tickets.txt"
 LOG_DIR.mkdir(exist_ok=True)
+VECTOR_DIR = BASE_DIR / "vector_store"   # ChromaDB index, rebuilt automatically when documents change
 
 # ---- Departments the Router Agent can send work to ---------------------------
 # key = folder name inside knowledge_base/, value = what that team handles

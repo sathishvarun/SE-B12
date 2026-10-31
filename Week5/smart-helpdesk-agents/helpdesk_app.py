@@ -7,7 +7,7 @@ Router (main) agent -> department agent (Support/Finance/Marketing/Sales/HR/IT)
 SETUP ON MAC (Terminal):
   mkdir ~/helpdesk && cd ~/helpdesk          # put this file here
   python3 -m venv .venv && source .venv/bin/activate
-  pip install 'autogen-agentchat==0.7.5' 'autogen-ext[openai]==0.7.5' 'streamlit>=1.45' 'python-dotenv>=1.0' 'pandas>=2.0' 'openpyxl>=3.1' 'requests>=2.31'
+  pip install 'autogen-agentchat==0.7.5' 'autogen-ext[openai]==0.7.5' 'streamlit>=1.45' 'python-dotenv>=1.0' 'pandas>=2.0' 'openpyxl>=3.1' 'requests>=2.31' 'chromadb>=1.0'
   streamlit run helpdesk_app.py              # first run creates .env, knowledge_base/, logs/, .streamlit/
   -> open the new .env file, paste OPENAI_API_KEY (SERPAPI_API_KEY optional), save,
      then stop (Ctrl+C) and run the same command again.  App: http://localhost:8501
@@ -22,13 +22,16 @@ from pathlib import Path
 from typing import Callable
 import asyncio
 import csv
+import hashlib
 import io
 import json
+import logging
 import os
 import re
 import threading
 
 from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.agents import UserProxyAgent
 from autogen_agentchat.base import TaskResult
 from autogen_agentchat.conditions import MaxMessageTermination, TextMentionTermination
 from autogen_agentchat.messages import (TextMessage, ToolCallExecutionEvent,
@@ -44,7 +47,7 @@ import streamlit.components.v1 as components
 # First-run bootstrap: create .env, theme settings and knowledge base files if missing
 # ============================================================================
 _HERE = Path(__file__).resolve().parent
-_ENV_TEMPLATE = "# Copy this file to .env and fill in your own keys.  NEVER commit .env to GitHub.\n\n# Required: OpenAI key from https://platform.openai.com/api-keys\nOPENAI_API_KEY=sk-your-key-here\nOPENAI_MODEL=gpt-4o-mini\n\n# Optional: live web search for Marketing/Sales agents (https://serpapi.com/manage-api-key)\nSERPAPI_API_KEY=\n\n# Optional: use another OpenAI-compatible provider instead (Groq, Gemini, Ollama...)\n# OPENAI_BASE_URL=https://api.groq.com/openai/v1\n\n# Optional but recommended on a VPS: password to open the app\nAPP_PASSWORD=\n\n# Optional: show source file names and every agent's step in the chat (demo / assignment screenshots).\n# Keep false for real employees - they only see the answer.\nSHOW_AGENT_STEPS=false\n"
+_ENV_TEMPLATE = '# Copy this file to .env and fill in your own keys.  NEVER commit .env to GitHub.\n\n# Required: OpenAI key from https://platform.openai.com/api-keys\nOPENAI_API_KEY=sk-your-key-here\nOPENAI_MODEL=gpt-4o-mini\n\n# Optional: live web search for Marketing/Sales agents (https://serpapi.com/manage-api-key)\nSERPAPI_API_KEY=\n\n# Optional: use another OpenAI-compatible provider instead (Groq, Gemini, Ollama...)\n# OPENAI_BASE_URL=https://api.groq.com/openai/v1\n\n# Optional but recommended on a VPS: password to open the app\nAPP_PASSWORD=\n\n# Optional: show source file names and every agent\'s step in the chat (demo / assignment screenshots).\n# Keep false for real employees - they only see the answer.\nSHOW_AGENT_STEPS=false\n\n# Human-in-the-loop: password for the staff-only "Review queue" page (empty = page locked)\nREVIEWER_PASSWORD=\n\n# Knowledge search: "vector" = ChromaDB + OpenAI embeddings (by meaning), "keyword" = word matching\nSEARCH_MODE=vector\nEMBEDDING_MODEL=text-embedding-3-small\n'
 _STREAMLIT_CONFIG = '[server]\nheadless = true\nport = 8501\n\n[browser]\ngatherUsageStats = false\n\n[theme]\nprimaryColor = "#FF6B1A"\n\n[client]\ntoolbarMode = "minimal"\n'
 _KB_FILES = {
     "customer_support/client_portal_and_releases.md": "# SK Soft Technology Client Portal, Access and Releases\n\n## Client portal login problems\n1. On the portal login page click Forgot Password and enter your registered work email.\n2. Use the reset link within 30 minutes.\n3. The new password needs at least 12 characters with upper case, lower case, a number and a symbol.\n4. After 5 wrong attempts the account is locked for 30 minutes.\n5. Single sign-on (SSO) users must reset their password with their own company IT team.\n\n## Adding or removing client users\n- Only the client's named admin can request new portal users or removal of users, by raising a P4 ticket.\n- Requests are completed within 1 business day.\n\n## Reporting a bug\n- Raise a ticket with the steps to reproduce, the expected result, the actual result, the browser or app version and screenshots.\n- Confirmed bugs are given a bug ID and planned into a release based on severity.\n\n## Releases and maintenance windows\n- Planned releases happen every second Saturday between 10 PM and 2 AM IST.\n- Clients are informed by email 5 business days before each release, with release notes.\n- Emergency hotfixes for P1 issues can be deployed at any time after client approval.\n",
@@ -83,6 +86,16 @@ SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY", "")   # optional: live web search
 APP_PASSWORD = os.getenv("APP_PASSWORD", "")         # optional: protects the app on a VPS
 # Show file names and each agent's steps in the chat (for demos / assignment screenshots only)
 SHOW_AGENT_STEPS = os.getenv("SHOW_AGENT_STEPS", "false").strip().lower() in ("1", "true", "yes", "on")
+# Password for the staff-only "Review queue" page (human-in-the-loop). Empty = page is locked.
+REVIEWER_PASSWORD = os.getenv("REVIEWER_PASSWORD", "")
+
+# ---- Knowledge search -------------------------------------------------------
+# "vector"  = ChromaDB + OpenAI embeddings (search by meaning), falls back to keywords if unavailable
+# "keyword" = simple keyword matching only
+SEARCH_MODE = os.getenv("SEARCH_MODE", "vector").strip().lower()
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+# Cosine distance limit: smaller = stricter. Passages further away than this count as "not relevant".
+VECTOR_MAX_DISTANCE = float(os.getenv("VECTOR_MAX_DISTANCE", "0.75"))
 
 # ---- Paths ------------------------------------------------------------------
 KB_DIR = BASE_DIR / "knowledge_base"
@@ -90,6 +103,7 @@ LOG_DIR = BASE_DIR / "logs"
 LOG_CSV = LOG_DIR / "tickets.csv"
 LOG_TXT = LOG_DIR / "tickets.txt"
 LOG_DIR.mkdir(exist_ok=True)
+VECTOR_DIR = BASE_DIR / "vector_store"   # ChromaDB index, rebuilt automatically when documents change
 
 # ---- Departments the Router Agent can send work to ---------------------------
 # key = folder name inside knowledge_base/, value = what that team handles
@@ -135,6 +149,104 @@ def make_model_client():
     return OpenAIChatCompletionClient(**kwargs)
 
 # ============================================================================
+# tools/vector_store.py
+# ============================================================================
+COLLECTION = "sk_soft_knowledge_base"
+_lock = threading.Lock()
+_state = {"collection": None, "fingerprint": None, "disabled": ""}
+embedding_function_override = None   # tests can plug in a fake embedding function here
+
+
+def _fingerprint() -> str:
+    """Changes whenever any knowledge base file is added, removed or edited."""
+    h = hashlib.sha256()
+    for f in sorted(KB_DIR.rglob("*.md")):
+        h.update(str(f.relative_to(KB_DIR)).encode())
+        h.update(f.read_bytes())
+    return h.hexdigest()[:16]
+
+
+def _embedding_function():
+    if embedding_function_override is not None:
+        return embedding_function_override
+    from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+    return OpenAIEmbeddingFunction(api_key=OPENAI_API_KEY, model_name=EMBEDDING_MODEL)
+
+
+def _chunks():
+    ids, docs, metas = [], [], []
+    for f in sorted(KB_DIR.rglob("*.md")):
+        source = str(f.relative_to(KB_DIR))
+        department = source.split("/")[0]
+        for i, (title, block) in enumerate(_passages(f)):
+            if len(block.splitlines()) < 2:      # a heading on its own carries no answer
+                continue
+            ids.append(f"{source}#{i}")
+            docs.append(block)
+            metas.append({"source": source, "department": department})
+    return ids, docs, metas
+
+
+def _collection():
+    """Open the ChromaDB collection, (re)building it when the documents changed."""
+    import chromadb
+    from chromadb.config import Settings
+
+    fp = _fingerprint()
+    if _state["collection"] is not None and _state["fingerprint"] == fp:
+        return _state["collection"]
+    client = chromadb.PersistentClient(path=str(VECTOR_DIR), settings=Settings(anonymized_telemetry=False))
+    ef = _embedding_function()
+    col = None
+    try:
+        col = client.get_collection(COLLECTION, embedding_function=ef)
+    except Exception:
+        pass
+    if col is None or (col.metadata or {}).get("fingerprint") != fp:
+        if col is not None:
+            client.delete_collection(COLLECTION)
+        col = client.create_collection(COLLECTION, embedding_function=ef,
+                                       metadata={"fingerprint": fp, "hnsw:space": "cosine"})
+        ids, docs, metas = _chunks()
+        if ids:
+            col.add(ids=ids, documents=docs, metadatas=metas)
+    _state.update(collection=col, fingerprint=fp)
+    return col
+
+
+def vector_available() -> bool:
+    if _state["disabled"]:
+        return False
+    if embedding_function_override is None and (not OPENAI_API_KEY or OPENAI_BASE_URL):
+        return False        # no key, or a non-OpenAI provider without an embeddings endpoint
+    try:
+        import chromadb  # noqa: F401
+        return True
+    except Exception as exc:           # not installed, or a broken install: use keyword search
+        _state["disabled"] = f"chromadb unavailable: {exc}"
+        return False
+
+
+def vector_search(query: str, department: str | None = None, top_k: int = 3) -> list[dict]:
+    """Closest chunks by meaning: [{source, text, score}] with score = 1 - cosine distance."""
+    with _lock:
+        col = _collection()
+        n = col.count()
+        if n == 0:
+            return []
+        res = col.query(query_texts=[query], n_results=min(top_k, n),
+                        where={"department": department} if department else None)
+    out = []
+    for doc, meta, dist in zip(res["documents"][0], res["metadatas"][0], res["distances"][0]):
+        if dist <= VECTOR_MAX_DISTANCE:
+            out.append({"source": meta["source"], "text": doc, "score": round(1 - dist, 3)})
+    return out
+
+
+def vector_disable(reason: str):
+    _state["disabled"] = reason
+
+# ============================================================================
 # tools/kb_search.py
 # ============================================================================
 STOPWORDS = set("""
@@ -167,8 +279,8 @@ def _passages(file: Path):
             yield title, block
 
 
-def search(query: str, department: str | None = None, top_k: int = 3) -> list[dict]:
-    """Return the best matching passages: [{source, text, score}]."""
+def keyword_search(query: str, department: str | None = None, top_k: int = 3) -> list[dict]:
+    """Keyword matching: passages sharing the most words with the query: [{source, text, score}]."""
     q_terms = _terms(query)
     if not q_terms:
         return []
@@ -195,6 +307,24 @@ def format_results(results: list[dict]) -> str:
         return "NO_MATCH: nothing relevant was found in the knowledge base."
     parts = [f"[source: {r['source']}]\n{r['text']}" for r in results]
     return "\n\n---\n\n".join(parts)
+
+
+def search_mode() -> str:
+    """What the search is using right now: 'vector' or 'keyword'."""
+    return "vector" if SEARCH_MODE == "vector" and vector_available() else "keyword"
+
+
+def search(query: str, department: str | None = None, top_k: int = 3) -> list[dict]:
+    """Best matching passages for the query: vector search first, keyword search as the fallback."""
+    if search_mode() == "vector":
+        try:
+            results = vector_search(query, department, top_k)
+            if results:
+                return results
+        except Exception as exc:                 # e.g. no internet / embeddings API error
+            logging.warning("Vector search unavailable, using keyword search: %s", exc)
+            vector_disable(str(exc))
+    return keyword_search(query, department, top_k)
 
 # ============================================================================
 # tools/web_search.py
@@ -225,7 +355,12 @@ COLUMNS = [
     "ticket_id", "timestamp", "employee_name", "employee_id", "department", "category",
     "priority", "sentiment", "summary", "complaint", "kb_sources", "response",
     "confidence", "status", "escalation_reason", "assigned_to",
+    # human-in-the-loop: escalated tickets wait for a person to approve the reply
+    "review_status", "reviewer", "final_response", "reviewed_at",
 ]
+
+REVIEW_PENDING, REVIEW_APPROVED, REVIEW_CLOSED, REVIEW_NOT_NEEDED = (
+    "Pending review", "Approved", "Handled by team", "Not needed")
 
 RISK_WORDS = {
     "legal threat": ["lawyer", "legal", "sue", "court", "police", "consumer forum"],
@@ -235,7 +370,7 @@ RISK_WORDS = {
     "workplace complaint": ["harass", "discriminat", "abuse", "threaten", "unsafe"],
 }
 
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 
 def next_ticket_id() -> str:
@@ -304,7 +439,27 @@ def build_row(ctx: dict, response: str, confidence: str, kb_sources: str,
     ticket["status"] = "Escalated" if reasons else "Resolved"
     ticket["escalation_reason"] = " + ".join(reasons)
     ticket["assigned_to"] = f"{dept_label} human team" if reasons else "AI Agent"
+    # Escalated replies are HELD as a draft until a person approves them in the Review queue.
+    ticket["review_status"] = REVIEW_PENDING if reasons else REVIEW_NOT_NEEDED
     return ticket
+
+
+def update_review(ticket_id: str, review_status: str, reviewer: str, final_response: str) -> dict:
+    """Record a person's decision on an escalated ticket (CSV row updated + TXT log entry)."""
+    with _lock:
+        _upgrade_old_log()
+        df = pd.read_csv(LOG_CSV, dtype=str).fillna("")
+        mask = df["ticket_id"] == ticket_id
+        if not mask.any():
+            raise KeyError(f"Ticket {ticket_id} not found")
+        when = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        df.loc[mask, ["review_status", "reviewer", "final_response", "reviewed_at"]] = [
+            review_status, reviewer, final_response.strip(), when]
+        df.to_csv(LOG_CSV, index=False)
+        with open(LOG_TXT, "a", encoding="utf-8") as f:
+            f.write(f"{'-' * 70}\nREVIEW {ticket_id} | {when} | {review_status.upper()} by {reviewer}\n"
+                    f"Final reply: {final_response.strip()}\n\n")
+        return df[mask].iloc[0].to_dict()
 
 
 def _upgrade_old_log():
@@ -316,7 +471,11 @@ def _upgrade_old_log():
     if header != COLUMNS:
         df = pd.read_csv(LOG_CSV, dtype=str).fillna("")
         df = df.rename(columns={"customer_name": "employee_name", "order_id": "employee_id"})
-        df.reindex(columns=COLUMNS, fill_value="").to_csv(LOG_CSV, index=False)
+        df = df.reindex(columns=COLUMNS, fill_value="")
+        empty = df["review_status"] == ""
+        df.loc[empty, "review_status"] = df.loc[empty, "status"].map(
+            lambda s: REVIEW_PENDING if s == "Escalated" else REVIEW_NOT_NEEDED)
+        df.to_csv(LOG_CSV, index=False)
 
 
 def load_tickets() -> pd.DataFrame:
@@ -526,6 +685,45 @@ def create_log_agent(model_client, ctx: dict) -> AssistantAgent:
     )
 
 # ============================================================================
+# agents/human_review_agent.py
+# ============================================================================
+DECISIONS = {"APPROVE": REVIEW_APPROVED, "CLOSE": REVIEW_CLOSED}
+
+
+def create_human_reviewer(reviewer_input: str) -> UserProxyAgent:
+    """A UserProxyAgent whose 'keyboard' is the Review queue page: it answers with what the person entered."""
+    return UserProxyAgent(
+        name="Human_Reviewer",
+        description="A support team member who approves, edits or closes escalated tickets.",
+        input_func=lambda prompt: reviewer_input,
+    )
+
+
+async def record_human_decision(ticket: dict, decision: str, reviewer: str, final_reply: str) -> dict:
+    """Run the Human_Reviewer agent on the AI draft and save the person's decision on the ticket.
+
+    decision = "APPROVE" (send final_reply to the employee) or "CLOSE" (team handled it directly;
+    final_reply is the note the employee sees).
+    """
+    if decision not in DECISIONS:
+        raise ValueError(f"Unknown decision {decision}")
+    if not final_reply.strip():
+        raise ValueError("The reply to the employee cannot be empty.")
+
+    reviewer_input = f"DECISION: {decision}\nREVIEWER: {reviewer}\nFINAL REPLY:\n{final_reply.strip()}"
+    human = create_human_reviewer(reviewer_input)
+    task = (f"Escalated ticket {ticket['ticket_id']} for the {ticket['department']} team.\n"
+            f"Question: {ticket['complaint']}\nWhy escalated: {ticket['escalation_reason']}\n"
+            f"AI draft reply:\n{ticket['response']}\n\n"
+            "Approve or edit the reply, or close it if your team handled it directly.")
+    result = await human.run(task=task)
+    answer = result.messages[-1].content            # the human's message, as recorded by AutoGen
+
+    m = re.search(r"DECISION:\s*(APPROVE|CLOSE)", answer)
+    final = answer.split("FINAL REPLY:", 1)[-1].strip()
+    return update_review(ticket["ticket_id"], DECISIONS[m.group(1) if m else decision], reviewer, final)
+
+# ============================================================================
 # team.py
 # ============================================================================
 EventFn = Callable[[str, str, str], None]  # (agent_name, kind, text)
@@ -709,6 +907,8 @@ h1, h2, h3, .hero-title { font-family: 'Poppins', sans-serif !important; }
 .handoff { background:#fff7ed; border-left:4px solid #FF6B1A; padding:10px 14px; border-radius:8px;
            color:#7c2d12; font-size:.9rem; margin-top:8px; }
 .part-head { font-family:'Poppins',sans-serif; font-weight:600; font-size:1.05rem; margin-bottom:6px; }
+.reply-ok { background:#ecfdf5; border-left:4px solid #16a34a; padding:10px 14px; border-radius:8px; margin:6px 0; }
+.reply-wait { background:#f8fafc; border-left:4px solid #94a3b8; padding:8px 14px; border-radius:8px; margin:6px 0; color:#475569; font-size:.9rem; }
 .source { color:#6b7280; font-size:.82rem; margin-top:6px; }
 .mini-hero { background: linear-gradient(135deg, #14213D 0%, #23407a 70%, #FF6B1A 160%); border-radius: 16px;
              padding: 14px 20px; color: #fff; margin-bottom: 12px; font-size: .95rem; }
@@ -754,12 +954,18 @@ def render_part(r: dict, multi: bool):
         st.markdown(f"<div class='part-head'>{TEAM_ICONS.get(r['department'], '🎧')} {r['department']} team</div>",
                     unsafe_allow_html=True)
     st.markdown(chips(r), unsafe_allow_html=True)
-    st.markdown(r["response"])
-    if r["status"] == "Escalated":
+    team = r["assigned_to"].replace(" human team", " team")
+    if r["status"] == "Escalated" and r.get("review_status", REVIEW_PENDING) == REVIEW_PENDING:
+        # Human-in-the-loop: the AI draft is held until a person approves it.
         why = f"<br><small>Why: {r['escalation_reason']}</small>" if SHOW_AGENT_STEPS else ""
-        st.markdown(f"<div class='handoff'>🙋 A person from the <b>{r['assigned_to'].replace(' human team', ' team')}</b> will follow up on this "
-                    f"shortly. Please keep your ticket number <b>{r['ticket_id']}</b> handy.{why}</div>",
-                    unsafe_allow_html=True)
+        st.markdown(f"<div class='handoff'>🙋 This needs a person from the <b>{team}</b>. They are reviewing "
+                    f"it now, and the approved answer will appear under <b>📬 Replies from our team</b> at the top "
+                    f"of this page. Your ticket number is <b>{r['ticket_id']}</b>.{why}</div>", unsafe_allow_html=True)
+        if SHOW_AGENT_STEPS:
+            with st.expander("Demo mode: the AI draft waiting for approval"):
+                st.markdown(r["response"])
+    else:
+        st.markdown(r["response"])
     if SHOW_AGENT_STEPS:
         src = r["kb_sources"] if r["kb_sources"] != "NONE" else "no matching company document"
         st.markdown(f"<div class='source'>📄 Based on: {src}</div>", unsafe_allow_html=True)
@@ -828,7 +1034,10 @@ def page_ask():
           </div>
         </div>""", unsafe_allow_html=True)
 
-    # ---- 2. Example questions: one line of teams, then that team's questions ---
+    # ---- 2. Replies from people on escalated tickets (human-in-the-loop) --------
+    my_replies()
+
+    # ---- 3. Example questions: one line of teams, then that team's questions ---
     example_bar()
 
     # ---- 3. Conversation (newest at the bottom, just above the question box) --
@@ -879,6 +1088,30 @@ def details_gate():
                 st.session_state.user_name = name.strip().title()
                 st.session_state.user_ref = emp_id.strip().upper()
                 st.rerun()
+
+
+def my_replies():
+    """Escalated tickets of this employee: approved replies from people, and the ones still waiting."""
+    df = load_tickets()
+    if df.empty:
+        return
+    mine = df[(df["employee_id"] == st.session_state.user_ref) & (df["status"] == "Escalated")]
+    done = mine[mine["review_status"].isin([REVIEW_APPROVED, REVIEW_CLOSED])].iloc[::-1]
+    waiting = mine[mine["review_status"] == REVIEW_PENDING]
+    if done.empty and waiting.empty:
+        return
+    label = f"📬 Replies from our team ({len(done)})" + (f" · ⏳ {len(waiting)} waiting" if len(waiting) else "")
+    with st.expander(label, expanded=not done.empty):
+        for _, r in done.iterrows():
+            st.markdown(f"<div class='reply-ok'><b>{r['ticket_id']} · {r['department']} team</b> — "
+                        f"replied by {r['reviewer']} on {r['reviewed_at'][:16]}<br><small>Your question: "
+                        f"{r['complaint']}</small></div>", unsafe_allow_html=True)
+            st.markdown(r["final_response"])
+        for _, r in waiting.iterrows():
+            st.markdown(f"<div class='reply-wait'>⏳ <b>{r['ticket_id']} · {r['department']} team</b> is "
+                        f"reviewing: {r['complaint']}</div>", unsafe_allow_html=True)
+        if st.button("🔄 Check for new replies", key="refresh_replies"):
+            st.rerun()
 
 
 def send_example(key: str, options: dict):
@@ -1003,7 +1236,9 @@ def page_history():
         "When": view["timestamp"],
         "Team": view["department"],
         "Priority": view["priority"].map({"High": "🔴 High", "Medium": "🟠 Medium", "Low": "🔵 Low"}),
-        "Status": view["status"].map({"Resolved": "✅ Solved", "Escalated": "🙋 With a person"}),
+        "Status": [("✅ Solved" if st_ == "Resolved" else
+                    {REVIEW_APPROVED: "🧑‍💼 Approved by a person", REVIEW_CLOSED: "📞 Handled by the team"}
+                    .get(rv, "⏳ Waiting for review")) for st_, rv in zip(view["status"], view["review_status"])],
         "Question": view["summary"].where(view["summary"] != "", view["complaint"]),
     })
     event = st.dataframe(table, hide_index=True, width="stretch", on_select="rerun",
@@ -1017,6 +1252,10 @@ def page_history():
             st.markdown(chips(r), unsafe_allow_html=True)
             st.markdown(f"**Question:** {r['complaint']}")
             st.markdown(f"**Answer:**\n\n{r['response']}")
+            if r.get("final_response"):
+                st.markdown(f"<div class='reply-ok'><b>{r['review_status']}</b> by {r['reviewer']} on "
+                            f"{r['reviewed_at'][:16]}</div>", unsafe_allow_html=True)
+                st.markdown(f"**Final reply sent:**\n\n{r['final_response']}")
             if r["status"] == "Escalated":
                 st.markdown(f"<div class='handoff'>Assigned to <b>{r['assigned_to']}</b> — {r['escalation_reason']}</div>",
                             unsafe_allow_html=True)
@@ -1074,8 +1313,8 @@ def page_weekly():
         st.markdown("**Tickets per day**")
         st.bar_chart(week.groupby(week["ts"].dt.strftime("%a %d"))["ticket_id"].count(), color="#14213D", height=220)
 
-    esc = week[week["status"] == "Escalated"]
-    st.markdown(f"**🙋 Waiting for a person ({len(esc)})**")
+    esc = week[(week["status"] == "Escalated") & (week["review_status"] == REVIEW_PENDING)]
+    st.markdown(f"**⏳ Waiting for a person to review ({len(esc)})**")
     if esc.empty:
         st.success("Nothing waiting — every ticket this week was solved by the AI team.")
     for _, r in esc.iterrows():
@@ -1093,6 +1332,77 @@ def page_weekly():
         lines.append("")
     st.download_button("📝 Download weekly report (TXT)", "\n".join(lines),
                        f"weekly_report_{start:%Y_%m_%d}.txt", "text/plain")
+
+
+# ----------------------------------------------------------------------------
+# Page 4: Review queue (staff only) - human-in-the-loop for escalated tickets
+# ----------------------------------------------------------------------------
+def page_review():
+    st.markdown("### 🧑‍💼 Review queue")
+    st.caption("For support staff. Escalated tickets wait here: read the AI draft, edit it if needed, "
+               "then approve it for the employee or close it if your team handled it directly.")
+    if not REVIEWER_PASSWORD:
+        st.info("The review queue is locked. Add a line `REVIEWER_PASSWORD=choose-a-password` to the `.env` "
+                "file and restart the app to turn it on.")
+        return
+    if not st.session_state.get("reviewer_ok"):
+        with st.form("reviewer_login"):
+            name = st.text_input("Your name and team *", placeholder="e.g. Anitha (Finance)")
+            pwd = st.text_input("Reviewer password *", type="password")
+            if st.form_submit_button("Open review queue", type="primary"):
+                if pwd == REVIEWER_PASSWORD and name.strip():
+                    st.session_state.reviewer_ok = True
+                    st.session_state.reviewer_name = name.strip()
+                    st.rerun()
+                st.error("Enter your name and the correct reviewer password.")
+        return
+
+    df = load_tickets()
+    pending = df[(df["status"] == "Escalated") & (df["review_status"] == REVIEW_PENDING)]
+    done = df[df["review_status"].isin([REVIEW_APPROVED, REVIEW_CLOSED])]
+    c1, c2, c3 = st.columns(3)
+    c1.metric("⏳ Waiting for review", len(pending), border=True)
+    c2.metric("✅ Approved by people", int((df["review_status"] == REVIEW_APPROVED).sum()), border=True)
+    c3.metric("📞 Handled directly", int((df["review_status"] == REVIEW_CLOSED).sum()), border=True)
+
+    teams = ["All teams"] + sorted(pending["department"].unique())
+    team = st.selectbox("Team", teams, label_visibility="collapsed")
+    if team != "All teams":
+        pending = pending[pending["department"] == team]
+    st.caption(f"Signed in as **{st.session_state.reviewer_name}**")
+    if pending.empty:
+        st.success("Nothing waiting. Every escalated ticket has been reviewed.")
+
+    prio_rank = {"High": 0, "Medium": 1, "Low": 2}
+    pending = pending.assign(_p=pending["priority"].map(prio_rank)).sort_values(["_p", "timestamp"])
+    for _, r in pending.iterrows():
+        t = r.to_dict()
+        with st.container(border=True):
+            st.markdown(f"**{t['ticket_id']}** · {t['timestamp'][:16]} · {t['employee_name']} ({t['employee_id']})")
+            st.markdown(chips(t), unsafe_allow_html=True)
+            st.markdown(f"**Question:** {t['complaint']}")
+            st.markdown(f"<div class='handoff'>Why it was escalated: {t['escalation_reason']}</div>",
+                        unsafe_allow_html=True)
+            reply = st.text_area("Reply to the employee (AI draft, edit as needed)", t["response"],
+                                 key=f"reply_{t['ticket_id']}", height=170)
+            b1, b2, _ = st.columns([1.2, 1.2, 2])
+            approve = b1.button("✅ Approve & send", key=f"ok_{t['ticket_id']}", type="primary", width="stretch")
+            close = b2.button("📞 Handled directly", key=f"close_{t['ticket_id']}", width="stretch",
+                              help="Your team contacted the employee directly. The text above is the note they will see.")
+            if approve or close:
+                try:
+                    asyncio.run(record_human_decision(t, "APPROVE" if approve else "CLOSE",
+                                                      st.session_state.reviewer_name, reply))
+                    st.toast(f"{t['ticket_id']} {'approved' if approve else 'closed'} - the employee can see it now.")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"Could not save the decision: {exc}")
+
+    if not done.empty:
+        with st.expander(f"Recently reviewed ({len(done)})"):
+            st.dataframe(done.iloc[::-1][["ticket_id", "department", "employee_name", "review_status",
+                                          "reviewer", "reviewed_at"]],
+                         hide_index=True, width="stretch")
 
 
 # ----------------------------------------------------------------------------
@@ -1119,15 +1429,17 @@ with st.sidebar:
                     "2. A **main AI agent** picks the right team — Client Support, Finance, Marketing, "
                     "Sales, HR or IT — and sets the priority.\n"
                     "3. That **team's agent** reads only that team's company documents.\n"
-                    "4. You get an answer. If it's urgent, sensitive or not covered, "
-                    "a **person from that team** follows up.\n"
+                    "4. You get an answer. If it's urgent, sensitive or not covered, a **person from that team "
+                    "reviews it first** and their reply appears under 📬 Replies from our team.\n"
                     "5. Every question is **saved as a ticket**.")
     if SHOW_AGENT_STEPS:  # technical status only in demo mode
         st.divider()
         st.caption("🛠️ Demo mode: showing sources and agent steps")
+        st.caption("🔎 Search: " + ("vector · ChromaDB + embeddings" if search_mode() == "vector" else "keyword"))
         st.caption(f"{'🟢' if OPENAI_API_KEY else '🔴'} AI connected · `{OPENAI_MODEL}`")
         st.caption(f"{'🟢' if SERPAPI_API_KEY else '⚪'} Web search {'on' if SERPAPI_API_KEY else 'off'}")
 
-page = st.segmented_control("Menu", ["💬 Ask", "🗂️ Ticket history", "📊 Weekly summary"],
+page = st.segmented_control("Menu", ["💬 Ask", "🗂️ Ticket history", "📊 Weekly summary", "🧑‍💼 Review queue"],
                             default="💬 Ask", key="page", label_visibility="collapsed") or "💬 Ask"
-{"💬 Ask": page_ask, "🗂️ Ticket history": page_history, "📊 Weekly summary": page_weekly}[page]()
+{"💬 Ask": page_ask, "🗂️ Ticket history": page_history, "📊 Weekly summary": page_weekly,
+ "🧑‍💼 Review queue": page_review}[page]()

@@ -1,8 +1,14 @@
-"""Simple keyword search over the knowledge_base/ folder (a beginner-friendly RAG)."""
+"""Knowledge base search (the "R" in RAG).
+
+search() uses vector search (ChromaDB + embeddings, by meaning) when it is available,
+and falls back to simple keyword matching otherwise, so the app always works.
+"""
+import logging
 import re
 from pathlib import Path
 
-from config import KB_DIR
+from config import KB_DIR, SEARCH_MODE
+from tools.vector_store import vector_available, vector_disable, vector_search
 
 STOPWORDS = set("""
 a an the and or but if to of in on at for with from by is are was were be been am i me my
@@ -34,8 +40,8 @@ def _passages(file: Path):
             yield title, block
 
 
-def search(query: str, department: str | None = None, top_k: int = 3) -> list[dict]:
-    """Return the best matching passages: [{source, text, score}]."""
+def keyword_search(query: str, department: str | None = None, top_k: int = 3) -> list[dict]:
+    """Keyword matching: passages sharing the most words with the query: [{source, text, score}]."""
     q_terms = _terms(query)
     if not q_terms:
         return []
@@ -62,3 +68,22 @@ def format_results(results: list[dict]) -> str:
         return "NO_MATCH: nothing relevant was found in the knowledge base."
     parts = [f"[source: {r['source']}]\n{r['text']}" for r in results]
     return "\n\n---\n\n".join(parts)
+
+
+def search_mode() -> str:
+    """What the search is using right now: 'vector' or 'keyword'."""
+    return "vector" if SEARCH_MODE == "vector" and vector_available() else "keyword"
+
+
+def search(query: str, department: str | None = None, top_k: int = 3) -> list[dict]:
+    """Best matching passages for the query: vector search first, keyword search as the fallback."""
+    if search_mode() == "vector":
+        try:
+            results = vector_search(query, department, top_k)
+            if results:
+                return results
+        except Exception as exc:                 # e.g. no internet / embeddings API error
+            logging.warning("Vector search unavailable, using keyword search: %s", exc)
+            vector_disable(str(exc))
+    return keyword_search(query, department, top_k)
+

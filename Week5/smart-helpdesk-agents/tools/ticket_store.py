@@ -1,4 +1,4 @@
-"""Ticket logging (CSV + TXT) and the escalation rules."""
+"""Ticket logging (CSV + TXT), the escalation rules and the human review (human-in-the-loop) updates."""
 import csv
 import threading
 from datetime import datetime
@@ -11,7 +11,12 @@ COLUMNS = [
     "ticket_id", "timestamp", "employee_name", "employee_id", "department", "category",
     "priority", "sentiment", "summary", "complaint", "kb_sources", "response",
     "confidence", "status", "escalation_reason", "assigned_to",
+    # human-in-the-loop: escalated tickets wait for a person to approve the reply
+    "review_status", "reviewer", "final_response", "reviewed_at",
 ]
+
+REVIEW_PENDING, REVIEW_APPROVED, REVIEW_CLOSED, REVIEW_NOT_NEEDED = (
+    "Pending review", "Approved", "Handled by team", "Not needed")
 
 RISK_WORDS = {
     "legal threat": ["lawyer", "legal", "sue", "court", "police", "consumer forum"],
@@ -21,7 +26,7 @@ RISK_WORDS = {
     "workplace complaint": ["harass", "discriminat", "abuse", "threaten", "unsafe"],
 }
 
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 
 def next_ticket_id() -> str:
@@ -90,7 +95,27 @@ def build_row(ctx: dict, response: str, confidence: str, kb_sources: str,
     ticket["status"] = "Escalated" if reasons else "Resolved"
     ticket["escalation_reason"] = " + ".join(reasons)
     ticket["assigned_to"] = f"{dept_label} human team" if reasons else "AI Agent"
+    # Escalated replies are HELD as a draft until a person approves them in the Review queue.
+    ticket["review_status"] = REVIEW_PENDING if reasons else REVIEW_NOT_NEEDED
     return ticket
+
+
+def update_review(ticket_id: str, review_status: str, reviewer: str, final_response: str) -> dict:
+    """Record a person's decision on an escalated ticket (CSV row updated + TXT log entry)."""
+    with _lock:
+        _upgrade_old_log()
+        df = pd.read_csv(LOG_CSV, dtype=str).fillna("")
+        mask = df["ticket_id"] == ticket_id
+        if not mask.any():
+            raise KeyError(f"Ticket {ticket_id} not found")
+        when = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        df.loc[mask, ["review_status", "reviewer", "final_response", "reviewed_at"]] = [
+            review_status, reviewer, final_response.strip(), when]
+        df.to_csv(LOG_CSV, index=False)
+        with open(LOG_TXT, "a", encoding="utf-8") as f:
+            f.write(f"{'-' * 70}\nREVIEW {ticket_id} | {when} | {review_status.upper()} by {reviewer}\n"
+                    f"Final reply: {final_response.strip()}\n\n")
+        return df[mask].iloc[0].to_dict()
 
 
 def _upgrade_old_log():
@@ -102,7 +127,11 @@ def _upgrade_old_log():
     if header != COLUMNS:
         df = pd.read_csv(LOG_CSV, dtype=str).fillna("")
         df = df.rename(columns={"customer_name": "employee_name", "order_id": "employee_id"})
-        df.reindex(columns=COLUMNS, fill_value="").to_csv(LOG_CSV, index=False)
+        df = df.reindex(columns=COLUMNS, fill_value="")
+        empty = df["review_status"] == ""
+        df.loc[empty, "review_status"] = df.loc[empty, "status"].map(
+            lambda s: REVIEW_PENDING if s == "Escalated" else REVIEW_NOT_NEEDED)
+        df.to_csv(LOG_CSV, index=False)
 
 
 def load_tickets() -> pd.DataFrame:

@@ -13,3 +13,6 @@ logs/*
 
 # mac
 .DS_Store
+
+# ChromaDB vector index (rebuilt automatically)
+vector_store/

@@ -7,9 +7,11 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from config import COMPANY_NAME, SHOW_AGENT_STEPS, APP_PASSWORD, LOG_CSV, LOG_TXT, OPENAI_API_KEY, OPENAI_MODEL, SERPAPI_API_KEY
+from config import COMPANY_NAME, SHOW_AGENT_STEPS, REVIEWER_PASSWORD, APP_PASSWORD, LOG_CSV, LOG_TXT, OPENAI_API_KEY, OPENAI_MODEL, SERPAPI_API_KEY
 from team import run_request
-from tools.ticket_store import load_tickets
+from agents.human_review_agent import record_human_decision
+from tools.kb_search import search_mode
+from tools.ticket_store import REVIEW_APPROVED, REVIEW_CLOSED, REVIEW_PENDING, load_tickets
 
 st.set_page_config(page_title=f"{COMPANY_NAME} Help Desk", page_icon="🎧", layout="wide")
 
@@ -93,6 +95,8 @@ h1, h2, h3, .hero-title { font-family: 'Poppins', sans-serif !important; }
 .handoff { background:#fff7ed; border-left:4px solid #FF6B1A; padding:10px 14px; border-radius:8px;
            color:#7c2d12; font-size:.9rem; margin-top:8px; }
 .part-head { font-family:'Poppins',sans-serif; font-weight:600; font-size:1.05rem; margin-bottom:6px; }
+.reply-ok { background:#ecfdf5; border-left:4px solid #16a34a; padding:10px 14px; border-radius:8px; margin:6px 0; }
+.reply-wait { background:#f8fafc; border-left:4px solid #94a3b8; padding:8px 14px; border-radius:8px; margin:6px 0; color:#475569; font-size:.9rem; }
 .source { color:#6b7280; font-size:.82rem; margin-top:6px; }
 .mini-hero { background: linear-gradient(135deg, #14213D 0%, #23407a 70%, #FF6B1A 160%); border-radius: 16px;
              padding: 14px 20px; color: #fff; margin-bottom: 12px; font-size: .95rem; }
@@ -138,12 +142,18 @@ def render_part(r: dict, multi: bool):
         st.markdown(f"<div class='part-head'>{TEAM_ICONS.get(r['department'], '🎧')} {r['department']} team</div>",
                     unsafe_allow_html=True)
     st.markdown(chips(r), unsafe_allow_html=True)
-    st.markdown(r["response"])
-    if r["status"] == "Escalated":
+    team = r["assigned_to"].replace(" human team", " team")
+    if r["status"] == "Escalated" and r.get("review_status", REVIEW_PENDING) == REVIEW_PENDING:
+        # Human-in-the-loop: the AI draft is held until a person approves it.
         why = f"<br><small>Why: {r['escalation_reason']}</small>" if SHOW_AGENT_STEPS else ""
-        st.markdown(f"<div class='handoff'>🙋 A person from the <b>{r['assigned_to'].replace(' human team', ' team')}</b> will follow up on this "
-                    f"shortly. Please keep your ticket number <b>{r['ticket_id']}</b> handy.{why}</div>",
-                    unsafe_allow_html=True)
+        st.markdown(f"<div class='handoff'>🙋 This needs a person from the <b>{team}</b>. They are reviewing "
+                    f"it now, and the approved answer will appear under <b>📬 Replies from our team</b> at the top "
+                    f"of this page. Your ticket number is <b>{r['ticket_id']}</b>.{why}</div>", unsafe_allow_html=True)
+        if SHOW_AGENT_STEPS:
+            with st.expander("Demo mode: the AI draft waiting for approval"):
+                st.markdown(r["response"])
+    else:
+        st.markdown(r["response"])
     if SHOW_AGENT_STEPS:
         src = r["kb_sources"] if r["kb_sources"] != "NONE" else "no matching company document"
         st.markdown(f"<div class='source'>📄 Based on: {src}</div>", unsafe_allow_html=True)
@@ -212,7 +222,10 @@ def page_ask():
           </div>
         </div>""", unsafe_allow_html=True)
 
-    # ---- 2. Example questions: one line of teams, then that team's questions ---
+    # ---- 2. Replies from people on escalated tickets (human-in-the-loop) --------
+    my_replies()
+
+    # ---- 3. Example questions: one line of teams, then that team's questions ---
     example_bar()
 
     # ---- 3. Conversation (newest at the bottom, just above the question box) --
@@ -263,6 +276,30 @@ def details_gate():
                 st.session_state.user_name = name.strip().title()
                 st.session_state.user_ref = emp_id.strip().upper()
                 st.rerun()
+
+
+def my_replies():
+    """Escalated tickets of this employee: approved replies from people, and the ones still waiting."""
+    df = load_tickets()
+    if df.empty:
+        return
+    mine = df[(df["employee_id"] == st.session_state.user_ref) & (df["status"] == "Escalated")]
+    done = mine[mine["review_status"].isin([REVIEW_APPROVED, REVIEW_CLOSED])].iloc[::-1]
+    waiting = mine[mine["review_status"] == REVIEW_PENDING]
+    if done.empty and waiting.empty:
+        return
+    label = f"📬 Replies from our team ({len(done)})" + (f" · ⏳ {len(waiting)} waiting" if len(waiting) else "")
+    with st.expander(label, expanded=not done.empty):
+        for _, r in done.iterrows():
+            st.markdown(f"<div class='reply-ok'><b>{r['ticket_id']} · {r['department']} team</b> — "
+                        f"replied by {r['reviewer']} on {r['reviewed_at'][:16]}<br><small>Your question: "
+                        f"{r['complaint']}</small></div>", unsafe_allow_html=True)
+            st.markdown(r["final_response"])
+        for _, r in waiting.iterrows():
+            st.markdown(f"<div class='reply-wait'>⏳ <b>{r['ticket_id']} · {r['department']} team</b> is "
+                        f"reviewing: {r['complaint']}</div>", unsafe_allow_html=True)
+        if st.button("🔄 Check for new replies", key="refresh_replies"):
+            st.rerun()
 
 
 def send_example(key: str, options: dict):
@@ -387,7 +424,9 @@ def page_history():
         "When": view["timestamp"],
         "Team": view["department"],
         "Priority": view["priority"].map({"High": "🔴 High", "Medium": "🟠 Medium", "Low": "🔵 Low"}),
-        "Status": view["status"].map({"Resolved": "✅ Solved", "Escalated": "🙋 With a person"}),
+        "Status": [("✅ Solved" if st_ == "Resolved" else
+                    {REVIEW_APPROVED: "🧑‍💼 Approved by a person", REVIEW_CLOSED: "📞 Handled by the team"}
+                    .get(rv, "⏳ Waiting for review")) for st_, rv in zip(view["status"], view["review_status"])],
         "Question": view["summary"].where(view["summary"] != "", view["complaint"]),
     })
     event = st.dataframe(table, hide_index=True, width="stretch", on_select="rerun",
@@ -401,6 +440,10 @@ def page_history():
             st.markdown(chips(r), unsafe_allow_html=True)
             st.markdown(f"**Question:** {r['complaint']}")
             st.markdown(f"**Answer:**\n\n{r['response']}")
+            if r.get("final_response"):
+                st.markdown(f"<div class='reply-ok'><b>{r['review_status']}</b> by {r['reviewer']} on "
+                            f"{r['reviewed_at'][:16]}</div>", unsafe_allow_html=True)
+                st.markdown(f"**Final reply sent:**\n\n{r['final_response']}")
             if r["status"] == "Escalated":
                 st.markdown(f"<div class='handoff'>Assigned to <b>{r['assigned_to']}</b> — {r['escalation_reason']}</div>",
                             unsafe_allow_html=True)
@@ -458,8 +501,8 @@ def page_weekly():
         st.markdown("**Tickets per day**")
         st.bar_chart(week.groupby(week["ts"].dt.strftime("%a %d"))["ticket_id"].count(), color="#14213D", height=220)
 
-    esc = week[week["status"] == "Escalated"]
-    st.markdown(f"**🙋 Waiting for a person ({len(esc)})**")
+    esc = week[(week["status"] == "Escalated") & (week["review_status"] == REVIEW_PENDING)]
+    st.markdown(f"**⏳ Waiting for a person to review ({len(esc)})**")
     if esc.empty:
         st.success("Nothing waiting — every ticket this week was solved by the AI team.")
     for _, r in esc.iterrows():
@@ -477,6 +520,77 @@ def page_weekly():
         lines.append("")
     st.download_button("📝 Download weekly report (TXT)", "\n".join(lines),
                        f"weekly_report_{start:%Y_%m_%d}.txt", "text/plain")
+
+
+# ----------------------------------------------------------------------------
+# Page 4: Review queue (staff only) - human-in-the-loop for escalated tickets
+# ----------------------------------------------------------------------------
+def page_review():
+    st.markdown("### 🧑‍💼 Review queue")
+    st.caption("For support staff. Escalated tickets wait here: read the AI draft, edit it if needed, "
+               "then approve it for the employee or close it if your team handled it directly.")
+    if not REVIEWER_PASSWORD:
+        st.info("The review queue is locked. Add a line `REVIEWER_PASSWORD=choose-a-password` to the `.env` "
+                "file and restart the app to turn it on.")
+        return
+    if not st.session_state.get("reviewer_ok"):
+        with st.form("reviewer_login"):
+            name = st.text_input("Your name and team *", placeholder="e.g. Anitha (Finance)")
+            pwd = st.text_input("Reviewer password *", type="password")
+            if st.form_submit_button("Open review queue", type="primary"):
+                if pwd == REVIEWER_PASSWORD and name.strip():
+                    st.session_state.reviewer_ok = True
+                    st.session_state.reviewer_name = name.strip()
+                    st.rerun()
+                st.error("Enter your name and the correct reviewer password.")
+        return
+
+    df = load_tickets()
+    pending = df[(df["status"] == "Escalated") & (df["review_status"] == REVIEW_PENDING)]
+    done = df[df["review_status"].isin([REVIEW_APPROVED, REVIEW_CLOSED])]
+    c1, c2, c3 = st.columns(3)
+    c1.metric("⏳ Waiting for review", len(pending), border=True)
+    c2.metric("✅ Approved by people", int((df["review_status"] == REVIEW_APPROVED).sum()), border=True)
+    c3.metric("📞 Handled directly", int((df["review_status"] == REVIEW_CLOSED).sum()), border=True)
+
+    teams = ["All teams"] + sorted(pending["department"].unique())
+    team = st.selectbox("Team", teams, label_visibility="collapsed")
+    if team != "All teams":
+        pending = pending[pending["department"] == team]
+    st.caption(f"Signed in as **{st.session_state.reviewer_name}**")
+    if pending.empty:
+        st.success("Nothing waiting. Every escalated ticket has been reviewed.")
+
+    prio_rank = {"High": 0, "Medium": 1, "Low": 2}
+    pending = pending.assign(_p=pending["priority"].map(prio_rank)).sort_values(["_p", "timestamp"])
+    for _, r in pending.iterrows():
+        t = r.to_dict()
+        with st.container(border=True):
+            st.markdown(f"**{t['ticket_id']}** · {t['timestamp'][:16]} · {t['employee_name']} ({t['employee_id']})")
+            st.markdown(chips(t), unsafe_allow_html=True)
+            st.markdown(f"**Question:** {t['complaint']}")
+            st.markdown(f"<div class='handoff'>Why it was escalated: {t['escalation_reason']}</div>",
+                        unsafe_allow_html=True)
+            reply = st.text_area("Reply to the employee (AI draft, edit as needed)", t["response"],
+                                 key=f"reply_{t['ticket_id']}", height=170)
+            b1, b2, _ = st.columns([1.2, 1.2, 2])
+            approve = b1.button("✅ Approve & send", key=f"ok_{t['ticket_id']}", type="primary", width="stretch")
+            close = b2.button("📞 Handled directly", key=f"close_{t['ticket_id']}", width="stretch",
+                              help="Your team contacted the employee directly. The text above is the note they will see.")
+            if approve or close:
+                try:
+                    asyncio.run(record_human_decision(t, "APPROVE" if approve else "CLOSE",
+                                                      st.session_state.reviewer_name, reply))
+                    st.toast(f"{t['ticket_id']} {'approved' if approve else 'closed'} - the employee can see it now.")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"Could not save the decision: {exc}")
+
+    if not done.empty:
+        with st.expander(f"Recently reviewed ({len(done)})"):
+            st.dataframe(done.iloc[::-1][["ticket_id", "department", "employee_name", "review_status",
+                                          "reviewer", "reviewed_at"]],
+                         hide_index=True, width="stretch")
 
 
 # ----------------------------------------------------------------------------
@@ -503,15 +617,17 @@ with st.sidebar:
                     "2. A **main AI agent** picks the right team — Client Support, Finance, Marketing, "
                     "Sales, HR or IT — and sets the priority.\n"
                     "3. That **team's agent** reads only that team's company documents.\n"
-                    "4. You get an answer. If it's urgent, sensitive or not covered, "
-                    "a **person from that team** follows up.\n"
+                    "4. You get an answer. If it's urgent, sensitive or not covered, a **person from that team "
+                    "reviews it first** and their reply appears under 📬 Replies from our team.\n"
                     "5. Every question is **saved as a ticket**.")
     if SHOW_AGENT_STEPS:  # technical status only in demo mode
         st.divider()
         st.caption("🛠️ Demo mode: showing sources and agent steps")
+        st.caption("🔎 Search: " + ("vector · ChromaDB + embeddings" if search_mode() == "vector" else "keyword"))
         st.caption(f"{'🟢' if OPENAI_API_KEY else '🔴'} AI connected · `{OPENAI_MODEL}`")
         st.caption(f"{'🟢' if SERPAPI_API_KEY else '⚪'} Web search {'on' if SERPAPI_API_KEY else 'off'}")
 
-page = st.segmented_control("Menu", ["💬 Ask", "🗂️ Ticket history", "📊 Weekly summary"],
+page = st.segmented_control("Menu", ["💬 Ask", "🗂️ Ticket history", "📊 Weekly summary", "🧑‍💼 Review queue"],
                             default="💬 Ask", key="page", label_visibility="collapsed") or "💬 Ask"
-{"💬 Ask": page_ask, "🗂️ Ticket history": page_history, "📊 Weekly summary": page_weekly}[page]()
+{"💬 Ask": page_ask, "🗂️ Ticket history": page_history, "📊 Weekly summary": page_weekly,
+ "🧑‍💼 Review queue": page_review}[page]()
