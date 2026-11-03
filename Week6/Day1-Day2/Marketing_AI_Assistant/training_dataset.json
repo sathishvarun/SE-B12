@@ -1,0 +1,34 @@
+[
+  {
+    "question": "What is a Smart Campaign in Marketo?",
+    "answer": "A Smart Campaign in Marketo automates marketing activities using triggers, filters and flow steps."
+  },
+  {
+    "question": "What does No Show mean in a webinar?",
+    "answer": "No Show means a registered participant did not attend the webinar."
+  },
+  {
+    "question": "What is Oracle Eloqua?",
+    "answer": "Oracle Eloqua is a marketing automation platform used for email campaigns, lead management and customer engagement."
+  },
+  {
+    "question": "What is lead nurturing?",
+    "answer": "Lead nurturing is building relationships with potential customers through relevant and personalized communications."
+  },
+  {
+    "question": "What is CRM integration?",
+    "answer": "CRM integration connects marketing automation platforms with customer relationship management systems to synchronize customer data."
+  },
+  {
+    "question": "What is email automation?",
+    "answer": "Email automation uses predefined workflows and triggers to send emails automatically."
+  },
+  {
+    "question": "What is a hard bounce?",
+    "answer": "A hard bounce is a permanent email delivery failure, such as an invalid email address."
+  },
+  {
+    "question": "What is a webinar registration confirmation?",
+    "answer": "It is an automated email confirming successful webinar registration and sharing event details."
+  }
+]

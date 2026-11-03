@@ -1,0 +1,7 @@
+# Tested application stack; install in a clean Python 3.11 or 3.12 environment.
+torch>=2.2
+transformers>=4.45,<5
+peft>=0.21.2
+accelerate>=1.0
+safetensors>=0.4
+streamlit>=1.40
