@@ -1,0 +1,202 @@
+[
+    {
+        "question": "What is Oracle Eloqua?",
+        "answer": "Oracle Eloqua is a marketing automation platform used to plan, execute, and measure marketing campaigns. It supports email marketing, lead nurturing, segmentation, campaign management, and CRM integration."
+    },
+    {
+        "question": "What is a hard bounce in email marketing?",
+        "answer": "A hard bounce occurs when an email cannot be delivered because of a permanent issue, such as an invalid or non-existent email address. Marketers should suppress hard-bounced addresses from future sends."
+    },
+    {
+        "question": "What is the difference between Eloqua Program Canvas and Campaign Canvas?",
+        "answer": "Eloqua Campaign Canvas is used to design and execute marketing campaigns, including audience selection, email sends, form submissions, and campaign responses. Program Canvas is used to automate recurring or ongoing processes, such as data processing, contact updates, and operational workflows."
+    },
+    {
+        "question": "What is a segment in Oracle Eloqua?",
+        "answer": "A segment in Oracle Eloqua is a group of contacts selected using specific criteria, such as location, job title, industry, or engagement activity. Marketers use segments to target relevant audiences for campaigns."
+    },
+    {
+        "question": "What is a shared filter in Oracle Eloqua?",
+        "answer": "A shared filter is a reusable set of criteria that can be used to select contacts or other records in multiple areas of Eloqua. It helps maintain consistent audience selection across marketing activities."
+    },
+    {
+        "question": "What is a contact in Oracle Eloqua?",
+        "answer": "A contact in Oracle Eloqua represents an individual person stored in the marketing database. Contact records can contain information such as name, email address, company, job title, location, and marketing engagement activity."
+    },
+    {
+        "question": "What is a form in Oracle Eloqua?",
+        "answer": "An Eloqua form collects information from website visitors or campaign audiences. It can capture details such as name, email address, company, and job title. Form submissions can trigger campaign actions and update contact records."
+    },
+    {
+        "question": "What is a landing page in Oracle Eloqua?",
+        "answer": "An Eloqua landing page is a web page designed to support a marketing campaign. It commonly contains campaign information, registration forms, or calls to action that encourage visitors to submit information or engage with an offer."
+    },
+    {
+        "question": "What is a campaign response in Oracle Eloqua?",
+        "answer": "A campaign response records a contact's qualifying interaction with a marketing campaign, such as clicking an email link, submitting a form, or registering for a webinar. Responses help marketers measure campaign engagement and performance."
+    },
+    {
+        "question": "What is lead scoring in Oracle Eloqua?",
+        "answer": "Lead scoring assigns numerical values to contacts based on their profile information and engagement activities. Marketers use these scores to identify contacts who may be ready for sales follow-up."
+    },
+    {
+        "question": "What is a decision step in Eloqua Campaign Canvas?",
+        "answer": "A decision step evaluates a contact against a defined condition and directs the contact along different campaign paths depending on the result. For example, contacts who clicked an email can follow a different path from contacts who did not click."
+    },
+    {
+        "question": "How can marketers measure email campaign performance in Oracle Eloqua?",
+        "answer": "Marketers can measure email campaign performance using metrics such as delivered emails, delivery rate, open rate, click-through rate, bounce rate, unsubscribe rate, and conversions. These metrics help evaluate audience engagement and campaign effectiveness."
+    },
+    {
+        "question": "What is a Smart Campaign in Adobe Marketo Engage?",
+        "answer": "A Smart Campaign in Adobe Marketo Engage automates marketing activities based on defined audience criteria and flow steps. It can send emails, update lead records, change program status, and perform other marketing actions. A Smart Campaign includes a Smart List, Flow, and Schedule."
+    },
+    {
+        "question": "What is a Smart List in Marketo?",
+        "answer": "A Smart List defines the audience or trigger conditions for a Marketo Smart Campaign. Marketers use filters to select leads based on attributes and triggers to respond to activities such as clicking an email link or filling out a form."
+    },
+    {
+        "question": "What is the Flow section in a Marketo Smart Campaign?",
+        "answer": "The Flow section defines the actions that Marketo performs for qualifying leads. Actions can include sending an email, changing data values, adding leads to a list, changing program status, or requesting a campaign."
+    },
+    {
+        "question": "What is the Schedule section in a Marketo Smart Campaign?",
+        "answer": "The Schedule section controls when a batch Smart Campaign runs or how a trigger campaign is activated. It can also define campaign qualification rules and limits on how often leads can run through a campaign."
+    },
+    {
+        "question": "What is the difference between a batch campaign and a trigger campaign in Marketo?",
+        "answer": "A batch campaign processes a defined audience at a scheduled time or when manually run. A trigger campaign runs automatically when a specified activity or event occurs, such as a form submission or email click."
+    },
+    {
+        "question": "What is a Marketo program?",
+        "answer": "A Marketo program is a container used to organize and measure marketing initiatives such as webinars, email campaigns, events, and digital advertising. Programs can include channels, statuses, members, and success criteria."
+    },
+    {
+        "question": "What is a channel in Marketo?",
+        "answer": "A channel in Marketo defines the progression statuses used to track members of a program. For example, a webinar channel may use statuses such as Invited, Registered, Attended, and No Show. Channel statuses can help measure program success."
+    },
+    {
+        "question": "What is a Marketo token?",
+        "answer": "A token in Marketo is a reusable variable that can personalize content or configure program settings. Tokens can represent values such as event dates, locations, URLs, and email content. Marketers can define tokens at different folder and program levels."
+    },
+    {
+        "question": "What is lead scoring in Marketo?",
+        "answer": "Lead scoring in Marketo assigns numerical values to leads based on their demographic attributes and behavioral activities. For example, marketers may increase a lead score when someone visits a pricing page or attends a webinar. Sales teams can use scores to prioritize follow-up."
+    },
+    {
+        "question": "How can marketers prevent duplicate email sends in Marketo?",
+        "answer": "Marketers can reduce duplicate email sends by reviewing campaign membership, using appropriate qualification rules, configuring communication limits, and checking whether leads have already received the email. The campaign setup should be tested before execution."
+    },
+    {
+        "question": "What is lead nurturing in marketing automation?",
+        "answer": "Lead nurturing is the process of building relationships with potential customers through relevant and timely communication. Marketing automation platforms use email campaigns, behavioral triggers, segmentation, and personalized content to guide leads through the buyer journey."
+    },
+    {
+        "question": "How do you design a lead nurturing workflow?",
+        "answer": "A lead nurturing workflow starts by identifying the target audience and segmenting leads based on their interests, profile, and engagement. The workflow sends relevant content over time, monitors activities such as email clicks and form submissions, adjusts communication based on engagement, and identifies leads ready for sales follow-up."
+    },
+    {
+        "question": "What is a drip email campaign?",
+        "answer": "A drip email campaign is a sequence of pre-planned emails delivered to contacts over a defined period or based on specific actions. It helps educate prospects, maintain engagement, and move leads through the buyer journey."
+    },
+    {
+        "question": "What is the difference between lead nurturing and lead generation?",
+        "answer": "Lead generation focuses on attracting potential customers and collecting their information. Lead nurturing focuses on developing relationships with those prospects through relevant communication and engagement until they are ready for a sales conversation."
+    },
+    {
+        "question": "How can marketers identify sales-ready leads?",
+        "answer": "Marketers can identify sales-ready leads using lead scoring, demographic fit, behavioral engagement, and qualification criteria agreed upon with the sales team. Leads that meet the defined threshold can be routed to sales for follow-up."
+    },
+    {
+        "question": "What is behavioral segmentation in lead nurturing?",
+        "answer": "Behavioral segmentation groups leads based on their actions and engagement, such as email clicks, website visits, webinar attendance, and content downloads. It helps marketers deliver communication that matches each lead's interests."
+    },
+    {
+        "question": "How should marketers handle inactive leads in a nurturing campaign?",
+        "answer": "Marketers should identify inactive leads using engagement criteria and review whether the contacts are still eligible for communication. They can reduce email frequency, provide relevant content, or use a re-engagement campaign. Unsubscribed and suppressed contacts must remain excluded from marketing sends."
+    },
+    {
+        "question": "How can marketing automation improve lead nurturing?",
+        "answer": "Marketing automation improves lead nurturing by delivering personalized communication at scale, responding to prospect activities, updating lead records, applying scoring rules, and routing qualified leads to sales. It also helps measure engagement and optimize campaign performance."
+    },
+    {
+        "question": "What is ON24?",
+        "answer": "ON24 is a digital experience platform used to host webinars, virtual events, and interactive content experiences. Marketing teams use it to manage registrations, deliver live or on-demand sessions, capture audience engagement, and generate attendee data for follow-up."
+    },
+    {
+        "question": "What is a Simulive webinar in ON24?",
+        "answer": "A Simulive webinar combines a pre-recorded presentation with a scheduled webinar experience. The recording is played at a planned time while presenters may participate in live chat or Q&A, depending on the event configuration. It provides an event experience similar to a live webinar without requiring the entire presentation to be delivered live."
+    },
+    {
+        "question": "What is the difference between a live webinar and a Simulive webinar?",
+        "answer": "A live webinar delivers the presentation in real time, with presenters speaking during the scheduled event. A Simulive webinar plays pre-recorded presentation content at a scheduled time and may include live interaction such as Q&A or chat. The choice depends on the event objectives and required audience interaction."
+    },
+    {
+        "question": "What is a webinar registration page?",
+        "answer": "A webinar registration page is a web page where potential attendees provide their details to register for an event. It commonly collects information such as name, email address, company, and job title. The registration information is used for confirmation messages, attendee management, and marketing follow-up."
+    },
+    {
+        "question": "What is a webinar confirmation email?",
+        "answer": "A webinar confirmation email is sent after a successful registration. It confirms the attendee's registration and usually includes event details, date, time, joining instructions, and calendar information."
+    },
+    {
+        "question": "What is the difference between a webinar registrant and an attendee?",
+        "answer": "A registrant is someone who has completed the webinar registration process. An attendee is someone who actually joins the webinar session. A registered person may not attend the event, so registration and attendance should be tracked separately."
+    },
+    {
+        "question": "How should marketers handle webinar no-shows?",
+        "answer": "Marketers should identify registered contacts who did not attend the webinar and place them into an appropriate follow-up campaign. The communication can include an on-demand recording, presentation slides, or related resources. Contacts should be segmented based on their registration and engagement status."
+    },
+    {
+        "question": "What is webinar engagement tracking?",
+        "answer": "Webinar engagement tracking measures how attendees interact with an event. Depending on the platform and event configuration, metrics may include attendance duration, poll responses, Q&A participation, resource downloads, and other engagement activities. These insights help marketers evaluate audience interest."
+    },
+    {
+        "question": "How can ON24 webinar data be used in marketing automation?",
+        "answer": "ON24 webinar data can be used in marketing automation to update contact records, segment registrants and attendees, trigger follow-up emails, support lead scoring, and route qualified leads to sales. Integration methods and available fields depend on the connected systems and configuration."
+    },
+    {
+        "question": "What is a webinar follow-up campaign?",
+        "answer": "A webinar follow-up campaign is a communication workflow launched after an event. It can send different messages to attendees and no-shows. Attendees may receive thank-you messages and additional resources, while no-shows may receive the recording. Follow-up activities can also be used to identify interested leads for sales engagement."
+    },
+    {
+        "question": "What is Salesforce CRM?",
+        "answer": "Salesforce CRM is a customer relationship management platform used to manage accounts, contacts, leads, opportunities, and customer interactions. Marketing teams can use it with marketing automation platforms to share prospect information and support sales follow-up."
+    },
+    {
+        "question": "What is the difference between a lead and a contact in Salesforce?",
+        "answer": "A lead in Salesforce represents a prospective customer who has not yet been converted into an account and contact. A contact represents an individual associated with an account. Organizations use lead conversion to move qualified prospects into their sales processes."
+    },
+    {
+        "question": "What is CRM integration in marketing automation?",
+        "answer": "CRM integration connects a marketing automation platform with a customer relationship management system. It allows relevant data, such as leads, contacts, campaign activities, and qualification information, to be shared between systems according to configured synchronization rules."
+    },
+    {
+        "question": "Why is lead synchronization important between Eloqua and Salesforce?",
+        "answer": "Lead synchronization helps marketing and sales teams work with consistent prospect information. It can transfer contact and lead details, engagement information, and qualification data between Eloqua and Salesforce, depending on the integration configuration. This supports sales follow-up and campaign reporting."
+    },
+    {
+        "question": "What should marketers check when Salesforce and a marketing automation platform are not synchronizing leads?",
+        "answer": "Marketers should check integration status, synchronization errors, field mappings, required fields, record permissions, duplicate rules, and synchronization filters. They should also review error logs and confirm whether the affected records meet the configured synchronization criteria."
+    },
+    {
+        "question": "What is an email suppression list?",
+        "answer": "An email suppression list contains email addresses that must be excluded from marketing sends. It may include unsubscribed contacts, hard-bounced addresses, and other contacts who are not eligible to receive communications. Suppression helps protect deliverability and respect communication preferences."
+    },
+    {
+        "question": "What is the difference between a hard bounce and a soft bounce?",
+        "answer": "A hard bounce indicates a permanent delivery failure, such as an invalid email address. A soft bounce indicates a temporary delivery problem, such as a full mailbox or temporary receiving-server issue. Marketers should suppress hard bounces and monitor soft bounces according to their platform's policies."
+    },
+    {
+        "question": "What is an email unsubscribe?",
+        "answer": "An unsubscribe occurs when a recipient indicates that they no longer want to receive certain marketing emails. Marketing systems should record and respect the recipient's communication preference and exclude them from applicable future marketing sends."
+    },
+    {
+        "question": "What is email deliverability?",
+        "answer": "Email deliverability refers to the ability of marketing emails to reach recipients' intended inboxes rather than being blocked, rejected, or filtered into spam. It is influenced by sender reputation, authentication, list quality, engagement, and sending practices."
+    },
+    {
+        "question": "What checks should marketers perform before launching an email campaign?",
+        "answer": "Before launching an email campaign, marketers should verify the target audience, suppression lists, unsubscribe status, email content, personalization fields, links, tracking parameters, sender details, mobile rendering, and test sends. They should also confirm scheduling, time zones, and campaign approval."
+    }
+]

@@ -1,4 +1,27 @@
-.venv/
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Python
 __pycache__/
-.streamlit/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environments
+.venv/
+.venv-*/
+venv/
+
+# macOS
 .DS_Store
+
+# Logs
+*.log
+
+# Generated RAG files
+document_chunks.jsonl
+vector_store/
+
+# Model weights - use Git LFS or external storage
+model/

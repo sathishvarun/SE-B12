@@ -1,0 +1,32 @@
+[
+    {
+        "category": "Oracle Eloqua",
+        "question": "Explain Eloqua Program Canvas vs Campaign Canvas.",
+        "answer": "Eloqua's Program Canvas and Campaign Canvas are both powerful tools for managing customer data in the Eloqua platform, but they serve different purposes and have distinct features.\n\n### Program Canvas\n\n**Program Canvas** is an advanced feature within Eloqua that allows you to create custom programs based on specific criteria. It provides a structured way to organize your data into categories or segments, which can be used to segment customers more effectively. Here’s how it works:\n\n1. **Segmentation**: You can define segments based on various criteria such as age, location, purchase history, etc.\n2. **Data Integration**: The program canvas integrates with other Eloqua features like Lead Capture, Contact Management, and Customer Segmentation.\n3. **Customization**: You can customize the appearance of the canvas using templates and styles to make it visually appealing.\n4. **Advanced Filtering**: You can use complex filters to refine your segmentation results.\n\n**Key Features:**\n- **Segments**: Define groups of customers based on specific criteria",
+        "status": "Success"
+    },
+    {
+        "category": "Marketo",
+        "question": "How do Smart Campaigns work in Marketo?",
+        "answer": "Smart Campaigns in Marketo are designed to help you automate and optimize your marketing efforts more effectively. Here's how they work:\n\n1. **Campaign Creation**: When you create a new campaign in Marketo, it automatically generates a set of predefined templates that cover various types of campaigns such as lead generation, email marketing, and sales funnels.\n\n2. **Customization**: Once the template is selected, you can customize it further with different variables like:\n   - **Variables**: These allow you to add custom data or conditions to the campaign.\n   - **Actions**: This section allows you to define actions that will be taken when the campaign is triggered (e.g., send an email, open a form).\n   - **Audience**: Define who the campaign is targeting based on demographics, interests, behaviors, etc.\n\n3. **Advanced Settings**: After creating the campaign, you have access to advanced settings where you can fine-tune the behavior of the campaign:\n   - **Timing**: Set the",
+        "status": "Success"
+    },
+    {
+        "category": "Lead Nurturing",
+        "question": "Design a lead nurturing workflow for new prospects.",
+        "answer": "Creating a lead nurturing workflow is an essential part of engaging with potential customers and building relationships. Here’s a step-by-step guide to designing a lead nurturing workflow for new prospects:\n\n### 1. Define Your Goals\n- **Objective:** Determine what you want to achieve from the lead nurturing process.\n- **Goals:**\n  - Increase customer acquisition rate (CAC)\n  - Boost conversion rates\n  - Build brand awareness\n  - Engage with leads more effectively\n\n### 2. Identify Key Activities\n- **Lead Generation:** Collecting information about your target audience through various channels like social media, email marketing, and direct sales efforts.\n- **Lead Screening:** Filtering out irrelevant or low-value leads based on criteria such as demographics, interests, and past interactions.\n- **Lead Outreach:** Sending personalized emails or messages to interested leads to nurture their interest further.\n- **Lead Engagement:** Following up with leads after outreach to keep them engaged and encourage conversions.\n\n### 3. Develop Lead Nurt",
+        "status": "Success"
+    },
+    {
+        "category": "Webinar Operations",
+        "question": "What happens when a registrant does not attend a webinar?",
+        "answer": "When a registrant does not attend a webinar, the registrar typically has several options to address this situation:\n\n1. **Notification**: The registrar can send an email or SMS notification to the registrant's registered email address with details about the cancellation and any potential refund or alternative registration.\n\n2. **Credit Card Processing**: If the event is online, the registrar may process the payment for the attendee's credit card directly through their website or app. This ensures that the attendee receives their money promptly without needing to contact them again.\n\n3. **Email Notification**: The registrar can also send an email to the attendee's registered email address explaining the cancellation and providing a reason for it (e.g., they were unable to attend due to unforeseen circumstances).\n\n4. **Alternative Registration**: In some cases, the registrar might offer an alternative registration option such as a virtual meeting or a different date and time slot.\n\n5. **Contacting Attendee**: If the attendee is still interested in attending but needs further instructions or",
+        "status": "Success"
+    },
+    {
+        "category": "CRM Integration",
+        "question": "Explain Eloqua and Salesforce CRM integration.",
+        "answer": "Eloqua and Salesforce CRM integration is a powerful way to leverage the strengths of both platforms for customer relationship management (CRM) purposes. Here's an explanation of how it works:\n\n1. **Integration Overview:**\n   - **Salesforce CRM:** This platform is designed specifically for managing customer data and interactions with sales teams. It provides tools like contact management, lead generation, and sales pipeline tracking.\n   - **Eloqua:** This is a marketing automation and customer engagement platform that helps businesses automate their customer relationships.\n\n2. **How It Works:**\n   - **Data Integration:** Both platforms collect and store customer data from various sources such as Salesforce, Google Analytics, and other external systems.\n   - **Customer Relationship Management (CRM):** The data collected from Salesforce is integrated into Eloqua, allowing customers to be tracked across different channels and touchpoints within the company.\n   - **Lead Generation:** Customers can be automatically identified through Salesforce and then promoted to Eloqua for further nurturing or conversion",
+        "status": "Success"
+    }
+]

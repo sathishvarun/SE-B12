@@ -1,12 +1,15 @@
-import os
-import torch
-import streamlit as st
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from peft import PeftModel
 
-BASE_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+import os
+import requests
+import streamlit as st
+from dotenv import load_dotenv
+
+# Project configuration
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-ADAPTER_DIR = os.path.join(PROJECT_DIR, "model", "marketing-llm-finetuned")
+load_dotenv(os.path.join(PROJECT_DIR, ".env"))
+
+API_URL = "http://127.0.0.1:8000/generate"
+API_KEY = os.getenv("MARKETING_API_KEY")
 
 st.set_page_config(
     page_title="Marketing AI Assistant",
@@ -14,111 +17,115 @@ st.set_page_config(
     layout="centered",
 )
 
-@st.cache_resource(show_spinner="Loading the base model and your fine-tuned adapter...")
-def load_assistant():
-    required = ["adapter_config.json", "adapter_model.safetensors"]
-    missing = [f for f in required if not os.path.isfile(os.path.join(ADAPTER_DIR, f))]
-    if missing:
-        raise FileNotFoundError(
-            "Missing adapter file(s): " + ", ".join(missing) +
-            f"\nExpected folder: {ADAPTER_DIR}"
-        )
-
-    # Load the tokenizer from the original Qwen base model.
-    # The adapter folder contains LoRA weights; its tokenizer_config.json
-    # may have an incompatible extra_special_tokens format.
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-
-    if torch.cuda.is_available():
-        device = "cuda"
-        dtype = torch.float16
-    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        # float32 is selected for broad MPS compatibility on Apple Silicon.
-        device = "mps"
-        dtype = torch.float32
-    else:
-        device = "cpu"
-        dtype = torch.float32
-
-    base = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL,
-        torch_dtype=dtype,
-    )
-    base.to(device)
-
-    model = PeftModel.from_pretrained(base, ADAPTER_DIR)
-    model.eval()
-    return tokenizer, model, device
-
-def answer_question(question, tokenizer, model, device, max_new_tokens=180):
-    messages = [{"role": "user", "content": question}]
-    prompt = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True,
-    )
-    inputs = tokenizer(prompt, return_tensors="pt")
-    inputs = {k: v.to(device) for k, v in inputs.items()}
-
-    with torch.inference_mode():
-        output = model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            do_sample=False,
-            pad_token_id=tokenizer.eos_token_id,
-            eos_token_id=tokenizer.eos_token_id,
-        )
-
-    new_tokens = output[0, inputs["input_ids"].shape[1]:]
-    return tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
-
+# Page heading
 st.title("🤖 Marketing AI Assistant")
-st.caption("Qwen 2.5 0.5B + your saved LoRA adapter")
+st.caption("Qwen 2.5 0.5B + Marketing Fine-Tuned LoRA V2")
+
 st.write(
-    "Ask questions about Marketo, Eloqua, marketing automation, "
+    "Ask questions about Oracle Eloqua, Marketo, marketing automation, "
     "webinar operations, lead nurturing and email campaigns."
 )
 
+# Sidebar
 with st.sidebar:
     st.header("Model information")
-    st.write(f"**Base model:** `{BASE_MODEL}`")
-    st.write("**Adapter:** `model/marketing-llm-finetuned`")
-    st.info("The first launch downloads the base model from Hugging Face. "
-            "Keep an internet connection during the first load.")
+    st.write("**Base model:** Qwen/Qwen2.5-0.5B-Instruct")
+    st.write("**Adapter:** marketing-llm-finetuned-v2")
+    st.write("**Backend:** FastAPI")
+    st.write("**API endpoint:** Port 8000")
+
+    if st.button("Check backend health"):
+        try:
+            health = requests.get(
+                "http://127.0.0.1:8000/health",
+                timeout=10,
+            )
+            if health.ok:
+                st.success(f"Backend: {health.json()}")
+            else:
+                st.error(f"Backend returned HTTP {health.status_code}")
+        except requests.RequestException as exc:
+            st.error(f"Backend connection failed: {exc}")
+
     if st.button("Clear conversation"):
         st.session_state.messages = []
         st.rerun()
 
-try:
-    tokenizer, model, device = load_assistant()
-    st.sidebar.success(f"Model loaded · {device.upper()}")
-except Exception as exc:
-    st.error("The model could not be loaded.")
-    st.exception(exc)
+# Check API key
+if not API_KEY:
+    st.error(
+        "MARKETING_API_KEY is missing. "
+        "Please check your project .env file."
+    )
     st.stop()
 
+# Chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Display previous messages
 for item in st.session_state.messages:
     with st.chat_message(item["role"]):
         st.markdown(item["content"])
 
+# Chat input
 question = st.chat_input("Ask your Marketing AI Assistant...")
+
 if question:
-    st.session_state.messages.append({"role": "user", "content": question})
+    st.session_state.messages.append(
+        {"role": "user", "content": question}
+    )
+
     with st.chat_message("user"):
         st.markdown(question)
 
     with st.chat_message("assistant"):
-        with st.spinner("Generating answer..."):
+        with st.spinner("Marketing AI is preparing your answer..."):
             try:
-                response = answer_question(question, tokenizer, model, device)
-                st.markdown(response or "_The model returned an empty response._")
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": response}
+                response = requests.post(
+                    API_URL,
+                    headers={
+                        "X-API-Key": API_KEY,
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "question": question,
+                        "max_new_tokens": 300,
+                    },
+                    timeout=180,
                 )
-            except Exception as exc:
-                st.error(f"Answer generation failed: {exc}")
+
+                if response.status_code == 200:
+                    result = response.json()
+                    answer = result.get("answer", "")
+
+                    if answer:
+                        st.markdown(answer)
+                        st.session_state.messages.append(
+                            {"role": "assistant", "content": answer}
+                        )
+                    else:
+                        st.warning("The backend returned an empty answer.")
+
+                elif response.status_code == 401:
+                    st.error(
+                        "API authentication failed. "
+                        "Check MARKETING_API_KEY in your .env file."
+                    )
+                else:
+                    st.error(
+                        f"API error: HTTP {response.status_code}\n\n"
+                        f"{response.text}"
+                    )
+
+            except requests.exceptions.Timeout:
+                st.error("The request timed out. Please try again.")
+
+            except requests.exceptions.ConnectionError:
+                st.error(
+                    "Cannot connect to FastAPI. "
+                    "Make sure the backend is running on port 8000."
+                )
+
+            except requests.RequestException as exc:
+                st.error(f"Request failed: {exc}")

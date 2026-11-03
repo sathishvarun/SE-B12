@@ -1,0 +1,23 @@
+
+[
+  {
+    "category": "Oracle Eloqua",
+    "question": "Explain Eloqua Program Canvas vs Campaign Canvas."
+  },
+  {
+    "category": "Marketo",
+    "question": "How do Smart Campaigns work in Marketo?"
+  },
+  {
+    "category": "Lead Nurturing",
+    "question": "Design a lead nurturing workflow for new prospects."
+  },
+  {
+    "category": "Webinar Operations",
+    "question": "What happens when a registrant does not attend a webinar?"
+  },
+  {
+    "category": "CRM Integration",
+    "question": "Explain Eloqua and Salesforce CRM integration."
+  }
+]

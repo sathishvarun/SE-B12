@@ -1,0 +1,18 @@
+Oracle Eloqua Marketing Automation
+
+Oracle Eloqua is a marketing automation platform used for campaign management, lead nurturing, email marketing and marketing operations.
+
+Campaign Canvas:
+Campaign Canvas allows marketers to design and execute marketing campaigns using assets such as emails, landing pages, forms and decision steps.
+
+Program Canvas:
+Program Canvas is used to build programs that manage contacts through a sequence of steps based on program membership and defined rules.
+
+Contact Management:
+Eloqua stores contact information and engagement data. Marketers can use segmentation to target relevant audiences.
+
+Lead Nurturing:
+Lead nurturing uses automated campaigns to deliver relevant communications to prospects based on their interests, behavior and engagement.
+
+CRM Integration:
+Eloqua can integrate with Salesforce CRM to synchronize relevant contact, account and lead information between marketing and sales systems.
