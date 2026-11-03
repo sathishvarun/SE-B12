@@ -1,606 +1,536 @@
 # Marketing AI Assistant
 
-## Qwen2.5-0.5B-Instruct + Fine-Tuned LoRA Adapter
+An AI-powered marketing knowledge assistant built around a fine-tuned
+Qwen2.5 language model and Retrieval-Augmented Generation (RAG). The
+project combines a Streamlit user interface, a FastAPI service, a
+PEFT/LoRA adapter, semantic document retrieval, and evaluation
+utilities.
 
-A local, browser-based Marketing AI Assistant built with **Python,
-Hugging Face Transformers, PEFT/LoRA, PyTorch and Streamlit**.
+> **Project status:** The FastAPI health check and generation endpoint
+> were tested successfully. Both generation without RAG and generation
+> with RAG returned HTTP 200 in local testing. The RAG test retrieved
+> `eloqua/eloqua_basics.txt`. Full Streamlit end-to-end validation
+> remains to be completed.
 
-The application loads the original Qwen instruction model and attaches
-the saved marketing-domain LoRA adapter. It provides a chat interface
-for asking questions about marketing automation, Marketo, Oracle Eloqua,
-webinar operations, lead nurturing and email campaigns.
+## 1. Project objectives
 
-> **Project status:** The Streamlit application and adapter-loading
-> workflow have been assembled. The tokenizer-loading issue described
-> below was corrected in `app.py` by loading the tokenizer from the
-> original Qwen base model. Model quality still needs to be evaluated
-> with a broader test set before production use.
+-   Answer marketing operations questions using a domain-adapted
+    language model.
+-   Ground answers in approved internal knowledge-base documents through
+    RAG.
+-   Expose model functionality through an API.
+-   Provide a simple interactive interface for users.
+-   Fine-tune and compare LoRA adapters using marketing-focused
+    question-and-answer data.
+-   Evaluate model responses with repeatable evaluation questions and
+    reports.
 
-------------------------------------------------------------------------
-
-## 1. Project objective
-
-The objective was to take a small general-purpose instruction model,
-fine-tune it for marketing-automation question-and-answer examples, save
-the trained adapter, and run it locally through a simple web interface.
-
-### What we built
-
--   **Base model:** `Qwen/Qwen2.5-0.5B-Instruct`
--   **Fine-tuning approach:** Supervised fine-tuning (SFT) using a
-    PEFT/LoRA adapter
--   **Adapter folder:** `model/marketing-llm-finetuned/`
--   **Application:** Streamlit chat interface
--   **Inference:** Transformers + PyTorch + PEFT
--   **Local address:** http://localhost:8501
-
-### Important distinction: base model versus fine-tuned model
-
-The original Qwen model is the **base model**. It provides the general
-language understanding and text-generation capability.
-
-The saved `marketing-llm-finetuned` folder contains the **LoRA
-adapter**, which stores learned parameter updates from the fine-tuning
-exercise. It is not a complete standalone model.
-
-At runtime, the application loads the base model first and then attaches
-the LoRA adapter. Together, they are used as the fine-tuned Marketing AI
-Assistant.
-
-------------------------------------------------------------------------
-
-## 2. End-to-end project flow
+## 2. High-level architecture
 
 ``` text
-Marketing question-and-answer examples
-                |
-                v
-       Prepare training dataset
-                |
-                v
-       Load Qwen base model
-                |
-                v
-   Supervised fine-tuning (SFT)
-        with PEFT / LoRA
-                |
-                v
-     Save trained LoRA adapter
-                |
-                v
- Download / place adapter ZIP locally
-                |
-                v
-   Marketing_AI_Assistant project
-                |
-                +---- app.py
-                |
-                +---- requirements.txt
-                |
-                +---- model/
-                |       |
-                |       +---- marketing-llm-finetuned/
-                |
-                v
-       Create Python environment
-                |
-                v
-       Install dependencies
-                |
-                v
-   Load Qwen base model + adapter
-                |
-                v
-       Streamlit chat interface
-                |
-                v
-       http://localhost:8501
-                |
-                v
-       User asks a question
-                |
-                v
-       Model generates an answer
+User
+ |
+ v
+Streamlit UI (app.py)
+ |
+ | HTTP request + API key
+ v
+FastAPI service (main.py)
+ |
+ +--> Qwen2.5-0.5B-Instruct base model
+ |       |
+ |       +--> PEFT / LoRA marketing adapter (V2)
+ |
+ +--> RAG pipeline (rag_pipeline.py), when enabled
+         |
+         +--> Knowledge-base documents
+         +--> Text chunking and metadata
+         +--> Sentence Transformers embeddings
+         +--> FAISS similarity search
+ |
+ v
+Generated answer + retrieval/source metadata
 ```
 
-------------------------------------------------------------------------
-
-## 3. Project folder structure
-
-The main project directory is `Marketing_AI_Assistant`.
-
-``` text
-Marketing_AI_Assistant/
-│
-├── app.py
-│   └── Streamlit application, model loading and chat generation
-│
-├── requirements.txt
-│   └── Python packages required by the application
-│
-├── README.md
-│   └── Project documentation and setup instructions
-│
-├── run_mac.sh
-│   └── Optional Mac setup and launch script
-│
-├── evaluate_model.py
-│   └── Command-line sample evaluation script
-│
-├── training_dataset.json
-│   └── Small set of marketing question-and-answer examples
-│
-├── .gitignore
-│   └── Files and folders excluded from Git
-│
-├── .venv/
-│   └── Local Python virtual environment (created during setup)
-│
-└── model/
-    └── marketing-llm-finetuned/
-        │
-        ├── adapter_config.json
-        │   └── LoRA configuration and base-model reference
-        │
-        ├── adapter_model.safetensors
-        │   └── Trained LoRA adapter weights
-        │
-        ├── tokenizer_config.json
-        │   └── Tokenizer configuration saved with the adapter
-        │
-        ├── tokenizer.json
-        │   └── Tokenizer vocabulary and processing information
-        │
-        ├── chat_template.jinja
-        │   └── Chat formatting template
-        │
-        ├── training_args.bin
-        │   └── Saved training arguments
-        │
-        └── README.md
-            └── Adapter model card / metadata
-```
-
-The `.venv` folder is generated on the user's computer and is not
-required to be copied between machines. The adapter folder must retain
-`adapter_config.json` and `adapter_model.safetensors`.
-
-------------------------------------------------------------------------
-
-## 4. Base model: what we started with
-
-We used the Hugging Face model:
-
-**`Qwen/Qwen2.5-0.5B-Instruct`**
-
-The base model is a general-purpose instruction-following language
-model. Before domain fine-tuning, it has general language capabilities,
-but it is not specifically trained for our small set of
-marketing-automation examples.
-
-The base model is downloaded from Hugging Face the first time the
-application runs. An internet connection is therefore required for the
-first model load. Subsequent runs can use the locally cached base model.
-
-Model page: https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct
-
-------------------------------------------------------------------------
-
-## 5. Fine-tuning approach: what we created
-
-We used **Supervised Fine-Tuning (SFT)** with **Parameter-Efficient
-Fine-Tuning (PEFT)** and **Low-Rank Adaptation (LoRA)**.
-
-### What is LoRA?
-
-LoRA fine-tunes selected model layers by learning a smaller set of
-additional parameters rather than updating and saving every parameter in
-the original base model.
-
-This makes the fine-tuning output smaller and easier to store and reuse.
-
-### Adapter configuration
-
-The supplied `adapter_config.json` identifies these settings:
-
-  Setting                 Saved value
-  ----------------------- ------------------------------
-  Base model              `Qwen/Qwen2.5-0.5B-Instruct`
-  PEFT type               LoRA
-  Task type               Causal language modelling
-  LoRA rank (`r`)         8
-  LoRA alpha              16
-  LoRA dropout            0.05
-  PEFT version recorded   0.21.2
+## 3. Technology stack and concepts
 
-The adapter targets attention and feed-forward projection modules,
-including `q_proj`, `k_proj`, `v_proj`, `o_proj`, `gate_proj`, `up_proj`
-and `down_proj`.
+  ------------------------------------------------------------------------------------------
+  Area                    Technology / concept                       Purpose
+  ----------------------- ------------------------------------------ -----------------------
+  Programming language    Python                                     Application, model,
+                                                                     data and automation
+                                                                     code
 
-**Note:** These values are read from the saved adapter configuration.
-They describe the adapter that was supplied to this application.
+  Base LLM                `Qwen/Qwen2.5-0.5B-Instruct`               Generates
+                                                                     natural-language
+                                                                     answers
 
-------------------------------------------------------------------------
+  Model adaptation        Supervised fine-tuning (SFT)               Adapts the base model
+                                                                     to marketing-domain
+                                                                     examples
 
-## 6. Training input: what information we gave the model
+  Parameter-efficient     PEFT / LoRA                                Trains a smaller
+  fine-tuning                                                        adapter instead of
+                                                                     updating every
+                                                                     base-model parameter
 
-The example training data is stored in `training_dataset.json`.
+  ML framework            PyTorch                                    Model execution and
+                                                                     training
 
-It contains question-and-answer pairs. Each item has: - `question`: the
-example question - `answer`: the expected answer
+  Model tooling           Hugging Face Transformers                  Tokenizer, model
+                                                                     loading and text
+                                                                     generation
 
-### Training examples included in the project
+  Adapter tooling         Hugging Face PEFT                          Loading and applying
+                                                                     LoRA adapters
 
-  ------------------------------------------------------------------------
-                           No. Training question     Topic
-  ---------------------------- --------------------- ---------------------
-                             1 What is a Smart       Marketo
-                               Campaign in Marketo?  
+  Backend/API             FastAPI                                    Exposes health and
+                                                                     answer-generation
+                                                                     endpoints
 
-                             2 What does No Show     Webinar operations
-                               mean in a webinar?    
+  ASGI server             Uvicorn                                    Runs the FastAPI
+                                                                     application
 
-                             3 What is Oracle        Eloqua
-                               Eloqua?               
+  Frontend                Streamlit                                  Provides the
+                                                                     interactive web
+                                                                     application
 
-                             4 What is lead          Lead management
-                               nurturing?            
+  RAG                     Retrieval-Augmented Generation             Retrieves relevant
+                                                                     knowledge before answer
+                                                                     generation
 
-                             5 What is CRM           CRM integration
-                               integration?          
+  Embeddings              `sentence-transformers/all-MiniLM-L6-v2`   Converts text into
+                                                                     semantic vectors
 
-                             6 What is email         Email automation
-                               automation?           
+  Vector search           FAISS                                      Finds semantically
+                                                                     similar document chunks
 
-                             7 What is a hard        Email deliverability
-                               bounce?               
+  Configuration           `python-dotenv`                            Loads local environment
+                                                                     variables
 
-                             8 What is a webinar     Webinar operations
-                               registration          
-                               confirmation?         
-  ------------------------------------------------------------------------
+  Data formats            JSON, JSONL, TXT, Markdown                 Training, evaluation
+                                                                     and knowledge-base
+                                                                     content
 
-These are short instructional examples, not a large enterprise knowledge
-base.
+  Version control         Git and GitHub                             Tracks and publishes
+                                                                     project source code
+  ------------------------------------------------------------------------------------------
 
-### Example training record
+### Technologies not established as part of this implementation
 
-``` json
-{
-  "question": "What is lead nurturing?",
-  "answer": "Lead nurturing is building relationships with potential customers through relevant and personalized communications."
-}
-```
+-   **React:** The current user interface is implemented with Streamlit.
+    React is not part of the confirmed application stack.
+-   **pytest:** The project includes model-evaluation scripts and API
+    checks described in this README, but a pytest test suite has not
+    been confirmed. Do not describe pytest as implemented unless test
+    files and a successful pytest run are added.
+-   **Docker / cloud deployment:** These are not confirmed as part of
+    the current validated application workflow.
 
-The training process teaches the model the response patterns represented
-by these examples. The training dataset is not automatically a live
-database, and the model does not automatically know private company
-processes or current campaign data.
+## 4. Main project components
 
-------------------------------------------------------------------------
+  -----------------------------------------------------------------------
+  File / folder                       Responsibility
+  ----------------------------------- -----------------------------------
+  `app.py`                            Streamlit user interface
 
-## 7. What questions can we ask the running model?
+  `main.py`                           FastAPI application, model loading
+                                      and generation endpoint
 
-After launching the application, users can enter questions in the
-Streamlit chat box.
+  `rag_pipeline.py`                   RAG retrieval and supporting
+                                      pipeline logic
 
-Examples for testing:
+  `ingest_documents.py`               Processes knowledge-base source
+                                      documents
+
+  `build_vector_db.py`                Builds the vector index used for
+                                      retrieval
+
+  `train_model.py`                    Fine-tunes the model using the
+                                      marketing training data
 
-### Marketo
-
--   What is a Smart Campaign in Marketo?
--   How do triggers, filters and flow steps work in a Smart Campaign?
-
-### Oracle Eloqua
-
--   What is Oracle Eloqua?
--   What is a typical Eloqua email campaign workflow?
--   What is lead nurturing?
-
-### Webinar operations
-
--   What does No Show mean in a webinar?
--   What is a webinar registration confirmation?
--   What is the difference between a registrant and an attendee?
-
-### Email marketing
-
--   What is a hard bounce?
--   What is email automation?
--   Why should invalid email addresses be excluded from a campaign?
-
-### CRM and marketing operations
-
--   What is CRM integration?
--   Why is CRM data synchronization important for marketing automation?
-
-Some questions above are additional **inference test prompts**. They are
-not all included in the eight-example training dataset.
-
-------------------------------------------------------------------------
-
-## 8. How the application works
-
-The main application is `app.py`.
-
-### Application sequence
-
-1.  Streamlit creates the browser-based chat page.
-2.  The application checks that the adapter configuration and weights
-    exist.
-3.  The tokenizer is loaded from the original Qwen base model.
-4.  The application detects the available compute device:
-    -   CUDA when an NVIDIA GPU is available
-    -   Apple MPS when supported on the Mac
-    -   CPU otherwise
-5.  The Qwen base model is loaded.
-6.  PEFT attaches the saved LoRA adapter from
-    `model/marketing-llm-finetuned/`.
-7.  The model is placed in evaluation mode.
-8.  A user's question is formatted using the Qwen chat template.
-9.  The model generates a response.
-10. Streamlit displays the response in the chat interface.
-
-The application uses Streamlit session state to retain the conversation
-while the current app session is running. The **Clear conversation**
-button clears that chat history.
-
-------------------------------------------------------------------------
-
-## 9. Issues faced and how we fixed them
-
-### Issue 1: Tokenizer loading error
-
-**Error displayed:**
-
-``` text
-AttributeError: 'list' object has no attribute 'keys'
-```
-
-**Where it occurred:**
-
-The error occurred while calling:
-
-``` python
-AutoTokenizer.from_pretrained(tokenizer_path)
-```
-
-The traceback showed that Transformers was processing
-`extra_special_tokens` and attempted to call `.keys()` on a value that
-was a list.
-
-**Why it happened:**
-
-The adapter ZIP included its own tokenizer configuration. The installed
-Transformers tokenizer code expected a different data structure for the
-`extra_special_tokens` value in that configuration.
-
-**Correction made in `app.py`:**
-
-Instead of loading the tokenizer from the adapter directory, the
-application now loads it from the original base model:
-
-``` python
-BASE_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
-
-tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-```
-
-The adapter remains loaded separately using PEFT:
-
-``` python
-model = PeftModel.from_pretrained(base, ADAPTER_DIR)
-```
-
-**Why this correction is appropriate:**
-
-The adapter was fine-tuned from the same Qwen base model. Therefore, the
-base model's tokenizer can be used to tokenize the user's questions and
-decode generated answers, while the LoRA adapter supplies the fine-tuned
-weights.
-
-### Issue 2: Understanding the adapter versus the full model
-
-**Issue:** The downloaded ZIP was initially easy to mistake for a
-complete standalone model.
-
-**Clarification:** The ZIP contains the LoRA adapter and related files,
-not all the weights of the original Qwen base model.
-
-**Resolution:** The application loads the base model from Hugging Face
-and attaches the adapter from the local `model/marketing-llm-finetuned/`
-folder.
-
-### Issue 3: First launch requires a model download
-
-**Issue:** The adapter is present locally, but the base model is not
-bundled into the project ZIP.
-
-**Resolution:** Keep an internet connection during the first launch so
-Transformers can download the Qwen base model. It is normally cached
-locally for later use.
-
-------------------------------------------------------------------------
-
-## 10. Environment setup on macOS
-
-Open the `Marketing_AI_Assistant` folder in VS Code and select
-**Terminal → New Terminal**.
-
-### Step 1: Check Python
+  `evaluate_model.py`                 Evaluates model output
+
+  `compare_adapters.py`               Compares model adapters
+
+  `evaluate_comparison.py`            Evaluates comparison results
+
+  `run_evaluation.py`                 Runs the evaluation workflow
+
+  `training_dataset.json`             Initial training examples
+
+  `training_dataset_v2.json`          Updated training examples
+
+  `evaluation_questions.json`         Questions used for evaluation
+
+  `evaluation_results.json`           Saved evaluation output
+
+  `adapter_comparison_results.json`   Adapter comparison output
+
+  `adapter_evaluation_report.md`      Human-readable evaluation report
+
+  `model_evaluation_results.json`     Model evaluation output
+
+  `knowledge_base/`                   Source documents used by RAG
+
+  `vector_store/`                     Generated vector index; rebuildable
+
+  `model/`                            Local LoRA adapter/model artifacts
+  -----------------------------------------------------------------------
+
+## 5. AI and application concepts covered
+
+1.  **Large Language Models (LLMs):** Using an instruction-tuned model
+    to generate responses.
+2.  **Prompt formatting and tokenization:** Preparing user questions in
+    the format expected by the model.
+3.  **Supervised fine-tuning:** Training with curated
+    question-and-answer examples.
+4.  **LoRA:** Efficiently adapting a pretrained model with a smaller set
+    of trainable parameters.
+5.  **Model and adapter loading:** Combining the base model with a
+    selected marketing adapter.
+6.  **Inference and generation:** Producing answers from input prompts
+    with controlled generation settings.
+7.  **Embeddings:** Representing documents and questions as numerical
+    vectors.
+8.  **Semantic search:** Finding relevant content by vector similarity
+    rather than exact keyword matching.
+9.  **RAG:** Supplying retrieved knowledge to the language model to
+    improve grounding.
+10. **Document ingestion and chunking:** Preparing source documents for
+    retrieval.
+11. **Metadata and source attribution:** Retaining document
+    source/category details with retrieved chunks.
+12. **REST API development:** Exposing model functions through HTTP
+    endpoints.
+13. **API-key authentication:** Protecting the generation endpoint with
+    a configured key.
+14. **Frontend/backend integration:** Calling the FastAPI service from
+    Streamlit.
+15. **Evaluation and comparison:** Running repeatable questions and
+    comparing adapter/model outputs.
+16. **Environment and dependency management:** Using a Python virtual
+    environment and `requirements.txt`.
+17. **Version control:** Committing selected project files and pushing
+    them to GitHub.
+
+## 6. Issues encountered and how they were addressed
+
+The following table records the issues observed during development and
+GitHub publishing. It distinguishes resolved issues from items that
+still require validation.
+
+  ------------------------------------------------------------------------------------------------------------------
+                     \# Issue                Cause / symptom             Resolution or current status
+  --------------------- -------------------- --------------------------- -------------------------------------------
+                      1 Python environment   Multiple local virtual      Kept dependencies in `requirements.txt`;
+                        and dependency setup environments and            used a project virtual environment. The
+                                             Python/package              environments themselves are excluded from
+                                             compatibility               Git.
+                                             considerations              
+
+                      2 Model loading and    The project had more than   Selected the V2 marketing adapter for the
+                        adapter selection    one LoRA adapter/version    validated local API run.
+
+                      3 Incorrect tensor     `torch.ones_like()` was     Updated generation to pass the tokenizer
+                        handling during      applied to a                result as a batch using
+                        generation           `BatchEncoding` object      `model.generate(**inputs, ...)` and obtain
+                                             instead of a tensor         input length from `inputs["input_ids"]`.
+
+                      4 Old API process      A new Uvicorn process       Identified the need to check the listening
+                        still using port     reported                    process before restarting the backend. Use
+                        8000                 `Address already in use`;   `lsof -nP -iTCP:8000 -sTCP:LISTEN` and stop
+                                             an older process could      only the confirmed stale process.
+                                             still serve stale code      
+
+                      5 Streamlit port       Port 8503 was already       Check the process listening on that port or
+                        conflict             occupied                    use another available port. Full UI
+                                                                         end-to-end validation remains pending.
+
+                      6 RAG retrieval and    Needed to confirm that      Tested generation with RAG disabled and
+                        source verification  retrieval was actually used enabled. The RAG-enabled test returned HTTP
+                                             rather than only model      200 and a source from
+                                             generation                  `eloqua/eloqua_basics.txt`.
+
+                      7 Large local files    Virtual environments were   Added ignore rules for virtual environments
+                                             approximately 1.5 GB and    and model weights. Model artifacts should
+                                             1.3 GB; local model         be distributed separately or managed with
+                                             directory was approximately Git LFS if required.
+                                             202 MB                      
+
+                      8 Generated files in   Logs, cache files, chunks   Added `.gitignore` rules for logs, Python
+                        the repository       and vector indexes are      cache, `document_chunks.jsonl`,
+                                             generated locally           `vector_store/` and model weights.
+
+                      9 Secrets risk         `.env` contains local       Excluded `.env` and `.env.*`; use a
+                                             configuration/secrets       placeholder-only `.env.example` for
+                                                                         sharing. Never commit credentials.
+
+                     10 Git push rejected    GitHub `main` contained     Fetched `origin`; confirmed the remote had
+                        (non-fast-forward)   commits not present in the  newer commits. A rebase attempt aborted
+                                             original local checkout     with `could not detach HEAD`.
+
+                     11 Untracked files      The original repository     Avoided staging the entire repository.
+                        blocked a rebase     folder contained many       Created a separate fresh clone named
+                                             unrelated untracked Week    `SE-B12-GitHub-Sync` to isolate the update.
+                                             1--Week 5 and other project 
+                                             files                       
+
+                     12 Existing GitHub      The target folder already   Copied the latest project source into the
+                        project already      contained an initial        existing target folder, while excluding
+                        present              project version and a model local secrets, virtual environments,
+                                             adapter                     generated files and the local model
+                                                                         directory.
+
+                     13 Verifying the copied Needed to ensure new files  Used `git status --short`; Git showed
+                        project              were staged without adding  modified (`M`) and added (`A`) files under
+                                             unrelated repository        only
+                                             content                     `Week6/Day1-Day2/Marketing_AI_Assistant`.
+
+                     14 Final GitHub         The latest files were       Commit and push from `SE-B12-GitHub-Sync`
+                        publication          staged in the fresh clone   are the final publishing steps; verify the
+                                                                         remote folder and clean Git status after
+                                                                         pushing.
+  ------------------------------------------------------------------------------------------------------------------
+
+### Important Git lesson
+
+Do not run `git add .` from the repository root when unrelated untracked
+projects are present. Stage only the intended project path:
 
 ``` bash
-python3 --version
+git add Week6/Day1-Day2/Marketing_AI_Assistant
 ```
 
-Python 3.11 or 3.12 is recommended for this project.
+The original local repository and the fresh sync clone are separate
+working copies. Continue the final publishing workflow from
+`~/Downloads/SE-B12-GitHub-Sync`.
 
-### Step 2: Create a virtual environment
+## 7. Local setup
 
-For Python 3.12:
+### Prerequisites
+
+-   Python 3.12 recommended for a compatible ML dependency environment.
+-   Git.
+-   Internet access for downloading dependencies and the base model on
+    first run.
+-   Adequate memory and disk space for model inference.
+-   macOS or another supported Python environment; hardware acceleration
+    depends on the installed PyTorch build.
+
+### Clone and enter the project
+
+``` bash
+git clone https://github.com/sathishvarun/SE-B12.git
+cd SE-B12/Week6/Day1-Day2/Marketing_AI_Assistant
+```
+
+### Create and activate a virtual environment
 
 ``` bash
 python3.12 -m venv .venv
-```
-
-If using Python 3.11:
-
-``` bash
-python3.11 -m venv .venv
-```
-
-### Step 3: Activate the environment
-
-``` bash
 source .venv/bin/activate
 ```
 
-When activated, the terminal prompt should show:
-
-``` text
-(.venv)
-```
-
-### Step 4: Upgrade pip
+### Install dependencies
 
 ``` bash
 python -m pip install --upgrade pip
-```
-
-### Step 5: Install dependencies
-
-``` bash
-python -m pip install -r requirements.txt
-```
-
-### Step 6: Run the Streamlit application
-
-``` bash
-python -m streamlit run app.py
-```
-
-### Step 7: Open the local application
-
-Open this address in your browser:
-
-**http://localhost:8501**
-
-To stop the running application, return to the terminal and press
-`Control + C`.
-
-To deactivate the virtual environment:
-
-``` bash
-deactivate
-```
-
-When opening a new terminal later, activate the existing environment
-again. Do not recreate it every time.
-
-------------------------------------------------------------------------
-
-## 11. Dependencies
-
-The project's `requirements.txt` specifies:
-
-  Package          Purpose
-  ---------------- ------------------------------------
-  `torch`          Model computation and inference
-  `transformers`   Loads the Qwen model and tokenizer
-  `peft`           Loads the LoRA adapter
-  `accelerate`     Model execution support
-  `safetensors`    Reads adapter weights
-  `streamlit`      Browser-based user interface
-
-Install them with:
-
-``` bash
 pip install -r requirements.txt
 ```
 
-------------------------------------------------------------------------
+## 8. Environment configuration
 
-## 12. Localhost application
+Create a local `.env` file:
 
-Once Streamlit starts successfully, the terminal displays a local URL.
+``` bash
+cp .env.example .env
+```
 
-**Application URL: http://localhost:8501**
+Example placeholder:
 
-This is a local development address. It is accessible from the same
-computer while the Streamlit process is running. It is not a public
-internet URL.
+``` env
+MARKETING_API_KEY=replace_with_a_long_random_secret
+```
 
-------------------------------------------------------------------------
+The exact environment-variable names must match the configuration read
+by `main.py` and `app.py`. Keep real secrets in `.env` only. Commit
+`.env.example` with placeholders, never real keys.
 
-## 13. Current limitations and next improvements
+## 9. Prepare the RAG knowledge base
 
--   The training dataset contains only eight short examples. It is
-    suitable for a learning demonstration, not a comprehensive marketing
-    knowledge assistant.
--   Fine-tuning does not guarantee that every answer will be correct.
-    Validate responses against trusted documentation.
--   The model does not automatically access Eloqua, Marketo, Salesforce,
-    CRM records, campaign reports or live webinar platforms.
--   The model may produce incomplete or incorrect answers, especially
-    for detailed platform-specific procedures.
--   CPU inference may be slower than GPU or supported Apple Silicon
-    acceleration.
--   The current application is a local demo. Authentication, access
-    control, monitoring, data protection and production deployment would
-    be needed before wider use.
--   The base model is downloaded from Hugging Face on first launch; the
-    adapter is stored in the project folder.
+1.  Add approved reference documents under `knowledge_base/`.
+2.  Run the ingestion process.
+3.  Build or refresh the vector index.
 
-### Suggested future improvements
+``` bash
+python ingest_documents.py
+python build_vector_db.py
+```
 
-1.  Expand the training dataset with reviewed Marketo, Eloqua, webinar
-    and campaign-operation examples.
-2.  Create a separate validation/test dataset and measure answer
-    quality.
-3.  Add retrieval-augmented generation (RAG) to answer from approved
-    product documentation and internal process guides.
-4.  Add integrations with CRM and marketing automation platforms only
-    through approved, secure APIs.
-5.  Add user authentication and deployment controls if the application
-    is shared with a team.
+The current sample knowledge base includes an Eloqua basics document.
+Expand it with approved, accurate marketing documentation. Avoid
+confidential customer information and personal data.
 
-------------------------------------------------------------------------
+## 10. Run the application
 
-## 14. Conclusion
+### Start FastAPI
 
-In this project, we started with the general-purpose
-`Qwen/Qwen2.5-0.5B-Instruct` model and used a saved PEFT/LoRA adapter
-fine-tuned on a small set of marketing automation question-and-answer
-examples.
+From the project directory with the virtual environment activated:
 
-We then built a local Streamlit application that loads the base model,
-attaches the adapter, accepts questions from the user and displays
-generated answers in a browser.
+``` bash
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
 
-During setup, we encountered a tokenizer configuration error because the
-adapter's saved tokenizer configuration was incompatible with the
-installed Transformers tokenizer code. We corrected the application to
-load the tokenizer from the original Qwen base model while continuing to
-load the LoRA adapter from the local project folder.
+Health check:
 
-The result is a working application structure for experimenting with a
-domain-adapted Marketing AI Assistant. The next important step is to
-test answer quality and expand the reviewed training data before
-treating it as a reliable business assistant.
+``` bash
+curl http://127.0.0.1:8000/health
+```
 
-------------------------------------------------------------------------
+### Start Streamlit
 
-## 15. Key project details
+Open a second terminal, activate the same environment, enter the project
+directory, and run:
 
-  Item                         Value
-  ---------------------------- ----------------------------------
-  Project name                 Marketing AI Assistant
-  Base model                   `Qwen/Qwen2.5-0.5B-Instruct`
-  Fine-tuning method           SFT with PEFT/LoRA
-  Adapter location             `model/marketing-llm-finetuned/`
-  Training examples included   8
-  Application framework        Streamlit
-  Main application file        `app.py`
-  Local environment            `.venv`
-  Local application URL        http://localhost:8501
-  Primary language             Python
+``` bash
+streamlit run app.py --server.port 8503
+```
+
+Open the local URL printed by Streamlit. If the port is occupied, select
+another free port and ensure the frontend is configured to call the
+correct backend URL.
+
+## 11. API usage
+
+### Health endpoint
+
+``` http
+GET /health
+```
+
+The local test returned a healthy status with the model and RAG pipeline
+loaded.
+
+### Generation endpoint
+
+``` http
+POST /generate
+X-API-Key: YOUR_MARKETING_API_KEY
+Content-Type: application/json
+```
+
+Example request:
+
+``` json
+{
+  "question": "What is Eloqua Campaign Canvas?",
+  "max_new_tokens": 150,
+  "use_rag": true
+}
+```
+
+The response includes the generated answer and, when RAG is enabled,
+retrieval/source information. Use the exact request schema implemented
+in `main.py` if it changes.
+
+## 12. Testing and evaluation
+
+The project currently contains standalone evaluation scripts and saved
+result files:
+
+``` bash
+python evaluate_model.py
+python compare_adapters.py
+python evaluate_comparison.py
+python run_evaluation.py
+```
+
+Run the scripts according to their command-line arguments and local
+model/data availability.
+
+### Validation completed
+
+-   FastAPI health endpoint returned a running status.
+-   Model loading was confirmed.
+-   RAG loading was confirmed.
+-   Generation without RAG returned HTTP 200.
+-   Generation with RAG returned HTTP 200.
+-   The RAG-enabled response identified `eloqua/eloqua_basics.txt` as a
+    source.
+
+### Validation still recommended
+
+-   Complete a full browser-based Streamlit-to-FastAPI test.
+-   Test missing/invalid API keys and malformed requests.
+-   Add automated unit and API tests.
+-   If adopting `pytest`, create a `tests/` suite and add `pytest` to
+    development dependencies; do not treat it as already implemented.
+-   Test multiple knowledge-base documents and verify retrieval quality.
+-   Record reproducible evaluation metrics for V1 and V2 adapters.
+
+## 13. Git ignore and large-file policy
+
+The project `.gitignore` should exclude at least:
+
+``` gitignore
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.venv-*/
+venv/
+.DS_Store
+*.log
+document_chunks.jsonl
+vector_store/
+model/
+```
+
+The model directory was approximately 202 MB locally, and the two
+virtual environments were approximately 1.5 GB and 1.3 GB. Do not commit
+virtual environments. Keep model weights outside normal Git commits, or
+use Git LFS / an approved model-artifact store if repository
+distribution is required.
+
+## 14. Repository location
+
+GitHub repository:
+
+<https://github.com/sathishvarun/SE-B12>
+
+Project folder:
+
+<https://github.com/sathishvarun/SE-B12/tree/main/Week6/Day1-Day2/Marketing_AI_Assistant>
+
+## 15. Future improvements
+
+-   Expand and curate the marketing knowledge base.
+-   Improve document parsing, chunking and metadata filtering.
+-   Add source citations and relevance thresholds to generated answers.
+-   Add robust error handling, request validation, logging and rate
+    limiting.
+-   Add a dedicated automated test suite (for example, pytest).
+-   Complete Streamlit end-to-end and user-acceptance testing.
+-   Add monitoring for latency, memory use and retrieval quality.
+-   Document model licensing, data provenance and safe deployment
+    requirements.
+-   Consider a React frontend only if a separate custom web UI is a
+    future requirement; the current frontend is Streamlit.
+
+## 16. Summary
+
+Marketing AI Assistant demonstrates an end-to-end applied AI workflow:
+domain-specific dataset preparation, LoRA fine-tuning, LLM inference,
+semantic embeddings, FAISS-based retrieval, RAG, API development, a
+Streamlit interface, and model evaluation.
+
+The development process also covered practical engineering skills:
+debugging Python model inputs, managing local server ports, protecting
+credentials, excluding large generated artifacts, understanding Git
+history, resolving remote/local divergence safely, and publishing a
+focused project folder without staging unrelated repository files.
