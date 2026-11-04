@@ -1,0 +1,62 @@
+# One question per line. Add more lines for a better student (100-500 is ideal).
+What is machine learning?
+Explain artificial intelligence in simple terms.
+What is the difference between AI and machine learning?
+What is a neural network?
+What is deep learning?
+What is a large language model?
+What is a small language model and why is it useful?
+What is knowledge distillation in AI?
+What is Python used for?
+What is an API?
+What is a REST API?
+What is the difference between GET and POST requests?
+What is JSON?
+What is a database?
+What is SQL?
+What is cloud computing?
+What is Git and why do developers use it?
+What is GitHub?
+What is a virtual environment in Python?
+What is an operating system?
+What is the internet?
+What is cybersecurity?
+What is a password manager?
+What is two-factor authentication?
+What is data privacy?
+What is an algorithm?
+What is a variable in programming?
+What is a function in programming?
+What is a loop in programming?
+What is debugging?
+What is open source software?
+What is a CPU?
+What is a GPU and why is it used for AI?
+What is RAM?
+What is email marketing?
+What is a customer relationship management system?
+What is marketing automation?
+What is a webinar?
+What is lead scoring?
+What is an A/B test?
+What is a KPI?
+What is data analytics?
+What is a spreadsheet used for?
+How do I write a professional email?
+Give three tips for better time management.
+Give three tips for staying productive while working from home.
+How can I improve my public speaking?
+How do I prepare for a job interview?
+What are the benefits of regular exercise?
+Why is sleep important?
+What is the water cycle?
+What is photosynthesis?
+Why is the sky blue?
+What causes seasons on Earth?
+What is gravity?
+What is the solar system?
+What is climate change?
+What is renewable energy?
+Explain the difference between weather and climate.
+What is inflation?
+What is a budget and why should I make one?
