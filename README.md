@@ -1,6 +1,6 @@
 # SE-B12 — Generative AI & Agentic Automation Portfolio
 
-Hands-on projects by **[Sathish Sakthivel](https://github.com/sathishvarun)** from the Social Eagle Gen AI Architect / AI Engineering Program (Batch 12) — from Python and prompt engineering to RAG, n8n, multi-agent systems, fine-tuning and live deployments.
+Demo projects by **[Sathish Sakthivel](https://github.com/sathishvarun)** — senior marketing automation specialist — showing how AI can automate real business work: RAG assistants, n8n workflows, multi-agent systems, fine-tuned models and live deployments. New projects are added regularly.
 
 👉 **Full profile, featured projects and descriptions:** [github.com/sathishvarun](https://github.com/sathishvarun)
 
@@ -8,8 +8,8 @@ Hands-on projects by **[Sathish Sakthivel](https://github.com/sathishvarun)** fr
 - **AI Help Desk** (AutoGen + RAG + human approval) — https://helpdesk.sathishsakthivel.tech · [code](Week5/smart-helpdesk-agents)
 - **AI Customer Support Desk** (3-agent AutoGen) — https://support.sathishsakthivel.tech · [code](Week5/support-desk-project)
 
-## 📅 Week by week
-| Week | Focus | Highlights |
+## 🗂️ Projects by folder
+| Folder | Focus | Highlights |
 |---|---|---|
 | [Week 1](Week1) | Python, APIs, local models | [FastAPI & Streamlit](Week1/Day4), [Ollama / Transformers](Week1/Day5) |
 | [Week 2](Week2) | Prompting & RAG | [Prompting](Week2/Day1), [Traced RAG](Week2/Day3), [Multi-PDF RAG](Week2/Day4), [Shopping assistant](Week2/Day5) |

@@ -1,6 +1,6 @@
 # 🎧 AI Customer Support Desk — Multi-Agent System (AutoGen + Streamlit)
 
-> **Social Eagle · Gen AI Architect Program · Weekly Buildathon (Week 5)**
+> **Demo project · AI customer support automation**
 > A customer support system where three AI agents work one after another: one answers from its own knowledge, one searches the live web, and one records the ticket and returns both answers to the customer.
 
 🔗 **Live demo:** https://support.sathishsakthivel.tech
@@ -193,5 +193,5 @@ networks:
 ---
 
 ## 👤 Author
-**Sathish Varun** · Social Eagle Gen AI Architect Program (Batch B12)
+**Sathish Sakthivel** · [github.com/sathishvarun](https://github.com/sathishvarun)
 GitHub: [@sathishvarun](https://github.com/sathishvarun)

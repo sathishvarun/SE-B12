@@ -10,7 +10,7 @@ and sensitive cases are **approved by a person** before the employee sees them. 
 |---|---|
 | 🌐 **Live app** | https://helpdesk.sathishsakthivel.tech |
 | 💻 **Source code** | https://github.com/sathishvarun/SE-B12/tree/main/Week5/smart-helpdesk-agents |
-| 🏁 **Built for** | Social Eagle AI Engineering Program — Hackathon, Multi-Agent Systems track ("AI Customer Support Automation") |
+| 🎯 **Use case** | AI customer & employee support automation (multi-agent system) |
 
 ---
 
@@ -314,4 +314,4 @@ Example: `TKT-0004 · Finance · High · Angry · Escalated · "High priority + 
 
 ---
 
-Built by **Sathish** for the Social Eagle AI Engineering Program hackathon.
+Built by **Sathish Sakthivel** as a demo of AI-powered support automation.

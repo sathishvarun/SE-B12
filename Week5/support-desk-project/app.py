@@ -1,6 +1,6 @@
 """
 Multi-Agent Customer Support Desk
-AutoGen (AgentChat) + Streamlit  |  Social Eagle Gen AI Architect Buildathon
+AutoGen (AgentChat) + Streamlit  |  AI customer support demo
 
 Three agents run one after another in a RoundRobinGroupChat:
   1. Assistant             -> answers from its own knowledge (no tools)
