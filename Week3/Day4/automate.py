@@ -1,7 +1,8 @@
+import os
 from openai import OpenAI
 
 # Initialize the client with your OpenAI API key
-client = OpenAI(api_key="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")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # set in your environment or .env
 
 # Sample data to automate
 customer_feedbacks = [
