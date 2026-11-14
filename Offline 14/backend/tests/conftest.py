@@ -10,6 +10,10 @@ os.environ["SECRET_KEY"] = "pytest-only-9f3c1e7a2b4d6f8091a3c5e7b9d1f2a4c6e8"  #
 os.environ["SMTP_HOST"] = ""  # never send real email from tests
 os.environ["DODO_PAYMENTS_API_KEY"] = ""
 os.environ["DODO_PAYMENTS_WEBHOOK_SECRET"] = ""
+os.environ["DODO_PAYMENTS_PRO_PRODUCT_ID"] = ""
+# Real keys in a local .env must never leak into tests.
+os.environ["GOOGLE_CLIENT_ID"] = ""
+os.environ["GOOGLE_CLIENT_SECRET"] = ""
 
 from collections.abc import Callable, Generator, Iterator  # noqa: E402
 from dataclasses import dataclass, field  # noqa: E402

@@ -3,6 +3,8 @@
 > A simple CRM that helps sellers track their customers, leads, deals and follow-ups in one place.
 
 **Live:** https://crm.sathishsakthivel.tech
+**Source code:** https://github.com/sathishvarun/SE-B12/tree/main/Offline%2014
+**Languages:** English and Tamil (தமிழ்)
 
 ---
 
@@ -13,15 +15,17 @@
 3. [How it works (process flows)](#how-it-works-process-flows)
 4. [Project structure](#project-structure)
 5. [Run it on your computer](#run-it-on-your-computer)
-6. [Environment variables](#environment-variables)
-7. [Testing and code checks](#testing-and-code-checks)
-8. [Deploy to a server with HTTPS](#deploy-to-a-server-with-https)
-9. [Set up payments (Dodo Payments)](#set-up-payments-dodo-payments)
-10. [Set up Google sign-in](#set-up-google-sign-in)
-11. [Set up email (SMTP)](#set-up-email-smtp)
-12. [Day-to-day operations](#day-to-day-operations)
-13. [Troubleshooting](#troubleshooting)
-14. [How this project was built](#how-this-project-was-built)
+6. [Sample data (demo account)](#sample-data-demo-account)
+7. [Languages (English / Tamil)](#languages-english--tamil)
+8. [Environment variables](#environment-variables)
+9. [Testing and code checks](#testing-and-code-checks)
+10. [Deploy to a server with HTTPS](#deploy-to-a-server-with-https)
+11. [Set up payments (Dodo Payments)](#set-up-payments-dodo-payments)
+12. [Set up Google sign-in](#set-up-google-sign-in)
+13. [Set up email (SMTP)](#set-up-email-smtp)
+14. [Day-to-day operations](#day-to-day-operations)
+15. [Troubleshooting](#troubleshooting)
+16. [How this project was built](#how-this-project-was-built)
 
 ---
 
@@ -29,7 +33,7 @@
 
 | Area | What it does |
 |---|---|
-| **Accounts** | Sign up with email + password or Google, password reset by email, sessions renew automatically |
+| **Accounts** | Sign up with email + password or Google, password reset by email, sessions renew automatically. Signing up with an email that already exists shows a clear message under the Email field |
 | **Contacts** | Customers with email, phone, company, notes and tags; search and filter by tag |
 | **Leads** | Track source (website, referral, social, other) and status; convert a lead into a contact + deal in one click |
 | **Deals** | Drag-and-drop pipeline: Prospect → Proposal → Negotiation → Won / Lost; values in INR |
@@ -38,6 +42,7 @@
 | **Dashboard** | Key numbers, pipeline by stage, deals won per month, leads by source, conversion rate |
 | **Billing** | Free plan (100 contacts, 20 open deals) and Pro plan via Dodo Payments |
 | **Admin** | List users, activate/deactivate accounts, platform stats |
+| **Languages** | Whole app in English or Tamil; switch from the login page, the top bar or Settings. Dates and money follow the language |
 
 Every seller only sees their own data. Asking for another seller's record returns **404 Not Found**.
 
@@ -47,7 +52,7 @@ Every seller only sees their own data. Asking for another seller's record return
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, Vite, TypeScript (strict), Tailwind CSS v4, shadcn/ui, React Query, dnd-kit, Recharts |
+| Frontend | React 19, Vite, TypeScript (strict), Tailwind CSS v4, shadcn/ui, React Query, dnd-kit, Recharts, i18next (translations) |
 | Backend | FastAPI (Python 3.12), SQLAlchemy 2, Alembic, PyJWT + bcrypt, slowapi (rate limits), APScheduler |
 | Database | PostgreSQL 16 |
 | Payments | Dodo Payments (hosted checkout + signed webhooks) |
@@ -174,7 +179,7 @@ flowchart LR
 │   │   ├── services/          # Business logic, email, storage, Dodo Payments, reminders
 │   │   ├── auth/              # Password hashing, JWT, Google OAuth
 │   │   ├── templates/email/   # Email HTML templates
-│   │   └── scripts/make_admin.py
+│   │   └── scripts/           # make_admin.py, seed_sample_data.py
 │   ├── alembic/               # Database migrations
 │   ├── tests/                 # 294 pytest tests
 │   └── requirements.txt
@@ -185,6 +190,7 @@ flowchart LR
 │   │   ├── hooks/             # React Query hooks
 │   │   ├── services/          # API client (api.ts) and one service per module
 │   │   ├── context/           # AuthContext
+│   │   ├── i18n/              # Translations: locales/en.ts (source) and locales/ta.ts (Tamil)
 │   │   ├── lib/sections.ts    # Section colours used across the app
 │   │   └── types/             # TypeScript types (match the API exactly)
 │   ├── nginx.conf
@@ -192,6 +198,8 @@ flowchart LR
 ├── PRPs/
 │   ├── sathish-crm-prp.md     # Implementation blueprint
 │   └── api-contract.md        # Exact JSON for every endpoint
+├── scripts/demo_walkthrough.py # Checks every module through the API
+├── LEARNING_NOTES.md          # Step-by-step story of setup problems and fixes
 ├── docker-compose.dev.yml     # Local development (hot reload)
 ├── docker-compose.yml         # Production-like local run
 ├── docker-compose.prod.yml    # Server deployment behind Traefik
@@ -226,6 +234,9 @@ docker compose -f docker-compose.dev.yml up --build
 | API docs (Swagger) | http://localhost:8000/docs |
 
 Stop with `Ctrl+C`, or `docker compose -f docker-compose.dev.yml down`.
+
+> The production-like file `docker-compose.yml` serves the built app on **http://localhost:3000**
+> instead (`docker compose up -d --build`). It has no hot reload: rebuild after code changes.
 
 ### Option B: Without Docker
 
@@ -292,6 +303,64 @@ Notes:
 
 ---
 
+## Sample data (demo account)
+
+One script fills an account with realistic, made-up data that uses **every field**, so you can
+see every screen with content:
+
+| What | Count | Covers |
+|---|---|---|
+| Tags | 5 | VIP, Chennai, Wholesale, Repeat buyer, Needs follow-up |
+| Contacts | 10 | name, email, phone, company, address, notes, tags |
+| Leads | 8 | every source and every status, incl. one converted lead linked to its contact |
+| Deals | 9 | every stage, INR and USD, close dates, notes, `closed_at` for won/lost, one past its close date |
+| Tasks | 12 | every priority, pending and done, linked to a contact / lead / deal / nothing, due today / overdue / upcoming |
+| Files | 2 | a PDF on a deal and a PNG on a contact |
+
+```bash
+# Docker (local)
+docker compose exec backend python -m app.scripts.seed_sample_data --email demo@example.com --password 'ChooseAPassword123'
+
+# Live server (in /opt/sathish-crm)
+docker compose -p sathish-crm -f docker-compose.prod.yml exec backend \
+  python -m app.scripts.seed_sample_data --email demo@example.com --password 'ChooseAPassword123'
+
+# Without Docker (in backend/ with the venv active)
+python -m app.scripts.seed_sample_data --email demo@example.com
+```
+
+- The account is created on the Free plan if it doesn't exist. Without `--password`, a random
+  password is generated and shown **once** in the output.
+- An account that already has contacts is left alone, so running it twice never duplicates data.
+- It stays inside the Free plan limits (10 contacts, 6 open deals).
+- A demo account on the live site is a real account: change its password or delete it before
+  sharing the site publicly.
+
+---
+
+## Languages (English / Tamil)
+
+The whole interface is translated: menus, forms, buttons, validation messages, pop-ups, chart
+labels and empty states. Dates and money are formatted for the chosen language (`en-IN` / `ta-IN`).
+
+- **Switch language:** the dropdown on the login / sign-up pages, in the top bar, or
+  Settings → Account → Language. The choice is saved in the browser (English by default).
+- **How it works:** `frontend/src/i18n/` uses [i18next](https://www.i18next.com/) +
+  `react-i18next`. Components call `t("contacts.new")` instead of writing English text.
+- **Where the text lives:** `frontend/src/i18n/locales/en.ts` (the source of truth) and
+  `locales/ta.ts`. TypeScript checks that both files have exactly the same keys, and that every
+  `t("...")` key exists, so a missing or misspelt translation fails `npm run type-check`.
+- **Add a language** (for example Hindi):
+  1. Copy `locales/ta.ts` to `locales/hi.ts`, rename the export to `hi` and translate the text
+     (keep every `{{placeholder}}` unchanged).
+  2. In `src/i18n/index.ts`, add `{ code: "hi", label: "हिन्दी" }` to `LANGUAGES` and
+     `hi: { translation: hi }` to `resources`.
+- **Not translated yet:** error messages written by the backend (for example
+  "Incorrect email or password" from the API) still arrive in English, except the common
+  login / sign-up ones the frontend recognises.
+
+---
+
 ## Environment variables
 
 | Variable | Required | Example / default | What it's for |
@@ -328,7 +397,7 @@ pytest --cov=app --cov-fail-under=80
 ruff check . && ruff format --check .
 mypy app --ignore-missing-imports
 
-# Frontend: 58 tests
+# Frontend: 61 tests
 cd frontend
 npm test
 npm run lint          # oxlint: no `any`, no console.log
@@ -351,13 +420,16 @@ This is how the live site runs: a Hostinger VPS (Ubuntu 24.04) that already has 
    cat ~/.ssh/id_ed25519.pub     # paste into hPanel → VPS → Settings → SSH keys
    ssh root@VPS_IP               # should log in without a password
    ```
-3. **Copy the project** (leaves out local secrets and build folders):
+3. **Copy the project** (leaves out local secrets, build folders and the server's `.env` backups):
    ```bash
    rsync -az --delete \
      --exclude .git/ --exclude node_modules/ --exclude .venv/ --exclude __pycache__/ \
-     --exclude dist/ --exclude uploads/ --exclude .env \
+     --exclude dist/ --exclude uploads/ --exclude .env --exclude '.env.bak-*' \
+     --exclude tools/ --exclude .claude/ --exclude '.*_cache/' --exclude .coverage \
      ./ root@VPS_IP:/opt/sathish-crm/
    ```
+   Add `-n --itemize-changes` first for a dry run: lines starting with `*deleting` show what
+   would be removed on the server.
 4. **Create the server's settings** (on the server):
    ```bash
    cd /opt/sathish-crm
@@ -380,13 +452,18 @@ This is how the live site runs: a Hostinger VPS (Ubuntu 24.04) that already has 
 ### Updating the live site
 
 ```bash
-# from your Mac, in the project folder
-rsync -az --delete --exclude .git/ --exclude node_modules/ --exclude .venv/ \
-  --exclude __pycache__/ --exclude dist/ --exclude uploads/ --exclude .env \
+# from your Mac, in the project folder (same excludes as the first copy)
+rsync -az --delete \
+  --exclude .git/ --exclude node_modules/ --exclude .venv/ --exclude __pycache__/ \
+  --exclude dist/ --exclude uploads/ --exclude .env --exclude '.env.bak-*' \
+  --exclude tools/ --exclude .claude/ --exclude '.*_cache/' --exclude .coverage \
   ./ root@VPS_IP:/opt/sathish-crm/
 
 ssh root@VPS_IP 'cd /opt/sathish-crm && docker compose -p sathish-crm -f docker-compose.prod.yml up -d --build'
 ```
+
+Never leave out `--exclude .env`: the server's `.env` holds the live keys and must not be
+overwritten or deleted.
 
 Database migrations run automatically every time the backend starts.
 
@@ -396,13 +473,19 @@ Database migrations run automatically every time the backend starts.
 
 Until this is done, the **Upgrade** button shows "Payments are not configured".
 
-1. Create an account at https://app.dodopayments.com and stay in **Test mode** (toggle at the top).
+1. Create an account at https://app.dodopayments.com and switch to **Test Mode** (toggle at the
+   bottom-left). **Live Mode stays locked** until Dodo's business verification
+   ("Product Information Form") is done, so the API Keys page looks empty or broken there.
 2. **Products → Create product**
    - Type: **Subscription**
    - Name: `Sathish CRM Pro`
    - Price: your monthly price (for example ₹499 / month), billing every 1 month
    - Save, then copy the **Product ID** (starts with `pdt_`).
-3. **Developer → API Keys → Create API key**, copy it.
+3. **Developer → API Keys → Create New Key**:
+   - Dodo asks you to set up **two-factor authentication** first (email code + authenticator app).
+   - Give the key access (**Select all → Write**). A key with *0 permissions* is created but every
+     request with it fails.
+   - Copy the key straight away: it is shown only once.
 4. **Developer → Webhooks → Add endpoint**
    - URL: `https://crm.sathishsakthivel.tech/api/v1/billing/webhook`
    - Events: all `subscription.*` events (at least `active`, `renewed`, `on_hold`, `cancelled`, `expired`)
@@ -426,24 +509,40 @@ Until this is done, the **Upgrade** button shows "Payments are not configured".
    A test-mode key only works with `test_mode`, a live key only with `live_mode`; a mismatch
    shows "Payment provider error".
 6. **Test:** log in → Billing → Upgrade → pay with Dodo's test card → you land back on `/billing?checkout=success` and the plan shows **Pro** within a few seconds.
+   - Indian checkouts show Dodo's Indian test card (`4576 2389 1277 1450`, expiry `06/32`, CVV `123`)
+     and then a **Simulate Success** page. Other countries use `4242 4242 4242 4242`.
+   - Testing webhooks on your own computer: Dodo can't reach `localhost`. Run a free tunnel such
+     as `cloudflared tunnel --url http://localhost:8000`, add a **second** webhook endpoint in Dodo
+     with the tunnel URL + `/api/v1/billing/webhook`, and put *that* endpoint's signing secret in
+     your local `.env`. The tunnel URL changes every time it restarts.
 7. When ready for real money: create the same product, API key and webhook in **Live mode**, put the live values in `.env`, set `DODO_PAYMENTS_ENVIRONMENT=live_mode`, restart the backend.
 
 ---
 
 ## Set up Google sign-in
 
-1. https://console.cloud.google.com → create a project.
-2. **APIs & Services → OAuth consent screen**: External, app name "Sathish CRM", your support email, add the domain `sathishsakthivel.tech`.
-   While the app is in **Testing** status, add your Gmail under **Test users**, otherwise Google shows "Access blocked".
-3. **Credentials → Create credentials → OAuth client ID** → Web application.
-   - Authorised redirect URI: `https://crm.sathishsakthivel.tech/api/v1/auth/google/callback`
-4. Copy the Client ID and Client secret into the server's `.env`:
+1. https://console.cloud.google.com → create a project just for this app (for example "Sathish CRM"),
+   so the consent screen shows the right app name.
+2. **Google Auth Platform → Get started** (older consoles: *APIs & Services → OAuth consent screen*):
+   app name "Sathish CRM", your support email, audience **External**, your contact email, then
+   agree to the Google API Services User Data Policy.
+3. **Audience → Test users → Add users**: add every Gmail that should be able to sign in. While the
+   app is in **Testing**, everyone else sees "Access blocked". **Publish app** opens it to all Google
+   accounts (only name + email are requested, so this usually needs no Google review).
+4. **Clients → Create client** → Web application:
+   - Authorised JavaScript origin: `https://crm.sathishsakthivel.tech`
+   - Authorised redirect URIs: `https://crm.sathishsakthivel.tech/api/v1/auth/google/callback`
+     and, for local testing, `http://localhost:8000/api/v1/auth/google/callback`
+   - Copy the **Client secret** from the dialog: Google shows it only once (you can add a new
+     secret later under the client if you lose it).
+5. Copy the Client ID and Client secret into the server's `.env` (and your local `.env` for local testing):
    ```env
    GOOGLE_CLIENT_ID=....apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET=...
    ```
-5. Recreate the backend (`up -d backend`, same command as above).
-6. **Check from anywhere:**
+6. Recreate the backend (`up -d backend`, same command as above).
+   New Google settings can take from 5 minutes to a few hours to apply.
+7. **Check from anywhere:**
    ```bash
    curl -s -o /dev/null -w "%{redirect_url}\n" https://crm.sathishsakthivel.tech/api/v1/auth/google
    ```
@@ -498,11 +597,14 @@ alias crm='docker compose -p sathish-crm -f docker-compose.prod.yml'
 | Backend won't start: "SECRET_KEY must be a random value of at least 32 characters" | Put a real random value in `.env` (see setup steps) |
 | Changed `.env` but nothing changed | You used `restart`; run `crm up -d backend` so the container is recreated, then `crm exec backend printenv` to check |
 | "Payments are not configured" | Dodo API key or product ID is empty in the container; see [payments](#set-up-payments-dodo-payments) |
+| Dodo API Keys page empty / can't create a key | Switch to **Test Mode** (Live Mode is locked until verification) and finish the 2FA setup Dodo asks for |
 | "Payment provider error" | Wrong key / product ID, or test key with `live_mode` (or the reverse); `crm logs backend` shows Dodo's reply |
 | Paid but still on Free | Check the webhook URL and signing secret in Dodo; look at `crm logs backend` for "Invalid webhook signature" |
 | Google button returns at once to `/login?error=oauth_failed` (never shows Google) | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are empty in the container |
 | Google shows "redirect_uri_mismatch" | The redirect URI in Google Cloud must be exactly `https://crm.sathishsakthivel.tech/api/v1/auth/google/callback` |
-| Google shows "Access blocked" | Add your Gmail as a test user on the OAuth consent screen |
+| Google shows "Access blocked" | Add that Gmail under Audience → Test users, or publish the app |
+| Sign-up says "This email is already registered" | That email already has an account: log in, use **Forgot password?**, or **Continue with Google** if it was created with Google |
+| Local backend tests fail on Google / Dodo | `tests/conftest.py` blanks those keys; make sure you run `pytest` from `backend/` with the project's venv |
 | No emails arrive | `SMTP_HOST` is empty or wrong; check `crm logs backend` |
 | Site shows 404 right after deploy | Wait ~30 s; Traefik only routes to containers once their health check passes |
 | Certificate error | DNS A record must point at the server before the first visit |
