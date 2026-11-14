@@ -3,7 +3,7 @@ import { Suspense, useState } from "react"
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import { toast } from "sonner"
-import { CreditCard, Crown, LogOut, Menu, Settings, Shield, Sparkles, User, X } from "lucide-react"
+import { CreditCard, Crown, Hand, LogOut, Menu, Settings, Shield, Sparkles, User, X } from "lucide-react"
 
 import { LoadingSpinner } from "@/components/common"
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher"
@@ -209,7 +209,8 @@ export function AppLayout({
             <Menu className="size-5" />
           </Button>
           <p className="hidden text-sm font-semibold text-muted-foreground md:block">
-            {greeting()}, <span className="text-foreground">{userName.split(" ")[0]}</span> 👋
+            {greeting()}, <span className="text-foreground">{userName.split(" ")[0]}</span>{" "}
+            <Hand aria-hidden="true" className="inline size-4 -rotate-12 align-[-2px] text-violet-600" />
           </p>
           <div className="flex-1" />
           <LanguageSwitcher />
