@@ -1,0 +1,39 @@
+# ---------- Python ----------
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ---------- Node ----------
+node_modules/
+dist/
+dist-ssr/
+coverage/
+npm-debug.log*
+
+# ---------- Environment / secrets ----------
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# ---------- Uploaded files ----------
+uploads/
+backend/uploads/
+
+# ---------- OS / editor ----------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.log
+tools/

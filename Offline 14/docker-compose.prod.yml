@@ -1,0 +1,74 @@
+# Production stack for the Hostinger VPS, behind the server's existing Traefik
+# (Traefik already owns ports 80/443 and issues Let's Encrypt certificates).
+#   1. DNS: A record  crm -> server IP
+#   2. cp .env.production.example .env   and fill it in
+#   3. docker compose -p sathish-crm -f docker-compose.prod.yml up -d --build
+# No ports are published: only Traefik talks to these containers.
+#   https://DOMAIN/api/*, /health, /docs  -> backend
+#   https://DOMAIN/*                      -> frontend
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-sathish_crm}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-sathish_crm}
+      UPLOAD_DIR: /app/uploads
+      FRONTEND_URL: https://${DOMAIN:?Set DOMAIN in .env}
+      CORS_ORIGINS: '["https://${DOMAIN}"]'
+      GOOGLE_REDIRECT_URI: https://${DOMAIN}/api/v1/auth/google/callback
+    # One worker only: the daily reminder scheduler runs inside the API process.
+    # --proxy-headers: trust Traefik's X-Forwarded-* headers (real client IP for rate limits).
+    command: ["--proxy-headers", "--forwarded-allow-ips", "*"]
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sathish-crm-api.rule=Host(`${DOMAIN}`) && (PathPrefix(`/api`) || Path(`/health`) || Path(`/docs`) || Path(`/openapi.json`))
+      - traefik.http.routers.sathish-crm-api.priority=100
+      - traefik.http.routers.sathish-crm-api.entrypoints=websecure
+      - traefik.http.routers.sathish-crm-api.tls.certresolver=letsencrypt
+      - traefik.http.routers.sathish-crm-api.middlewares=sathish-crm-hsts
+      - traefik.http.services.sathish-crm-api.loadbalancer.server.port=8000
+      - traefik.http.middlewares.sathish-crm-hsts.headers.stsSeconds=31536000
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Same domain as the site, so the browser calls https://DOMAIN/api/v1/...
+        VITE_API_URL: https://${DOMAIN}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sathish-crm-web.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.sathish-crm-web.priority=10
+      - traefik.http.routers.sathish-crm-web.entrypoints=websecure
+      - traefik.http.routers.sathish-crm-web.tls.certresolver=letsencrypt
+      - traefik.http.routers.sathish-crm-web.middlewares=sathish-crm-hsts
+      - traefik.http.services.sathish-crm-web.loadbalancer.server.port=80
+
+volumes:
+  postgres_data:
+  uploads:

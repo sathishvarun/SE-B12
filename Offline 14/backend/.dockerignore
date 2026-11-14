@@ -1,0 +1,28 @@
+# Virtual envs / caches
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Test artifacts
+.coverage
+.coverage.*
+coverage.xml
+htmlcov
+tests
+
+# Secrets and local data
+.env
+.env.*
+!.env.example
+uploads
+
+# Misc
+.git
+.DS_Store
+*.log

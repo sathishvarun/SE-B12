@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Your subscription was updated{% endblock %}
+{% block content %}
+<p>Hi {{ user_name or "there" }},</p>
+<p>Your {{ app_name }} subscription has been updated.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:16px 0;">
+  <tr><td style="padding:4px 16px 4px 0;color:#6b7280;">Plan</td><td style="padding:4px 0;font-weight:bold;">{{ plan|string|capitalize }}</td></tr>
+  <tr><td style="padding:4px 16px 4px 0;color:#6b7280;">Status</td><td style="padding:4px 0;font-weight:bold;">{{ status|string|replace("_", " ")|capitalize }}</td></tr>
+</table>
+{% if status == "past_due" %}
+<p>We couldn't process your latest payment. Please update your payment details to keep your Pro features.</p>
+{% endif %}
+<p style="margin:28px 0;">
+  <a href="{{ app_url }}/billing" style="background-color:#4f46e5;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">View billing</a>
+</p>
+{% endblock %}

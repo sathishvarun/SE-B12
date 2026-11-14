@@ -1,0 +1,57 @@
+# Development stack with hot reload:
+#   docker compose -f docker-compose.dev.yml up --build
+# Requires a .env file at the repo root (cp .env.example .env).
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sathish_crm}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-sathish_crm}
+      UPLOAD_DIR: /app/uploads
+      FRONTEND_URL: http://localhost:5173
+    # Source is mounted, so code changes reload instantly
+    volumes:
+      - ./backend:/app
+    entrypoint: ["sh", "-c"]
+    command:
+      - alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: node:24-alpine
+    working_dir: /app
+    environment:
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      # Anonymous volume keeps Linux node_modules separate from the host's
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_dev_data:
