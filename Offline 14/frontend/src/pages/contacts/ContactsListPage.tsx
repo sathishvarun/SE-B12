@@ -51,6 +51,9 @@ export default function ContactsListPage() {
               setSearch(e.target.value)
               setPage(1)
             }}
+            id="contact-search"
+            name="search"
+            type="search"
             placeholder={t("contacts.searchPlaceholder")}
             aria-label={t("contacts.searchAria")}
             className="pl-8"

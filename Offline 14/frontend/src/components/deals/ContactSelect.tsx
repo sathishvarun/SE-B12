@@ -18,7 +18,7 @@ export function ContactSelect({ id, value, onChange, invalid, className }: Conta
   const { data: contacts = [], isLoading } = useContactOptions()
 
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select name={id} value={value} onValueChange={onChange}>
       <SelectTrigger id={id} aria-invalid={invalid || undefined} className={cn("w-full", className)}>
         <SelectValue placeholder={isLoading ? t("deals.loadingContacts") : t("deals.chooseContact")} />
       </SelectTrigger>

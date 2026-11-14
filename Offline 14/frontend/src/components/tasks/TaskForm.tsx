@@ -131,7 +131,7 @@ export function TaskForm({ task, defaultLink, submitLabel, isSubmitting = false,
           control={control}
           name="priority"
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select name={field.name} value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="task-priority" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -154,6 +154,7 @@ export function TaskForm({ task, defaultLink, submitLabel, isSubmitting = false,
           name="link_type"
           render={({ field }) => (
             <Select
+              name={field.name}
               value={field.value}
               onValueChange={(value) => {
                 field.onChange(value)
@@ -190,7 +191,7 @@ export function TaskForm({ task, defaultLink, submitLabel, isSubmitting = false,
                   invalid={!!errors.link_id}
                 />
               ) : (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select name={field.name} value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="task-link-id" className="w-full" aria-invalid={!!errors.link_id || undefined}>
                     <SelectValue
                       placeholder={

@@ -69,8 +69,10 @@ function ProfileForm({ user, onSaved }: { user: User; onSaved: () => Promise<unk
           )}
         />
         <div className="grid gap-2">
-          <span className="text-sm font-medium">{t("common.email")}</span>
-          <Input value={user.email} disabled readOnly />
+          <label htmlFor="profile-email" className="text-sm font-medium">
+            {t("common.email")}
+          </label>
+          <Input id="profile-email" name="email" value={user.email} disabled readOnly />
           <p className="text-xs text-muted-foreground">{t("profile.emailFixed")}</p>
         </div>
         <div>

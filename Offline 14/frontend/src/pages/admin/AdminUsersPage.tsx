@@ -60,6 +60,9 @@ export default function AdminUsersPage() {
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
+            id="user-search"
+            name="search"
+            type="search"
             placeholder={t("admin.searchPlaceholder")}
             aria-label={t("admin.searchAria")}
             className="pl-9"

@@ -140,7 +140,7 @@ export function DealForm({ deal, submitLabel, isSubmitting = false, onSubmit }: 
           control={control}
           name="stage"
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select name={field.name} value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="deal-stage" className="w-full">
                 <SelectValue />
               </SelectTrigger>

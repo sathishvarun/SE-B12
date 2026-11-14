@@ -72,6 +72,8 @@ export function TagMultiSelect({ value, onChange }: TagMultiSelectProps) {
               handleCreate()
             }
           }}
+          id="new-tag-name"
+          name="new_tag_name"
           placeholder={t("contacts.newTagName")}
           aria-label={t("contacts.newTagName")}
           className="max-w-xs"

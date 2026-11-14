@@ -96,7 +96,7 @@ export function LeadForm({ lead, onSubmit, isSubmitting = false, submitLabel }: 
             control={control}
             name="source"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select name={field.name} value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger id="lead-source" className="w-full">
                   <SelectValue />
                 </SelectTrigger>

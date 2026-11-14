@@ -139,6 +139,7 @@ export default function AttachmentsPanel({ contactId, dealId, attachments, onCha
         <input
           ref={inputRef}
           type="file"
+          name="files"
           multiple
           hidden
           aria-label={t("attachments.uploadAria")}
