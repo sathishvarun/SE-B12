@@ -3,11 +3,11 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 TZ=Asia/Kolkata PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl libatomic1 && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
- && playwright install --with-deps chromium
+ && python -m playwright install --with-deps chromium
 
 COPY . .
 RUN chmod +x start.sh && mkdir -p data
