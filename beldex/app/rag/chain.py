@@ -39,7 +39,7 @@ ANSWER_PROMPT = ChatPromptTemplate.from_messages([
      "5. Write the whole answer in {language}. Keep product names (BDX, BChat, BelNet, BNS) in English.\n"
      "6. Format: start with one bold sentence that answers the question directly. Then up to 4 short bullet "
      "points with the key facts (numbers, dates, names). If useful, end with one line starting with "
-     "'Why it matters:'.\n"
+     "'{why}'.\n"
      "7. On the very last line write FOLLOW_UPS: followed by 3 short follow-up questions in {language} that the "
      "context can answer, separated by ' | '."),
     ("human", "Context:\n{context}\n\nQuestion: {question}"),
@@ -110,13 +110,27 @@ def _sources(hits: list[Hit]) -> list[dict]:
     return out
 
 
+def _tamil_titles(ans: "Answer") -> None:
+    """In Tamil mode every source card also gets a Tamil title (cached after the first time)."""
+    if ans.lang != "ta" or not ans.sources:
+        return
+    from app.translate import ta_titles
+    m = ta_titles([s["title"] for s in ans.sources])
+    for s in ans.sources:
+        s["title_ta"] = m.get(s["title"], s["title"])
+
+
 def _extractive(ans: "Answer", hits, lang: str, question: str) -> "Answer":
     ans.mode = "extractive"
+    if lang == "ta":  # Tamil passages first, so a Tamil reader sees Tamil text when there is one
+        hits = sorted(hits, key=lambda h: h.doc.metadata.get("lang") != "ta")
     head = ("The AI model is not available right now, so here are the most relevant passages:" if lang == "en"
-            else "AI மாடல் இப்போது கிடைக்கவில்லை; தொடர்புடைய பகுதிகள் கீழே (ஆங்கிலத்தில்):")
-    lines = [f"- {h.doc.page_content[:300].strip()} [{i}]" for i, h in enumerate(hits[:3], 1)]
+            else "AI மாடல் இப்போது கிடைக்கவில்லை; தொடர்புடைய பகுதிகள் கீழே:")
+    num = {s["url"]: s["n"] for s in ans.sources}
+    lines = [f"- {h.doc.page_content[:300].strip()} [{num.get(h.doc.metadata['url'], i)}]" for i, h in enumerate(hits[:3], 1)]
     ans.text = head + "\n" + "\n".join(lines)
-    ans.steps.append("Showed matching passages (AI model not available)")
+    _tamil_titles(ans)
+    ans.steps.append("பொருந்தும் பகுதிகளைக் காட்டியது (AI மாடல் இல்லை)" if lang == "ta" else "Showed matching passages (AI model not available)")
     ans.follow_ups = _bank_follow_ups(" ".join(h.doc.page_content for h in hits), lang, question)
     return ans
 
@@ -134,14 +148,16 @@ def ask(question: str, lang: str = "en") -> Answer:
             p, c = token_usage(msg)
             ans.prompt_tokens += p
             ans.completion_tokens += c
-            ans.steps.append(f"Translated the question for search: “{msg.content.strip()[:80]}”")
+            ans.steps.append(f"தேடலுக்காக கேள்வியை மொழிபெயர்த்தது: “{msg.content.strip()[:80]}”" if lang == "ta"
+                             else f"Translated the question for search: “{msg.content.strip()[:80]}”")
         except Exception as e:  # bad key, quota or network: keep going with the original question
             log.warning("translate failed: %s", e)
             llm = None
 
     hits = kb.search(query, k=6)
     pages = len({h.doc.metadata['url'] for h in hits})
-    ans.steps.append(f"Searched the knowledge base ({kb.backend}): {len(hits)} passages from {pages} sources")
+    ans.steps.append(f"அறிவுத் தளத்தில் தேடியது ({kb.backend}): {pages} ஆதாரங்களிலிருந்து {len(hits)} பகுதிகள்" if lang == "ta"
+                     else f"Searched the knowledge base ({kb.backend}): {len(hits)} passages from {pages} sources")
     if not hits:
         ans.text, ans.found, ans.mode = NOT_FOUND[lang], False, "none"
         ans.follow_ups = FOLLOW_BANK[lang]["_"]
@@ -155,7 +171,8 @@ def ask(question: str, lang: str = "en") -> Answer:
                           for s, h in zip(ans.sources, hits))
     try:
         msg = (ANSWER_PROMPT | llm).invoke({"context": context, "question": question,
-                                            "language": "Tamil" if lang == "ta" else "English"})
+                                            "language": "Tamil" if lang == "ta" else "English",
+                                            "why": "ஏன் இது முக்கியம்:" if lang == "ta" else "Why it matters:"})
     except Exception as e:  # bad key, quota or network: still answer with the passages
         log.warning("answer failed: %s", e)
         return _extractive(ans, hits, lang, question)
@@ -172,11 +189,13 @@ def ask(question: str, lang: str = "en") -> Answer:
     if "NOT_IN_KB" in text:
         ans.follow_ups = FOLLOW_BANK[lang]["_"]
         ans.text, ans.found, ans.mode, ans.sources = NOT_FOUND[lang], False, "llm", []
-        ans.steps.append("The passages did not answer it, so no answer was made up")
+        ans.steps.append("ஆதாரங்களில் பதில் இல்லை; ஊகித்து எழுதவில்லை" if lang == "ta" else "The passages did not answer it, so no answer was made up")
         return ans
     used = {int(n) for n in re.findall(r"\[(\d+)\]", text)}
     if used:
         ans.sources = [s for s in ans.sources if s["n"] in used]
     ans.text = text
-    ans.steps.append(f"Wrote the answer in {'Tamil' if lang == 'ta' else 'English'} with {len(ans.sources)} citations")
+    _tamil_titles(ans)
+    ans.steps.append(f"{len(ans.sources)} ஆதாரக் குறிப்புகளுடன் தமிழில் பதில் எழுதியது" if lang == "ta"
+                     else f"Wrote the answer in English with {len(ans.sources)} citations")
     return ans

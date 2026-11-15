@@ -13,7 +13,8 @@ from datetime import timedelta
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from email_validator import EmailNotValidError, validate_email
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -72,7 +73,7 @@ def _password_ok(pw: str) -> bool:
 class RegisterIn(BaseModel):
     first_name: str = Field(min_length=1, max_length=60)
     last_name: str = Field(default="", max_length=60)
-    email: EmailStr
+    email: str = Field(max_length=200)
     password: str = Field(max_length=128)
     lang: str = "en"
 
@@ -107,7 +108,9 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(422, "Please enter your first name.")
     if not _password_ok(body.password):
         raise HTTPException(422, PASSWORD_RULE)
-    email = body.email.lower()
+    email = _clean_email(body.email)
+    if not email:
+        raise HTTPException(422, BAD_EMAIL)
     if db.scalar(select(User).where(User.email == email)):
         raise HTTPException(409, "This email is already registered. Please sign in instead.")
     base = re.sub(r"[^a-z0-9_.-]", "", email.split("@")[0]) or "user"
@@ -123,11 +126,22 @@ def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
     return _start_session(db, user, request)
 
 
+BAD_EMAIL = "Enter a real email address, like name@gmail.com."
+
+
+def _clean_email(raw: str) -> str | None:
+    """Same rules for the live check and for sign-up, so the form never says 'Looks good' and then fails."""
+    try:
+        return validate_email(raw.strip(), check_deliverability=False).normalized.lower()
+    except EmailNotValidError:
+        return None
+
+
 @app.get("/auth/check-email")
 def check_email(email: str, db: Session = Depends(get_db)):
     """Live check while the person types on the sign-up form."""
-    e = email.strip().lower()
-    valid = re.fullmatch(r"[^@\s]+@[^@\s]+\.[a-z]{2,}", e) is not None
+    e = _clean_email(email) or ""
+    valid = bool(e)
     taken = valid and db.scalar(select(User.id).where(User.email == e)) is not None
     return {"valid": valid, "available": valid and not taken}
 
@@ -139,7 +153,7 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
     if not user or not check_password(body.password, user.password_hash):
         _log(db, user.id if user else None, "sign_in_failed", key)
         db.commit()
-        raise HTTPException(401, "Wrong user ID or password")
+        raise HTTPException(401, "Wrong email or password")
     if not user.active:
         raise HTTPException(403, "This account is suspended")
     if body.as_role == "admin" and user.role != "admin":

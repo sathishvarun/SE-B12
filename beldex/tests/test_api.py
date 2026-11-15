@@ -113,3 +113,20 @@ def test_voice_endpoints(client, monkeypatch):
     client.post("/chat", json={"question": "What is BNS?", "via": "voice"}, headers=h)
     assert client.get("/admin/overview", headers=h).json()["kpis"]["voice_pct"] > 0
     assert voice.speakable("**Hi** [2]\n- one") == "Hi \none"
+
+
+def test_signup_rejects_reserved_email_domains(client):
+    r = client.get("/auth/check-email", params={"email": "tester@demo.local"})
+    assert r.json()["valid"] is False
+    r = client.post("/auth/register", json={"first_name": "A", "email": "tester@demo.local", "password": "abcd1234"})
+    assert r.status_code == 422 and "real email" in r.json()["detail"]
+
+
+def test_tamil_answer_has_tamil_steps(client):
+    tok = client.post("/auth/register", json={"first_name": "Ta", "email": "ta.user@gmail.com",
+                                               "password": "abcd1234", "lang": "ta"}).json()["token"]
+    a = client.post("/chat", json={"question": "Stablecoin என்றால் என்ன?", "lang": "ta"},
+                    headers={"Authorization": f"Bearer {tok}"}).json()
+    assert a["found"] is True
+    assert any("அறிவுத் தளத்தில்" in s for s in a["steps"])
+    assert all("title_ta" in s for s in a["sources"])

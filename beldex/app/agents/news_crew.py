@@ -62,13 +62,28 @@ def run_crew(n: int = 8) -> dict:
     result["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     result["items"] = [{"title": d.metadata["title"], "url": d.metadata["url"], "published": d.metadata["published"],
                         "summary": d.page_content[:260]} for d in docs]
+    _add_tamil_titles(result)
     DIGEST.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     return result
 
 
+def _add_tamil_titles(result: dict) -> bool:
+    items = result.get("items") or []
+    if not items or all(it.get("title_ta") for it in items):
+        return False
+    from app.translate import ta_titles
+    m = ta_titles([it["title"] for it in items])
+    for it in items:
+        it["title_ta"] = m.get(it["title"], it["title"])
+    return True
+
+
 def load_digest() -> dict:
     if DIGEST.exists():
-        return json.loads(DIGEST.read_text(encoding="utf-8"))
+        data = json.loads(DIGEST.read_text(encoding="utf-8"))
+        if settings.has_llm and _add_tamil_titles(data):  # digests made before Tamil titles existed
+            DIGEST.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        return data
     return run_crew()
 
 

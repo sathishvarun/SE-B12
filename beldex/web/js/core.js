@@ -7,6 +7,9 @@ const Auth = {
   clear() { localStorage.removeItem('bx_token'); localStorage.removeItem('bx_user'); },
 };
 
+// Picks the Tamil or English text for messages, following the page language.
+const L = (en, ta) => document.documentElement.lang === 'ta' ? ta : en;
+
 async function api(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth && Auth.token) headers.Authorization = 'Bearer ' + Auth.token;
@@ -14,7 +17,7 @@ async function api(path, { method = 'GET', body, auth = true } = {}) {
   try {
     res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   } catch {
-    throw new Error('Cannot reach the server. Check that the app is running.');
+    throw new Error(L('Cannot reach the server. Check that the app is running.', 'சர்வரை அணுக முடியவில்லை. சிறிது நேரம் கழித்து முயற்சிக்கவும்.'));
   }
   let data = null;
   try { data = await res.json(); } catch {}
@@ -22,7 +25,7 @@ async function api(path, { method = 'GET', body, auth = true } = {}) {
   if (!res.ok) {
     let msg = data && data.detail;
     if (Array.isArray(msg)) msg = msg.map(d => (d.loc ? d.loc[d.loc.length - 1] + ': ' : '') + d.msg).join(' · ');
-    throw new Error(msg || 'Something went wrong. Please try again.');
+    throw new Error(msg || L('Something went wrong. Please try again.', 'ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்.'));
   }
   return data;
 }
@@ -73,10 +76,10 @@ function utc(iso) { return new Date(iso.endsWith('Z') ? iso : iso + 'Z'); }
 function ago(iso) {
   if (!iso) return '—';
   const s = Math.max(0, (Date.now() - utc(iso)) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return Math.floor(s / 60) + ' min ago';
-  if (s < 86400) return Math.floor(s / 3600) + ' h ago';
-  if (s < 86400 * 7) return Math.floor(s / 86400) + ' d ago';
+  if (s < 60) return L('just now', 'இப்போது');
+  if (s < 3600) return Math.floor(s / 60) + L(' min ago', ' நிமிடம் முன்');
+  if (s < 86400) return Math.floor(s / 3600) + L(' h ago', ' மணி நேரம் முன்');
+  if (s < 86400 * 7) return Math.floor(s / 86400) + L(' d ago', ' நாள் முன்');
   return utc(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 function fmtDate(iso) { return iso ? utc(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'; }
@@ -139,7 +142,7 @@ const Voice = {
     }
     // browser fallback (Chrome / Edge / Safari)
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) throw new Error('Voice input is not supported in this browser. Please use Chrome.');
+    if (!SR) throw new Error(L('Voice input is not supported in this browser. Please use Chrome.', 'இந்த browser-இல் குரல் உள்ளீடு இல்லை. Chrome பயன்படுத்தவும்.'));
     this.sr = new SR();
     this.sr.lang = lang === 'ta' ? 'ta-IN' : 'en-IN';
     this.sr.interimResults = true; this.sr.continuous = true;
@@ -198,16 +201,16 @@ const Voice = {
       this._cleanup();
       const blob = new Blob(this.chunks, { type: rec.mimeType || 'audio/webm' });
       this.rec = null;
-      if (blob.size < 1500) throw new Error('I could not hear anything. Please try again and speak a little longer.');
+      if (blob.size < 1500) throw new Error(L('I could not hear anything. Please try again and speak a little longer.', 'எதுவும் கேட்கவில்லை. இன்னும் கொஞ்சம் நேரம் பேசி மீண்டும் முயற்சிக்கவும்.'));
       const res = await fetch(`/voice/transcribe?lang=${this.lang}&secs=${secs}`, { method: 'POST', headers: { 'Content-Type': blob.type, Authorization: 'Bearer ' + Auth.token }, body: blob });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || 'Could not understand the recording.');
+      if (!res.ok) throw new Error(L(data.detail || 'Could not understand the recording.', 'பதிவைப் புரிந்துகொள்ள முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'));
       return data.text;
     }
     const sr = this.sr;
     await new Promise(res => { sr.onend = res; sr.stop(); setTimeout(res, 1500); });
     this.sr = null; this._cleanup();
-    if (!this.srText.trim()) throw new Error('I could not hear anything. Please try again.');
+    if (!this.srText.trim()) throw new Error(L('I could not hear anything. Please try again.', 'எதுவும் கேட்கவில்லை. மீண்டும் முயற்சிக்கவும்.'));
     return this.srText.trim();
   },
 
@@ -227,7 +230,7 @@ const Voice = {
     if (this.server) {
       try {
         const res = await fetch('/voice/speak', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + Auth.token }, body: JSON.stringify({ text, lang }) });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Audio failed');
+        if (!res.ok) throw new Error(L((await res.json().catch(() => ({}))).detail || 'Audio failed', 'குரல் பதில் இயங்கவில்லை.'));
         if (this.playingBtn !== btn) return;
         this.audio = new Audio(URL.createObjectURL(await res.blob()));
         this.audio.onended = done; this.audio.onerror = done;
@@ -236,7 +239,7 @@ const Voice = {
         return;
       } catch (e) { console.warn('server voice failed, using browser voice', e); }
     }
-    if (!window.speechSynthesis) { done(); throw new Error('Spoken answers are not supported in this browser.'); }
+    if (!window.speechSynthesis) { done(); throw new Error(L('Spoken answers are not supported in this browser.', 'இந்த browser-இல் குரல் பதில் இல்லை.')); }
     const u = new SpeechSynthesisUtterance(this.clean(text));
     u.lang = lang === 'ta' ? 'ta-IN' : 'en-IN';
     const v = speechSynthesis.getVoices().find(x => x.lang.toLowerCase().startsWith(lang === 'ta' ? 'ta' : 'en-in')) || speechSynthesis.getVoices().find(x => x.lang.startsWith(lang === 'ta' ? 'ta' : 'en'));

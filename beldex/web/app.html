@@ -78,14 +78,14 @@ const T = {
   en: { new: 'New question', recent: 'RECENT', latest: 'Latest on Beldex', kb: 'Knowledge base', kbnote: 'Every answer is built only from these sources and links back to them.',
         note: 'Answers come only from beldex.io and official Beldex sources. Not financial advice.', hi: 'Hi', sub: 'What would you like to know about Beldex today?',
         ph: 'Ask anything about BDX, masternodes, BChat, BNS…', or: 'Or just ask:', srcs: 'Sources', copy: 'Copy', thanks: 'Thanks for the feedback',
-        copied: 'Copied', more: 'You might also ask', sources: 'sources', passages: 'passages', none: 'No questions yet — your history will show here.',
+        good: 'Helpful', bad: 'Not helpful', copied: 'Copied', more: 'You might also ask', sources: 'sources', passages: 'passages', none: 'No questions yet — your history will show here.',
         voiceRep: 'Voice replies', listen: 'Listen', academy: 'Beldex Academy', acadT: 'New to crypto?', acadS: 'Visual lessons, a blockchain playground and a quiz — in English and Tamil.', vTitle: 'Ask by voice', vSub: 'Tap and speak in English or Tamil — I\'ll answer out loud.',
         rec: 'Listening… tap ■ when done', trans: 'Turning your voice into text…',
         think: ['Understanding your question', 'Searching beldex.io and official sources', 'Reading the best passages', 'Writing your answer'] },
   ta: { new: 'புதிய கேள்வி', recent: 'சமீபத்தியவை', latest: 'பெல்டெக்ஸ் சமீபத்திய செய்திகள்', kb: 'அறிவுத் தளம்', kbnote: 'ஒவ்வொரு பதிலும் இந்த ஆதாரங்களிலிருந்து மட்டுமே.',
         note: 'பதில்கள் beldex.io மற்றும் அதிகாரப்பூர்வ ஆதாரங்களிலிருந்து மட்டுமே. நிதி ஆலோசனை அல்ல.', hi: 'வணக்கம்', sub: 'இன்று பெல்டெக்ஸ் பற்றி என்ன தெரிந்துகொள்ள விரும்புகிறீர்கள்?',
         ph: 'BDX, masternodes, BChat, BNS பற்றி எதையும் கேளுங்கள்…', or: 'அல்லது நேரடியாக கேளுங்கள்:', srcs: 'ஆதாரங்கள்', copy: 'நகலெடு', thanks: 'நன்றி!',
-        copied: 'நகலெடுக்கப்பட்டது', more: 'இதையும் கேட்கலாம்', sources: 'ஆதாரங்கள்', passages: 'பகுதிகள்', none: 'இன்னும் கேள்விகள் இல்லை.',
+        good: 'பயனுள்ளது', bad: 'பயனில்லை', copied: 'நகலெடுக்கப்பட்டது', more: 'இதையும் கேட்கலாம்', sources: 'ஆதாரங்கள்', passages: 'பகுதிகள்', none: 'இன்னும் கேள்விகள் இல்லை.',
         voiceRep: 'குரல் பதில்', listen: 'கேளுங்கள்', academy: 'Beldex Academy', acadT: 'கிரிப்டோவுக்கு புதியவரா?', acadS: 'படப் பாடங்கள், blockchain விளையாட்டு, வினாடி வினா — தமிழிலும் ஆங்கிலத்திலும்.', vTitle: 'குரலில் கேளுங்கள்', vSub: 'தட்டி தமிழிலோ ஆங்கிலத்திலோ பேசுங்கள் — பதிலை குரலிலும் சொல்வேன்.',
         rec: 'கேட்கிறேன்… முடிந்ததும் ■ தட்டவும்', trans: 'உங்கள் குரலை எழுத்தாக மாற்றுகிறது…',
         think: ['கேள்வியைப் புரிந்துகொள்கிறது', 'beldex.io ஆதாரங்களில் தேடுகிறது', 'சிறந்த பகுதிகளைப் படிக்கிறது', 'பதிலை எழுதுகிறது'] },
@@ -121,7 +121,7 @@ function applyLang() {
   if (!$('stream').querySelector('.msg-user')) renderWelcome();
 }
 async function setLang(l) {
-  lang = l; applyLang();
+  lang = l; applyLang(); loadRail();
   try { const u = await api('/me/lang', { method: 'POST', body: { lang: l } }); Auth.setUser(u); } catch {}
 }
 $('langEn').onclick = () => setLang('en'); $('langTa').onclick = () => setLang('ta');
@@ -221,7 +221,7 @@ async function addBot(r, { stream = true, speak = false } = {}) {
 
   const srcs = (r.sources || []).map(s => {
     const host = (() => { try { return new URL(s.url).hostname.replace('www.', ''); } catch { return ''; } })();
-    return `<a class="src" id="${uid}-${s.n}" href="${esc(s.url)}" target="_blank" rel="noopener"><span class="n">${s.n}</span><span><b>${esc(s.title)}</b><small>${esc(host)}${s.published ? ' · ' + esc(s.published) : ''}</small></span></a>`;
+    return `<a class="src" id="${uid}-${s.n}" href="${esc(s.url)}" target="_blank" rel="noopener"><span class="n">${s.n}</span><span><b>${esc(lang === 'ta' && s.title_ta || s.title)}</b><small>${esc(host)}${s.published ? ' · ' + esc(s.published) : ''}</small></span></a>`;
   }).join('');
   const after = d.querySelector('.after');
   after.innerHTML = `
@@ -229,7 +229,7 @@ async function addBot(r, { stream = true, speak = false } = {}) {
     <div class="actions" style="--i:1;margin-bottom:12px">
       <span class="listen-slot"></span>
       <button class="icon-btn" data-a="copy" title="${t('copy')}" aria-label="${t('copy')}">${ICON.copy}</button>
-      ${r.id ? `<button class="icon-btn" data-a="up" title="Helpful" aria-label="Helpful">${ICON.up}</button><button class="icon-btn" data-a="down" title="Not helpful" aria-label="Not helpful">${ICON.down}</button>` : ''}
+      ${r.id ? `<button class="icon-btn" data-a="up" title="${t('good')}" aria-label="${t('good')}">${ICON.up}</button><button class="icon-btn" data-a="down" title="${t('bad')}" aria-label="${t('bad')}">${ICON.down}</button>` : ''}
       ${r.usage ? `<span class="mono muted" style="font-size:11.5px;margin-left:8px">${(r.usage.latency_ms / 1000).toFixed(1)}s</span>` : ''}
     </div>
     ${r.follow_ups && r.follow_ups.length ? `<div style="--i:2"><div class="muted" style="font-size:12.5px;margin-bottom:6px">${t('more')}</div><div class="followups">${r.follow_ups.map((q, i) => `<button class="chip" style="--i:${i}" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>` : ''}`;
@@ -256,7 +256,7 @@ async function send(text, via = 'text') {
     loadHistory();
   } catch (e) {
     clearInterval(thinkTimer); $('typing')?.remove();
-    addBot({ answer: '⚠ ' + e.message, sources: [] }, { stream: false });
+    addBot({ answer: '⚠ ' + e.message, sources: [] }, { stream: false });  // messages from api() already follow the page language
   }
   busy = false; refreshSend(); $('q').focus();
 }
@@ -302,7 +302,7 @@ async function loadRail() {
   try {
     const n = await api('/news');
     $('timeline').innerHTML = (n.items || []).slice(0, 7).map((it, i) => `<li style="--i:${i}"><small>${esc(it.published)}</small>
-      <a href="#" data-q="${esc((lang === 'ta' ? 'இதைப் பற்றி விளக்கவும்: ' : 'Tell me about: ') + it.title)}">${esc(it.title)}</a></li>`).join('');
+      <a href="#" data-q="${esc((lang === 'ta' ? 'இதைப் பற்றி விளக்கவும்: ' : 'Tell me about: ') + (lang === 'ta' && it.title_ta || it.title))}">${esc(lang === 'ta' && it.title_ta || it.title)}</a></li>`).join('');
     $('timeline').querySelectorAll('[data-q]').forEach(a => a.onclick = e => { e.preventDefault(); send(a.dataset.q); });
   } catch { $('timeline').innerHTML = ''; }
   try {
