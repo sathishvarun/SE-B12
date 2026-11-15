@@ -165,10 +165,11 @@ Open **http://localhost:8501** (API docs: http://localhost:8501/docs). Stop with
 
 1. **DNS:** in the domain's DNS panel add an **A record**: Name `beldex` → Value `YOUR_VPS_IP`.
 2. **Open a terminal on the VPS:** hPanel → **VPS → Browser terminal** (or `ssh root@YOUR_VPS_IP`).
-3. **Get the code:**
+3. **Get only this project folder from GitHub:**
    ```bash
-   cd ~ && git clone https://github.com/sathishvarun/SE-B12.git    # later: cd ~/SE-B12 && git pull
-   cd ~/SE-B12/beldex
+   git clone --depth 1 --filter=blob:none --sparse https://github.com/sathishvarun/SE-B12.git ~/beldex-app
+   cd ~/beldex-app && git sparse-checkout set beldex
+   cd ~/beldex-app/beldex
    ```
 4. **Create `.env`** (use a strong admin password and a new JWT secret for the live server):
    ```bash
@@ -183,7 +184,7 @@ Open **http://localhost:8501** (API docs: http://localhost:8501/docs). Stop with
    It finds Traefik, builds the image, starts the `beldex-ai` container and prints the live link.
 6. **Share** https://beldex.sathishsakthivel.tech — users create their own accounts; you sign in through the **Admin** tab.
 
-**Update later:** `cd ~/SE-B12 && git pull && cd beldex && bash deploy/connect_domain_traefik.sh beldex.sathishsakthivel.tech`. Users and history in `data/` are kept.
+**Update later:** `cd ~/beldex-app/beldex && git pull && bash deploy/connect_domain_traefik.sh beldex.sathishsakthivel.tech`. Users and history in `data/` are kept.
 
 **Useful commands on the VPS:** `docker logs -f beldex-ai` (live log) · `docker restart beldex-ai` · `docker ps` (is it running?)
 
