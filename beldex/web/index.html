@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beldex AI — Sign in</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth">
+  <aside class="auth-side" aria-label="About Beldex AI">
+    <canvas id="net" aria-hidden="true"></canvas>
+    <a class="brand" href="index.html"><img src="img/logo.svg" alt="">Beldex AI</a>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <h1>Every Beldex answer,<br><em class="grad-text">with its source.</em></h1>
+      <p>Type or simply speak your question about BDX, masternodes, BChat, BelNet, BNS or the latest updates — in English or தமிழ் — and listen to the answer. Every answer comes only from beldex.io, the whitepaper and official news.</p>
+    </div>
+    <div class="demo-chat" aria-hidden="true">
+      <div class="demo-q" id="demoQ"></div>
+      <div class="demo-steps" id="demoSteps"></div>
+      <div class="demo-a" id="demoA"></div>
+    </div>
+    <div class="auth-stats">
+      <div><b>2</b><span>languages</span></div>
+      <div><b>100%</b><span>answers with sources</span></div>
+      <div><b>Voice</b><span>speak &amp; listen</span></div>
+    </div>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card stagger">
+      <div class="seg" role="tablist" aria-label="Account type" style="align-self:flex-start">
+        <button type="button" role="tab" id="roleUser" class="on">User</button>
+        <button type="button" role="tab" id="roleAdmin">Admin</button>
+      </div>
+
+      <!-- SIGN IN -->
+      <section id="viewIn">
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
+          <h2 id="inTitle">Welcome back</h2>
+          <p class="muted" id="inSub" style="margin:0">New here? <a href="#" id="toUp">Create a free account</a> — it takes 20 seconds.</p>
+        </div>
+        <form id="formIn" novalidate>
+          <div class="field">
+            <label for="inEmail">Email</label>
+            <input class="input" id="inEmail" type="text" autocomplete="username" placeholder="you@example.com" required>
+          </div>
+          <div class="field">
+            <label for="inPw">Password</label>
+            <div class="input-wrap">
+              <input class="input" id="inPw" type="password" autocomplete="current-password" placeholder="Your password" required>
+              <button type="button" class="icon-btn suffix" data-toggle="inPw" aria-label="Show password"></button>
+            </div>
+          </div>
+          <div class="form-error hidden" id="inErr" role="alert"></div>
+          <button class="btn btn-primary" id="inBtn" type="submit" style="min-height:50px">Sign in</button>
+          <div class="admin-note hidden" id="adminNote">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:1px"><path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7z"/></svg>
+            <span>Admin accounts are created by the owner. Every admin sign-in is recorded in the activity log.</span>
+          </div>
+        </form>
+      </section>
+
+      <!-- SIGN UP -->
+      <section id="viewUp" class="hidden">
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
+          <h2>Create your account</h2>
+          <p class="muted" style="margin:0">Already have one? <a href="#" id="toIn">Sign in</a></p>
+        </div>
+        <form id="formUp" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label for="upFirst">First name</label>
+              <input class="input" id="upFirst" autocomplete="given-name" placeholder="Priya" required>
+            </div>
+            <div class="field">
+              <label for="upLast">Last name <span class="muted" style="font-weight:500">(optional)</span></label>
+              <input class="input" id="upLast" autocomplete="family-name" placeholder="Kumar">
+            </div>
+          </div>
+          <div class="field">
+            <label for="upEmail">Email</label>
+            <input class="input" id="upEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+            <div class="hint" id="emailHint" aria-live="polite"></div>
+          </div>
+          <div class="field">
+            <label for="upPw">Password</label>
+            <div class="input-wrap">
+              <input class="input" id="upPw" type="password" autocomplete="new-password" placeholder="Create a password" required>
+              <button type="button" class="icon-btn suffix" data-toggle="upPw" aria-label="Show password"></button>
+            </div>
+            <div class="meter"><i id="meter"></i></div>
+            <ul class="rules" id="rules">
+              <li data-r="len">8+ characters</li>
+              <li data-r="let">One letter</li>
+              <li data-r="num">One number</li>
+            </ul>
+          </div>
+          <div class="form-error hidden" id="upErr" role="alert"></div>
+          <button class="btn btn-primary" id="upBtn" type="submit" style="min-height:50px" disabled>Create account</button>
+        </form>
+      </section>
+
+      <p class="auth-foot">Independent assistant, not affiliated with the Beldex project. Information only — not financial advice.</p>
+    </div>
+  </main>
+</div>
+
+<script src="js/core.js"></script>
+<script>
+bgFx();
+networkCanvas(document.getElementById('net'));
+document.querySelectorAll('.auth-card > *').forEach((el, i) => el.style.setProperty('--i', i));
+if (Auth.token && Auth.user) location.href = Auth.user.role === 'admin' ? 'admin.html' : 'app.html';
+if (new URLSearchParams(location.search).get('expired')) setTimeout(() => toast('Your session ended. Please sign in again.'), 300);
+
+const $ = id => document.getElementById(id);
+let role = 'user';
+
+// password show/hide buttons
+document.querySelectorAll('[data-toggle]').forEach(b => {
+  b.innerHTML = ICON.eye;
+  b.onclick = () => { const i = $(b.dataset.toggle); i.type = i.type === 'password' ? 'text' : 'password'; b.setAttribute('aria-label', i.type === 'password' ? 'Show password' : 'Hide password'); };
+});
+
+function show(view) {
+  $('viewIn').classList.toggle('hidden', view !== 'in');
+  $('viewUp').classList.toggle('hidden', view !== 'up');
+  (view === 'in' ? $('inEmail') : $('upFirst')).focus();
+}
+$('toUp').onclick = e => { e.preventDefault(); show('up'); };
+$('toIn').onclick = e => { e.preventDefault(); show('in'); };
+
+function setRole(r) {
+  role = r;
+  $('roleUser').classList.toggle('on', r === 'user');
+  $('roleAdmin').classList.toggle('on', r === 'admin');
+  $('inTitle').textContent = r === 'admin' ? 'Admin console' : 'Welcome back';
+  $('inSub').classList.toggle('hidden', r === 'admin');
+  $('adminNote').classList.toggle('hidden', r !== 'admin');
+  $('inBtn').textContent = r === 'admin' ? 'Open admin console' : 'Sign in';
+  $('inErr').classList.add('hidden');
+  show('in');
+}
+$('roleUser').onclick = () => setRole('user');
+$('roleAdmin').onclick = () => setRole('admin');
+
+function fail(box, msg) { box.textContent = msg; box.classList.remove('hidden'); }
+
+// ---- sign in
+$('formIn').onsubmit = async e => {
+  e.preventDefault();
+  const login = $('inEmail').value.trim(), pw = $('inPw').value;
+  $('inErr').classList.add('hidden');
+  if (!login || !pw) return fail($('inErr'), 'Enter your email and password.');
+  $('inBtn').disabled = true; $('inBtn').textContent = 'Signing in…';
+  try {
+    const res = await api('/auth/login', { method: 'POST', auth: false, body: { login, password: pw, as_role: role } });
+    Auth.save(res);
+    location.href = res.user.role === 'admin' && role === 'admin' ? 'admin.html' : 'app.html';
+  } catch (err) {
+    fail($('inErr'), err.message);
+    $('inBtn').disabled = false; $('inBtn').textContent = role === 'admin' ? 'Open admin console' : 'Sign in';
+  }
+};
+
+// ---- sign up: live validation
+const rules = { len: v => v.length >= 8, let: v => /[A-Za-z]/.test(v), num: v => /\d/.test(v) };
+let emailState = 'empty', emailTimer;
+
+function pwScore(v) {
+  let s = Object.values(rules).filter(f => f(v)).length;
+  if (v.length >= 12) s++;
+  if (/[^A-Za-z0-9]/.test(v)) s++;
+  return s;
+}
+function refreshUp() {
+  const v = $('upPw').value;
+  document.querySelectorAll('#rules li').forEach(li => li.classList.toggle('met', rules[li.dataset.r](v)));
+  const sc = pwScore(v), m = $('meter');
+  m.style.width = Math.min(100, sc * 20) + '%';
+  m.style.background = sc <= 2 ? 'var(--bad)' : sc === 3 ? '#C98A00' : 'var(--good)';
+  const pwOk = Object.values(rules).every(f => f(v));
+  $('upPw').classList.toggle('ok', pwOk);
+  $('upBtn').disabled = !($('upFirst').value.trim() && emailState === 'ok' && pwOk);
+}
+['upFirst', 'upPw'].forEach(id => $(id).addEventListener('input', refreshUp));
+
+$('upEmail').addEventListener('input', () => {
+  clearTimeout(emailTimer);
+  const v = $('upEmail').value.trim(), hint = $('emailHint');
+  $('upEmail').classList.remove('ok', 'err'); hint.className = 'hint'; hint.textContent = '';
+  emailState = v ? 'checking' : 'empty';
+  refreshUp();
+  if (!v) return;
+  emailTimer = setTimeout(async () => {
+    hint.textContent = 'Checking…';
+    try {
+      const r = await api('/auth/check-email?email=' + encodeURIComponent(v), { auth: false });
+      if (v !== $('upEmail').value.trim()) return;
+      if (!r.valid) { emailState = 'bad'; hint.className = 'hint err'; hint.innerHTML = ICON.x + ' Enter a valid email, like name@gmail.com'; $('upEmail').classList.add('err'); }
+      else if (!r.available) { emailState = 'taken'; hint.className = 'hint err'; hint.innerHTML = ICON.x + ' This email is already registered. <a href="#" id="goIn">Sign in instead</a>'; $('upEmail').classList.add('err');
+        $('goIn').onclick = ev => { ev.preventDefault(); $('inEmail').value = v; show('in'); $('inPw').focus(); }; }
+      else { emailState = 'ok'; hint.className = 'hint ok'; hint.innerHTML = ICON.check + ' Looks good'; $('upEmail').classList.add('ok'); }
+    } catch { emailState = 'empty'; hint.textContent = ''; }
+    refreshUp();
+  }, 400);
+});
+
+$('formUp').onsubmit = async e => {
+  e.preventDefault();
+  $('upErr').classList.add('hidden');
+  $('upBtn').disabled = true; $('upBtn').textContent = 'Creating your account…';
+  try {
+    const res = await api('/auth/register', { method: 'POST', auth: false, body: {
+      first_name: $('upFirst').value.trim(), last_name: $('upLast').value.trim(), email: $('upEmail').value.trim(),
+      password: $('upPw').value, lang: (navigator.language || '').startsWith('ta') ? 'ta' : 'en' } });
+    Auth.save(res);
+    location.href = 'app.html?welcome=1';
+  } catch (err) {
+    fail($('upErr'), err.message);
+    $('upBtn').textContent = 'Create account'; refreshUp();
+  }
+};
+
+// ---- animated demo on the left
+const DEMOS = [
+  { q: 'What changed in the Obscura hardfork?', s: 'searched knowledge base · 4 passages · 3 sources',
+    a: '<b>It went live on 7 Dec 2025 at block 4,939,540 and added Bulletproofs++</b> — smaller proofs that are faster to verify. <span class="demo-cite">[1]</span>' },
+  { q: 'Masternode இயக்க என்ன தேவை?', s: 'translated · searched · answered in Tamil',
+    a: '<b>ஒரு masternode-க்கு 10,000 BDX collateral தேவை.</b> அது network-ஐ பாதுகாத்து block rewards பெறுகிறது. <span class="demo-cite">[1]</span>' },
+  { q: 'Where can I trade BDX?', s: 'searched knowledge base · 2 sources',
+    a: '<b>BDX-USDT trades on KuCoin, MEXC, Gate.io, BingX, CoinEx, KCEX and NonKYC</b>, plus BloFin and Kraken since January 2026. <span class="demo-cite">[1][2]</span>' },
+];
+let di = 0;
+async function typeInto(el, text, speed = 28) { el.textContent = ''; for (const ch of text) { el.textContent += ch; await new Promise(r => setTimeout(r, speed)); } }
+async function demoLoop() {
+  const d = DEMOS[di++ % DEMOS.length];
+  $('demoA').innerHTML = ''; $('demoSteps').textContent = '';
+  await typeInto($('demoQ'), d.q);
+  await new Promise(r => setTimeout(r, 500));
+  $('demoSteps').textContent = '✓ ' + d.s;
+  $('demoA').innerHTML = '<span class="caret"></span>';
+  await new Promise(r => setTimeout(r, 900));
+  $('demoA').innerHTML = d.a;
+  setTimeout(demoLoop, 4200);
+}
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) { $('demoQ').textContent = DEMOS[0].q; $('demoSteps').textContent = '✓ ' + DEMOS[0].s; $('demoA').innerHTML = DEMOS[0].a; }
+else demoLoop();
+$('inEmail').focus();
+</script>
+</body>
+</html>

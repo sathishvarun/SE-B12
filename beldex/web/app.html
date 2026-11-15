@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beldex AI</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/purify.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Conversations">
+    <a class="brand" href="app.html"><img src="img/logo.svg" alt="">Beldex AI</a>
+    <button class="btn" id="newChat" style="justify-content:flex-start">New question</button>
+    <a class="btn" href="learn.html" style="justify-content:flex-start;margin-top:6px;background:linear-gradient(120deg,#121318,#5A2410);color:#fff;border:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l10-5 10 5-10 5zM6 10v5c3 2 9 2 12 0v-5"/></svg> <span data-t="academy">Beldex Academy</span></a>
+    <h4 data-t="recent">RECENT</h4>
+    <div class="threads" id="threads"></div>
+    <a class="btn btn-sm hidden" id="toAdmin" href="admin.html" style="margin:6px 0">Open admin console →</a>
+    <div class="me" id="me"></div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <h1 id="title">Ask Beldex AI</h1>
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <label class="switch" title="Read every answer aloud"><input type="checkbox" id="autoSpeak"><span class="track"></span><span data-t="voiceRep">Voice replies</span></label>
+        <div class="seg" role="group" aria-label="Reply language">
+          <button type="button" id="langEn">English</button>
+          <button type="button" id="langTa" class="ta">தமிழ்</button>
+        </div>
+      </div>
+    </header>
+    <div class="scroll" id="scroll"><div class="stream" id="stream"></div></div>
+    <div class="composer">
+      <form id="ask">
+        <label for="q" class="hidden">Your question</label>
+        <textarea id="q" rows="1"></textarea>
+        <div class="rec-bar" aria-live="polite">
+          <span class="rec-dot"></span><span class="rec-time" id="recTime">0:00</span>
+          <canvas id="wave" aria-hidden="true"></canvas>
+          <span class="rec-status" id="recStatus"></span>
+          <button type="button" class="btn btn-sm btn-ghost" id="recCancel">Cancel</button>
+        </div>
+        <button type="button" class="mic" id="micBtn" aria-label="Ask by voice" title="Ask by voice"></button>
+        <button class="send" id="sendBtn" type="submit" aria-label="Send" disabled></button>
+      </form>
+      <div class="note" data-t="note">Answers come only from beldex.io and official Beldex sources. Not financial advice.</div>
+    </div>
+  </div>
+
+  <aside class="rail" aria-label="Latest updates">
+    <section>
+      <h3 data-t="latest">Latest on Beldex</h3>
+      <ul class="tl stagger" id="timeline"><li><div class="skeleton" style="height:38px"></div></li><li><div class="skeleton" style="height:38px"></div></li></ul>
+    </section>
+    <section>
+      <h3 data-t="kb">Knowledge base</h3>
+      <div class="kb-stat" id="kbStat"></div>
+      <p class="muted" style="font-size:12.5px;margin:10px 0 0" data-t="kbnote">Every answer is built only from these sources and links back to them.</p>
+    </section>
+  </aside>
+</div>
+
+<script src="js/core.js"></script>
+<script>
+const me = requireLogin();
+startHeartbeat();
+bgFx();
+const $ = id => document.getElementById(id);
+let lang = (me && me.lang) || 'en';
+let busy = false;
+
+const T = {
+  en: { new: 'New question', recent: 'RECENT', latest: 'Latest on Beldex', kb: 'Knowledge base', kbnote: 'Every answer is built only from these sources and links back to them.',
+        note: 'Answers come only from beldex.io and official Beldex sources. Not financial advice.', hi: 'Hi', sub: 'What would you like to know about Beldex today?',
+        ph: 'Ask anything about BDX, masternodes, BChat, BNS…', or: 'Or just ask:', srcs: 'Sources', copy: 'Copy', thanks: 'Thanks for the feedback',
+        copied: 'Copied', more: 'You might also ask', sources: 'sources', passages: 'passages', none: 'No questions yet — your history will show here.',
+        voiceRep: 'Voice replies', listen: 'Listen', academy: 'Beldex Academy', acadT: 'New to crypto?', acadS: 'Visual lessons, a blockchain playground and a quiz — in English and Tamil.', vTitle: 'Ask by voice', vSub: 'Tap and speak in English or Tamil — I\'ll answer out loud.',
+        rec: 'Listening… tap ■ when done', trans: 'Turning your voice into text…',
+        think: ['Understanding your question', 'Searching beldex.io and official sources', 'Reading the best passages', 'Writing your answer'] },
+  ta: { new: 'புதிய கேள்வி', recent: 'சமீபத்தியவை', latest: 'பெல்டெக்ஸ் சமீபத்திய செய்திகள்', kb: 'அறிவுத் தளம்', kbnote: 'ஒவ்வொரு பதிலும் இந்த ஆதாரங்களிலிருந்து மட்டுமே.',
+        note: 'பதில்கள் beldex.io மற்றும் அதிகாரப்பூர்வ ஆதாரங்களிலிருந்து மட்டுமே. நிதி ஆலோசனை அல்ல.', hi: 'வணக்கம்', sub: 'இன்று பெல்டெக்ஸ் பற்றி என்ன தெரிந்துகொள்ள விரும்புகிறீர்கள்?',
+        ph: 'BDX, masternodes, BChat, BNS பற்றி எதையும் கேளுங்கள்…', or: 'அல்லது நேரடியாக கேளுங்கள்:', srcs: 'ஆதாரங்கள்', copy: 'நகலெடு', thanks: 'நன்றி!',
+        copied: 'நகலெடுக்கப்பட்டது', more: 'இதையும் கேட்கலாம்', sources: 'ஆதாரங்கள்', passages: 'பகுதிகள்', none: 'இன்னும் கேள்விகள் இல்லை.',
+        voiceRep: 'குரல் பதில்', listen: 'கேளுங்கள்', academy: 'Beldex Academy', acadT: 'கிரிப்டோவுக்கு புதியவரா?', acadS: 'படப் பாடங்கள், blockchain விளையாட்டு, வினாடி வினா — தமிழிலும் ஆங்கிலத்திலும்.', vTitle: 'குரலில் கேளுங்கள்', vSub: 'தட்டி தமிழிலோ ஆங்கிலத்திலோ பேசுங்கள் — பதிலை குரலிலும் சொல்வேன்.',
+        rec: 'கேட்கிறேன்… முடிந்ததும் ■ தட்டவும்', trans: 'உங்கள் குரலை எழுத்தாக மாற்றுகிறது…',
+        think: ['கேள்வியைப் புரிந்துகொள்கிறது', 'beldex.io ஆதாரங்களில் தேடுகிறது', 'சிறந்த பகுதிகளைப் படிக்கிறது', 'பதிலை எழுதுகிறது'] },
+};
+const t = k => T[lang][k];
+
+const TOPICS = {
+  en: [
+    { c: '#E2531D', i: 'M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7z', b: 'What is Beldex?', s: 'Origin, founder and how it started in 2018', q: 'How did Beldex start, and who founded it?' },
+    { c: '#11704A', i: 'M4 7h16v10H4zM8 7V5h8v2', b: 'Masternodes', s: 'Collateral, rewards and how staking works', q: 'What do I need to run a masternode and how are rewards paid?' },
+    { c: '#3B5BDB', i: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z', b: 'BChat & BelNet', s: 'Private messaging and private browsing', q: 'What are BChat and BelNet, and what versions are out?' },
+    { c: '#7C3AED', i: 'M4 12h16M12 4a12 12 0 0 1 0 16M12 4a12 12 0 0 0 0 16', b: 'BNS names', s: '.bdx names, fee burning, marketplace', q: 'What is BNS and how does the BNS Marketplace work?' },
+    { c: '#B7791F', i: 'M3 12h4l3-8 4 16 3-8h4', b: 'Latest updates', s: 'Hardforks, listings and 2026 news', q: 'What are the most important Beldex updates in 2026?' },
+    { c: '#0E7490', i: 'M4 17l6-6 4 4 6-8', b: 'Buy & trade BDX', s: 'Exchanges listed on beldex.io', q: 'Where can I buy or trade BDX?' },
+  ],
+  ta: [
+    { c: '#E2531D', i: 'M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7z', b: 'பெல்டெக்ஸ் என்றால் என்ன?', s: '2018 தொடக்கம், நிறுவனர்', q: 'பெல்டெக்ஸ் எப்படி தொடங்கியது? யார் நிறுவினார்?' },
+    { c: '#11704A', i: 'M4 7h16v10H4zM8 7V5h8v2', b: 'Masternodes', s: 'Collateral, வெகுமதிகள்', q: 'Masternode இயக்க என்ன தேவை? வெகுமதி எப்படி கிடைக்கும்?' },
+    { c: '#3B5BDB', i: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z', b: 'BChat & BelNet', s: 'தனியுரிமை messaging, browsing', q: 'BChat மற்றும் BelNet என்றால் என்ன?' },
+    { c: '#7C3AED', i: 'M4 12h16M12 4a12 12 0 0 1 0 16M12 4a12 12 0 0 0 0 16', b: 'BNS பெயர்கள்', s: '.bdx பெயர்கள், marketplace', q: 'BNS என்றால் என்ன? BNS Marketplace எப்படி வேலை செய்கிறது?' },
+    { c: '#B7791F', i: 'M3 12h4l3-8 4 16 3-8h4', b: 'சமீபத்திய அப்டேட்ஸ்', s: 'Hardforks, listings, 2026', q: '2026-இல் பெல்டெக்ஸின் முக்கிய அப்டேட்ஸ் என்ன?' },
+    { c: '#0E7490', i: 'M4 17l6-6 4 4 6-8', b: 'BDX வாங்க / trade', s: 'Exchanges பட்டியல்', q: 'BDX-ஐ எங்கே வாங்கலாம் அல்லது trade செய்யலாம்?' },
+  ],
+};
+const QUICK = { en: ['What is cryptocurrency?', 'What is the purpose of a blockchain?', 'What is Bitcoin?', 'What is a stablecoin?', 'Bitcoin vs Beldex — what is different?', 'What is Nexus (nexus.vin) and is it safe?'],
+                ta: ['கிரிப்டோகரன்சி என்றால் என்ன?', 'பிளாக்செயினின் நோக்கம் என்ன?', 'Bitcoin என்றால் என்ன?', 'Stablecoin என்றால் என்ன?', 'Bitcoin-க்கும் Beldex-க்கும் என்ன வேறுபாடு?', 'Nexus (nexus.vin) என்றால் என்ன? பாதுகாப்பானதா?'] };
+
+function applyLang() {
+  document.documentElement.lang = lang === 'ta' ? 'ta' : 'en';
+  $('langEn').classList.toggle('on', lang === 'en'); $('langTa').classList.toggle('on', lang === 'ta');
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
+  $('q').placeholder = t('ph');
+  if (!$('stream').querySelector('.msg-user')) renderWelcome();
+}
+async function setLang(l) {
+  lang = l; applyLang();
+  try { const u = await api('/me/lang', { method: 'POST', body: { lang: l } }); Auth.setUser(u); } catch {}
+}
+$('langEn').onclick = () => setLang('en'); $('langTa').onclick = () => setLang('ta');
+$('autoSpeak').checked = localStorage.getItem('bx_autospeak') === '1';
+$('autoSpeak').onchange = () => { localStorage.setItem('bx_autospeak', $('autoSpeak').checked ? '1' : '0'); if (!$('autoSpeak').checked) Voice.stopSpeaking(); };
+
+// ---------- sidebar
+$('newChat').innerHTML = ICON.plus + ' <span data-t="new">' + t('new') + '</span>';
+$('newChat').onclick = () => { Voice.stopSpeaking(); $('stream').innerHTML = ''; renderWelcome(); $('q').focus(); };
+$('me').innerHTML = `${avatar(me.name)}<div style="flex:1;min-width:0"><b style="font-size:13.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(me.name)}</b><small class="muted">${esc(me.email)}</small></div><button class="icon-btn" title="Sign out" aria-label="Sign out" onclick="signOut()">${ICON.out}</button>`;
+if (me.role === 'admin') $('toAdmin').classList.remove('hidden');
+
+let hist = [];
+async function loadHistory() {
+  try { hist = await api('/history'); } catch { hist = []; }
+  $('threads').innerHTML = hist.length ? hist.slice(0, 30).map((h, i) => `<button class="thread" data-i="${i}" title="${esc(h.question)}">${esc(h.question)}</button>`).join('')
+    : `<p class="muted" style="font-size:12.5px;padding:4px 10px">${t('none')}</p>`;
+  $('threads').querySelectorAll('.thread').forEach(b => b.onclick = () => {
+    const h = hist[b.dataset.i];
+    Voice.stopSpeaking(); $('stream').innerHTML = '';
+    addUser(h.question);
+    addBot({ id: h.id, answer: h.answer, sources: h.sources, steps: [], follow_ups: [], lang: h.lang }, { stream: false });
+  });
+}
+
+// ---------- welcome
+function renderWelcome() {
+  const first = (me.first_name || me.name || '').split(' ')[0];
+  $('stream').innerHTML = `<div class="welcome stagger">
+    <div style="--i:0"><h2>${t('hi')}, <span class="grad-text">${esc(first)}</span></h2><p class="muted" style="font-size:17px;margin:6px 0 0">${t('sub')}</p></div>
+    ${Voice.canListen() ? `<button class="voice-cta" id="ctaMic" style="--i:1"><span class="orb">${ICON.mic}</span><span><b>${t('vTitle')}</b><span>${t('vSub')}</span></span></button>` : ''}
+    <div class="topics stagger" style="--i:2">${TOPICS[lang].map((x, i) => `<button class="topic" style="--i:${i};--glow:${x.c}26" data-q="${esc(x.q)}">
+      <span class="go">${ICON.arrow}</span>
+      <span class="ic" style="background:${x.c}1A;color:${x.c}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${x.i}"/></svg></span>
+      <b>${esc(x.b)}</b><span>${esc(x.s)}</span></button>`).join('')}</div>
+    <a href="learn.html" class="card" style="--i:3;display:flex;align-items:center;gap:14px;padding:14px 18px;text-decoration:none;color:var(--ink);border-radius:16px">
+      <span style="width:42px;height:42px;border-radius:12px;background:#7C3AED1A;color:#7C3AED;display:flex;align-items:center;justify-content:center;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l10-5 10 5-10 5zM6 10v5c3 2 9 2 12 0v-5"/></svg></span>
+      <span style="flex:1"><b style="display:block">${t('acadT')}</b><span class="muted" style="font-size:13.5px">${t('acadS')}</span></span><span style="color:var(--accent)">${ICON.arrow}</span></a>
+    <div style="--i:4"><p class="muted" style="margin:0 0 8px;font-size:13px">${t('or')}</p><div class="followups">${QUICK[lang].map((q, i) => `<button class="chip" style="--i:${i}" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>
+  </div>`;
+  $('stream').querySelectorAll('[data-q]').forEach(b => b.onclick = () => send(b.dataset.q));
+  $('stream').querySelectorAll('.topic').forEach(c => c.addEventListener('mousemove', e => { const r = c.getBoundingClientRect(); c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px'); }));
+  $('ctaMic')?.addEventListener('click', startRecording);
+}
+
+// ---------- messages
+function addUser(text, via) {
+  $('stream').querySelector('.welcome')?.remove();
+  const d = document.createElement('div'); d.className = 'msg-user';
+  d.innerHTML = (via === 'voice' ? `<span style="opacity:.7;margin-right:6px;vertical-align:-3px;display:inline-block">${ICON.mic}</span>` : '') + esc(text);
+  $('stream').appendChild(d); scrollDown();
+}
+let thinkTimer;
+function addThinking() {
+  const d = document.createElement('div'); d.className = 'msg-bot'; d.id = 'typing';
+  d.innerHTML = `<img src="img/logo.svg" alt=""><div class="bubble"><div class="think">${t('think').map(s => `<div>${esc(s)}</div>`).join('')}</div></div>`;
+  $('stream').appendChild(d); scrollDown();
+  const rows = d.querySelectorAll('.think div'); let i = 0;
+  rows[0].classList.add('on');
+  thinkTimer = setInterval(() => { if (i < rows.length - 1) { rows[i].classList.replace('on', 'done'); rows[++i].classList.add('on'); } }, 900);
+}
+function linkCites(html, id) {
+  return html.replace(/\[(\d{1,2})\]/g, (m, n) => `<button class="cite" data-src="${id}-${n}" title="Source ${n}">${n}</button>`);
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+async function addBot(r, { stream = true, speak = false } = {}) {
+  clearInterval(thinkTimer); $('typing')?.remove();
+  const uid = 'm' + Math.random().toString(36).slice(2, 8);
+  const ansLang = r.lang || lang;
+  const d = document.createElement('div'); d.className = 'msg-bot';
+  d.innerHTML = `<img src="img/logo.svg" alt=""><div class="bubble">
+    ${r.steps && r.steps.length ? `<div class="steps">${r.steps.map(s => `<span>${esc(s)}</span>`).join('')}</div>` : ''}
+    <div class="answer"></div><div class="after reveal"></div></div>`;
+  $('stream').appendChild(d);
+  const ansEl = d.querySelector('.answer');
+
+  // the answer can be read aloud while the text appears
+  const listenBtn = document.createElement('button');
+  listenBtn.className = 'listen'; listenBtn.type = 'button';
+  listenBtn.innerHTML = `<span class="eq"><i></i><i></i><i></i><i></i></span><span>${t('listen')}</span>`;
+  listenBtn.onclick = () => Voice.speak(r.answer, ansLang, listenBtn).catch(e => toast(e.message, true));
+  if (speak && r.found !== false) Voice.speak(r.answer, ansLang, listenBtn).catch(() => {});
+
+  if (stream && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    ansEl.classList.add('streaming');
+    const words = r.answer.split(/(\s+)/);
+    const step = Math.max(1, Math.ceil(words.length / 60));
+    for (let i = 0; i < words.length; i += step) {
+      ansEl.innerHTML = linkCites(md(words.slice(0, i + step).join('')), uid);
+      if (i % (step * 6) === 0) scrollDown(false);
+      await wait(22);
+    }
+    ansEl.classList.remove('streaming');
+  }
+  ansEl.innerHTML = linkCites(md(r.answer), uid);
+
+  const srcs = (r.sources || []).map(s => {
+    const host = (() => { try { return new URL(s.url).hostname.replace('www.', ''); } catch { return ''; } })();
+    return `<a class="src" id="${uid}-${s.n}" href="${esc(s.url)}" target="_blank" rel="noopener"><span class="n">${s.n}</span><span><b>${esc(s.title)}</b><small>${esc(host)}${s.published ? ' · ' + esc(s.published) : ''}</small></span></a>`;
+  }).join('');
+  const after = d.querySelector('.after');
+  after.innerHTML = `
+    ${srcs ? `<div style="--i:0;margin-bottom:12px"><div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.06em;margin-bottom:6px">${t('srcs').toUpperCase()}</div><div class="sources">${srcs}</div></div>` : ''}
+    <div class="actions" style="--i:1;margin-bottom:12px">
+      <span class="listen-slot"></span>
+      <button class="icon-btn" data-a="copy" title="${t('copy')}" aria-label="${t('copy')}">${ICON.copy}</button>
+      ${r.id ? `<button class="icon-btn" data-a="up" title="Helpful" aria-label="Helpful">${ICON.up}</button><button class="icon-btn" data-a="down" title="Not helpful" aria-label="Not helpful">${ICON.down}</button>` : ''}
+      ${r.usage ? `<span class="mono muted" style="font-size:11.5px;margin-left:8px">${(r.usage.latency_ms / 1000).toFixed(1)}s</span>` : ''}
+    </div>
+    ${r.follow_ups && r.follow_ups.length ? `<div style="--i:2"><div class="muted" style="font-size:12.5px;margin-bottom:6px">${t('more')}</div><div class="followups">${r.follow_ups.map((q, i) => `<button class="chip" style="--i:${i}" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>` : ''}`;
+  after.querySelector('.listen-slot').replaceWith(listenBtn);
+  d.querySelectorAll('.cite').forEach(c => c.onclick = () => { const el = document.getElementById(c.dataset.src); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); } });
+  d.querySelectorAll('.chip').forEach(c => c.onclick = () => send(c.dataset.q));
+  d.querySelector('[data-a=copy]').onclick = () => { navigator.clipboard.writeText(r.answer); toast(t('copied')); };
+  d.querySelectorAll('[data-a=up],[data-a=down]').forEach(b => b.onclick = async () => {
+    try { await api(`/chat/${r.id}/feedback`, { method: 'POST', body: { value: b.dataset.a === 'up' ? 1 : -1 } }); b.style.color = 'var(--accent)'; toast(t('thanks')); } catch (e) { toast(e.message, true); }
+  });
+  scrollDown();
+}
+function scrollDown(smooth = true) { const s = $('scroll'); s.scrollTo({ top: s.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }); }
+
+async function send(text, via = 'text') {
+  text = (text || '').trim();
+  if (!text || busy) return;
+  busy = true; refreshSend(); Voice.stopSpeaking();
+  $('q').value = ''; autosize();
+  addUser(text, via); addThinking();
+  try {
+    const r = await api('/chat', { method: 'POST', body: { question: text, lang, via } });
+    await addBot({ ...r, lang }, { speak: via === 'voice' || $('autoSpeak').checked });
+    loadHistory();
+  } catch (e) {
+    clearInterval(thinkTimer); $('typing')?.remove();
+    addBot({ answer: '⚠ ' + e.message, sources: [] }, { stream: false });
+  }
+  busy = false; refreshSend(); $('q').focus();
+}
+
+// ---------- composer + voice
+const q = $('q'), form = $('ask');
+$('sendBtn').innerHTML = ICON.send;
+$('micBtn').innerHTML = ICON.mic;
+if (!Voice.canListen()) $('micBtn').classList.add('hidden');
+function autosize() { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 160) + 'px'; }
+function refreshSend() {
+  const recording = form.classList.contains('recording');
+  $('sendBtn').disabled = busy || (!recording && !q.value.trim());
+  $('sendBtn').innerHTML = recording ? ICON.stop : ICON.send;
+  $('sendBtn').setAttribute('aria-label', recording ? 'Stop recording' : 'Send');
+}
+q.addEventListener('input', () => { autosize(); refreshSend(); });
+q.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(q.value); } });
+
+let recTick;
+async function startRecording() {
+  if (busy || form.classList.contains('recording')) return;
+  Voice.stopSpeaking();
+  form.classList.add('recording'); $('recStatus').textContent = t('rec'); refreshSend();
+  try { await Voice.start($('wave'), lang); }
+  catch (e) { stopUi(); toast(e.name === 'NotAllowedError' ? 'Please allow microphone access in the browser to ask by voice.' : e.message, true); return; }
+  recTick = setInterval(() => { const s = Voice.elapsed(); $('recTime').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); if (s >= 120) finishRecording(); }, 250);
+}
+function stopUi() { clearInterval(recTick); form.classList.remove('recording', 'transcribing'); $('recTime').textContent = '0:00'; refreshSend(); }
+async function finishRecording() {
+  if (!form.classList.contains('recording')) return;
+  clearInterval(recTick);
+  form.classList.add('transcribing'); $('recStatus').textContent = t('trans'); $('sendBtn').disabled = true;
+  try { const text = await Voice.finish(); stopUi(); send(text, 'voice'); }
+  catch (e) { stopUi(); toast(e.message, true); }
+}
+$('micBtn').onclick = startRecording;
+$('recCancel').onclick = () => { Voice.cancel(); stopUi(); };
+form.onsubmit = e => { e.preventDefault(); form.classList.contains('recording') ? finishRecording() : send(q.value); };
+
+// ---------- right rail
+async function loadRail() {
+  try {
+    const n = await api('/news');
+    $('timeline').innerHTML = (n.items || []).slice(0, 7).map((it, i) => `<li style="--i:${i}"><small>${esc(it.published)}</small>
+      <a href="#" data-q="${esc((lang === 'ta' ? 'இதைப் பற்றி விளக்கவும்: ' : 'Tell me about: ') + it.title)}">${esc(it.title)}</a></li>`).join('');
+    $('timeline').querySelectorAll('[data-q]').forEach(a => a.onclick = e => { e.preventDefault(); send(a.dataset.q); });
+  } catch { $('timeline').innerHTML = ''; }
+  try {
+    const k = await api('/kb/sources');
+    $('kbStat').innerHTML = `<div><b id="kS">0</b><span>${t('sources')}</span></div><div><b id="kP">0</b><span>${t('passages')}</span></div>`;
+    countUp($('kS'), k.sources.length); countUp($('kP'), k.chunks);
+  } catch {}
+}
+
+Voice.init();
+applyLang();
+loadHistory();
+loadRail();
+const deep = new URLSearchParams(location.search).get('q');
+if (deep) { window.history.replaceState(null, '', 'app.html'); setTimeout(() => send(deep), 300); }
+if (new URLSearchParams(location.search).get('welcome')) { toast(lang === 'ta' ? 'கணக்கு உருவாக்கப்பட்டது! வரவேற்கிறோம்.' : 'Account created — welcome to Beldex AI!'); window.history.replaceState(null, '', 'app.html'); }
+q.focus();
+</script>
+</body>
+</html>

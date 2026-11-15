@@ -1,0 +1,11 @@
+# Local run with Docker:  docker compose up --build   ->  http://localhost:8501
+services:
+  beldex-ai:
+    build: .
+    container_name: beldex-ai
+    env_file: .env
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data      # users, sessions, usage log and the knowledge index survive rebuilds
+    restart: unless-stopped

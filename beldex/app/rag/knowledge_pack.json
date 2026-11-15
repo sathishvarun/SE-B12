@@ -1,0 +1,358 @@
+[
+ {
+  "title": "What is cryptocurrency?",
+  "url": "https://en.wikipedia.org/wiki/Cryptocurrency",
+  "kind": "guide",
+  "lang": "en",
+  "text": "A cryptocurrency is digital money that works without a bank or government in the middle. Ownership is recorded on a shared public ledger called a blockchain, and cryptography (mathematical locks and keys) makes sure only the owner can spend their coins. Anyone can check the ledger, and thousands of computers around the world keep copies of it, so no single company controls it. Bitcoin (2009) was the first cryptocurrency; today there are thousands, including Ethereum, Monero and Beldex (BDX). People use crypto to send value across borders in minutes, to pay for services inside apps, to stake and help secure networks, and as an investment. Prices can rise or fall sharply, so crypto is risky."
+ },
+ {
+  "title": "What is a blockchain?",
+  "url": "https://en.wikipedia.org/wiki/Blockchain",
+  "kind": "guide",
+  "lang": "en",
+  "text": "A blockchain is a list of records (blocks) that are linked together using cryptographic hashes. Each block holds a batch of transactions, a timestamp and the hash (digital fingerprint) of the previous block. Because every block points to the one before it, changing an old record would change its hash and break every block after it, which the rest of the network would immediately reject. Copies of the blockchain are kept by many independent computers called nodes. They agree on which new block to add using a consensus method such as Proof-of-Work (mining) or Proof-of-Stake (staking). The result is a shared record that is very hard to change or censor, without needing a central authority."
+ },
+ {
+  "title": "What is the purpose of a blockchain?",
+  "url": "https://en.wikipedia.org/wiki/Blockchain",
+  "kind": "guide",
+  "lang": "en",
+  "text": "The purpose of a blockchain is to let many people who do not know or trust each other agree on one shared record. Uses include: digital money that cannot be double-spent (Bitcoin, Beldex); transparent or private payments; smart contracts that run automatically (Ethereum); proving ownership of digital items and names (for example Beldex Name Service); tracking supply chains; and decentralised apps that keep running even if one company disappears. The trade-offs are that public blockchains can be slower than a normal database and, unless privacy is built in, everyone can see the transactions."
+ },
+ {
+  "title": "How a crypto transaction works, step by step",
+  "url": "https://bitcoin.org/en/how-it-works",
+  "kind": "guide",
+  "lang": "en",
+  "text": "1) You open your wallet and enter the receiver's address and the amount. 2) The wallet signs the transaction with your private key, proving you own the coins without revealing the key. 3) The signed transaction is broadcast to the network's nodes. 4) Nodes check the signature and that the coins were not already spent. 5) A miner (Proof-of-Work) or validator/masternode (Proof-of-Stake) puts the transaction into a new block. 6) The block is added to the chain and every node updates its copy. 7) After a few more blocks are added on top, the payment is considered final. On a privacy coin like Beldex, ring signatures, stealth addresses and RingCT hide the sender, the receiver and the amount during these steps."
+ },
+ {
+  "title": "What is Bitcoin?",
+  "url": "https://bitcoin.org/bitcoin.pdf",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Bitcoin (BTC) is the first cryptocurrency. It was described in a 2008 white paper by the pseudonymous Satoshi Nakamoto, titled 'Bitcoin: A Peer-to-Peer Electronic Cash System', and the network started on 3 January 2009 with the genesis block. Bitcoin uses Proof-of-Work mining: miners compete with computing power to add the next block roughly every 10 minutes and earn newly created bitcoin plus fees. The total supply is capped at 21 million BTC, and the block reward halves about every four years (every 210,000 blocks); after the April 2024 halving it is 3.125 BTC per block. Bitcoin transactions are public: anyone can see the addresses and amounts on the blockchain, which is why it is called pseudonymous rather than private."
+ },
+ {
+  "title": "Bitcoin vs Beldex — key differences",
+  "url": "https://beldex.io/",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Bitcoin (BTC) and Beldex (BDX) are both cryptocurrencies with their own blockchains, but they are built for different goals. Purpose: Bitcoin is mainly digital money and a store of value; Beldex is a privacy coin that also powers private apps (BChat messenger, BelNet VPN-like network, Beldex Browser, BNS names). Privacy: Bitcoin transactions are public and traceable; Beldex hides sender, receiver and amount by default using ring signatures, stealth addresses and RingCT with Bulletproofs++. Consensus: Bitcoin uses energy-heavy Proof-of-Work mining; Beldex uses Proof-of-Stake with masternodes (10,000 BDX collateral each). Speed and fees: Beldex blocks and fees are designed to be faster and cheaper than Bitcoin's. Supply: Bitcoin has a hard cap of 21 million; Beldex has billions of coins with emissions plus fee burning (for example BNS fees). Age: Bitcoin launched in 2009; Beldex launched in March 2018 as a fork of Monero."
+ },
+ {
+  "title": "Proof-of-Work (mining) explained",
+  "url": "https://ethereum.org/en/developers/docs/consensus-mechanisms/pow/",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Proof-of-Work (PoW) is a way for a blockchain network to agree on the next block. Miners repeatedly hash block data with a changing number (nonce) until they find a hash that meets a difficulty target. Finding it takes a lot of computing power and electricity, but checking it is instant for everyone else. The winner adds the block and earns a reward. PoW is very secure for large networks like Bitcoin, but it uses a lot of energy. Beldex started on PoW and later moved to Proof-of-Stake to lower fees and energy use and to scale better."
+ },
+ {
+  "title": "Proof-of-Stake and staking explained",
+  "url": "https://ethereum.org/en/developers/docs/consensus-mechanisms/pos/",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Proof-of-Stake (PoS) secures a blockchain with locked-up coins instead of mining power. Validators lock (stake) coins as collateral. The network picks validators to propose and confirm blocks; honest work earns rewards, while going offline or cheating can be penalised. PoS uses far less energy than Proof-of-Work. Ethereum moved from PoW to PoS in September 2022 ('the Merge'). Beldex uses a masternode form of Proof-of-Stake: each masternode locks 10,000 BDX and, besides securing the chain, relays traffic for BChat, BelNet and the Beldex Browser."
+ },
+ {
+  "title": "What is a crypto wallet? Keys and seed phrases",
+  "url": "https://en.wikipedia.org/wiki/Cryptocurrency_wallet",
+  "kind": "guide",
+  "lang": "en",
+  "text": "A crypto wallet is an app or device that stores your keys, not your coins (the coins live on the blockchain). The public address is like an account number you can share. The private key is the secret that lets you spend; whoever has it controls the funds. Most wallets show a seed phrase (12 or 25 words) that can restore all your keys — write it on paper, keep it offline, and never share it with anyone, including 'support staff'. Non-custodial wallets (you hold the keys) give full control; custodial wallets on exchanges hold the keys for you, which is convenient but means trusting the exchange. Hardware wallets keep keys on a separate device for extra safety."
+ },
+ {
+  "title": "Beldex wallets — where to keep BDX",
+  "url": "https://beldex.io/",
+  "kind": "official",
+  "lang": "en",
+  "text": "BDX can be stored in the official Beldex wallets: the Beldex Electron desktop wallet (Windows, macOS, Linux), the Beldex mobile wallet and the command-line (CLI) wallet. These wallets are also used to buy BNS names. For Hardfork 21 the Electron desktop wallet had to be updated to stay compatible with the network. Hardware-wallet makers such as Trezor list Beldex support for BDX on supported networks. Always download wallets only from beldex.io or the official Beldex GitHub, and keep your seed phrase offline."
+ },
+ {
+  "title": "Exchanges: centralised (CEX) vs decentralised (DEX)",
+  "url": "https://en.wikipedia.org/wiki/Cryptocurrency_exchange",
+  "kind": "guide",
+  "lang": "en",
+  "text": "A centralised exchange (CEX) such as KuCoin, MEXC or Kraken is a company that holds your funds, matches buyers and sellers, and usually requires identity verification (KYC). It is easy to use and lets you swap rupees or USDT for crypto. A decentralised exchange (DEX) is a smart contract you trade with directly from your own wallet; you keep your keys but must pay network fees and understand the risks. Beldex lists centralised exchanges for BDX-USDT on its partners page, and also has its own DEX (BDex) and a bridge for moving BDX to other chains."
+ },
+ {
+  "title": "What is a privacy coin?",
+  "url": "https://en.wikipedia.org/wiki/Privacy_coin",
+  "kind": "guide",
+  "lang": "en",
+  "text": "A privacy coin is a cryptocurrency that hides transaction details by default. On Bitcoin anyone can follow coins from address to address; on privacy coins like Monero and Beldex outsiders cannot see who sent, who received or how much. Common techniques are ring signatures (mixing the real signer with decoys), stealth addresses (a new one-time address for every payment) and confidential transactions (hiding amounts with range proofs such as Bulletproofs). Privacy protects people from tracking, targeted theft and data harvesting, but regulators look closely at privacy coins, and some exchanges in some countries have delisted them."
+ },
+ {
+  "title": "Ring signatures, stealth addresses and RingCT",
+  "url": "https://www.getmonero.org/resources/moneropedia/ringCT.html",
+  "kind": "guide",
+  "lang": "en",
+  "text": "These are the privacy tools Beldex inherited from Monero. Ring signatures: your signature is mixed with several decoy signatures, so an observer cannot tell which member of the ring actually spent the coins — this hides the sender. Stealth addresses: the sender creates a fresh one-time address for each payment from the receiver's public address, so payments cannot be linked to the receiver — this hides the receiver. RingCT (Ring Confidential Transactions): amounts are hidden with commitments, and range proofs prove no coins were created from nothing — this hides the amount. Beldex's Obscura hardfork (December 2025) upgraded the range proofs to Bulletproofs++, making them smaller and faster to verify."
+ },
+ {
+  "title": "Monero vs Beldex",
+  "url": "https://www.getmonero.org/",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Beldex began in 2018 as a fork of Monero (XMR), the best-known privacy coin, so both use ring signatures, stealth addresses and RingCT. The main differences: Monero stays Proof-of-Work and focuses on private money; Beldex moved to Proof-of-Stake with masternodes and builds a whole privacy app ecosystem on top — BChat (messaging), BelNet (private routing), Beldex Browser, BNS names, a bridge to other chains and a merchant point-of-sale plan. Beldex also burns some fees (for example from BNS), while Monero has a small permanent tail emission."
+ },
+ {
+  "title": "Ethereum and smart contracts (for comparison)",
+  "url": "https://ethereum.org/en/whitepaper/",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Ethereum (ETH), launched in July 2015, is a blockchain for smart contracts: programs that run exactly as written, used for tokens, DeFi lending, NFTs and DAOs. Ethereum transactions are public like Bitcoin's. It moved to Proof-of-Stake in September 2022. Beldex connects to Ethereum through bridging (wrapped BDX on Ethereum, and LayerZero cross-chain transfers), and BNS names can point to Ethereum addresses since the Hermes hardfork. Beldex itself focuses on privacy apps rather than general smart contracts; an EVM integration has been mentioned as a future direction."
+ },
+ {
+  "title": "Market cap, supply and volatility — reading crypto numbers",
+  "url": "https://en.wikipedia.org/wiki/Market_capitalization",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Price is what one coin trades for. Circulating supply is how many coins are in public hands. Market capitalisation = price × circulating supply, which compares the size of projects better than price alone (a coin at 0.08 dollars with billions of coins can be bigger than a 50-dollar coin). Max supply is the most coins that can ever exist (21 million for Bitcoin; for BDX some trackers list about 9.93 billion while others show none). Fully diluted value uses max supply. Crypto prices are volatile and can fall 50% or more; never invest money you cannot afford to lose. This assistant gives information only, not financial advice."
+ },
+ {
+  "title": "Staying safe: crypto scams to avoid",
+  "url": "https://en.wikipedia.org/wiki/Pig_butchering_scam",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Common crypto scams: 'pig butchering', where a friendly stranger on social media or WhatsApp builds trust and then pushes you to an investment site that shows fake profits; such sites then demand a 'tax', 'verification' or 'release fee' before any withdrawal — never pay it. Fake support staff who ask for your seed phrase or private key (no real support ever needs them). Fake wallet apps and look-alike websites — check the exact domain (beldex.io) and download only from official links. 'Guaranteed' daily returns, doubling schemes and pressure to act fast are red flags. Check whether a platform is regulated before depositing money, and use well-known exchanges."
+ },
+ {
+  "title": "Beldex at a glance",
+  "url": "https://beldex.io/",
+  "kind": "official",
+  "lang": "en",
+  "text": "Beldex (ticker BDX) is a privacy-focused blockchain ecosystem. Its mission is to provide a confidential environment where data and value can be exchanged securely. Key facts: launched March 2018 as a fork of Monero; mainnet 2019; founder and chairman Afanddy B. Hushni; developed by Beldex International Inc.; consensus is Proof-of-Stake with masternodes (10,000 BDX collateral); privacy from ring signatures, stealth addresses and RingCT with Bulletproofs++; ecosystem of BChat, BelNet, Beldex Browser, BNS, the Privacy Protocol, BDex and the Beldex Bridge; cross-chain BDX on Ethereum, BNB Smart Chain and Solana; listed on exchanges such as KuCoin, MEXC, Gate.io, BingX, CoinEx, KCEX, NonKYC, BloFin and Kraken."
+ },
+ {
+  "title": "What is BDX used for?",
+  "url": "https://beldex.io/usebdx",
+  "kind": "official",
+  "lang": "en",
+  "text": "BDX is both a privacy coin and the utility token of the Beldex ecosystem. It is used to: make confidential payments; pay for services in Beldex dApps such as BNS names; stake 10,000 BDX to run a masternode and earn block rewards; vote on protocol proposals as a masternode operator; move value across chains through the Beldex Bridge; and, under the 2026 plan, pay merchants through a point-of-sale dashboard. Fees from some services, such as BNS registrations, are burned, which reduces supply over time."
+ },
+ {
+  "title": "Masternodes — rewards, uptime and voting",
+  "url": "https://beldex.io/",
+  "kind": "reference",
+  "lang": "en",
+  "text": "A Beldex masternode is a server run by someone who has locked 10,000 BDX as collateral. Masternodes validate blocks under Proof-of-Stake, store data for the network and relay encrypted traffic for BChat, BelNet and the Beldex Browser. Rewards come from block rewards and are paid through a queue so that payouts are spread fairly across active masternodes. Masternodes must stay online; poor uptime can lead to deregistration and penalties, and the stake is time-locked. Operators also vote on protocol proposals. The live number of masternodes is shown on beldex.io and the Beldex explorer."
+ },
+ {
+  "title": "BChat — private messaging",
+  "url": "https://bchat.beldex.io/",
+  "kind": "official",
+  "lang": "en",
+  "text": "BChat is Beldex's decentralised, end-to-end encrypted messenger. Messages are routed through the Beldex masternode network instead of a company's central servers, and you do not need a phone number or email to sign up — your identity is a BChat ID (which can be linked to a readable BNS name). The Android app version listed on beldex.io is 3.0.2. BChat is integrated with the Beldex wallet so users can send BDX inside chats."
+ },
+ {
+  "title": "BelNet — private routing (dVPN)",
+  "url": "https://belnet.beldex.io/",
+  "kind": "official",
+  "lang": "en",
+  "text": "BelNet is a decentralised, VPN-like network that routes internet traffic through Beldex masternodes. It masks your IP address, location and metadata, and it does not rely on a single VPN company that could log your activity. BelNet also hosts .bdx sites and MNApps (apps hosted on masternodes). The Android app version listed on beldex.io is 1.4.1."
+ },
+ {
+  "title": "Beldex Browser",
+  "url": "https://browser.beldex.io/",
+  "kind": "official",
+  "lang": "en",
+  "text": "The Beldex Browser is a privacy-first web browser. It blocks ads, cookies and trackers, offers private and censorship-resistant browsing, can route traffic through Beldex infrastructure (BelNet), and connects with BChat and the Beldex wallet. The version listed on beldex.io is 1.4.2-beta."
+ },
+ {
+  "title": "BNS — Beldex Name Service in detail",
+  "url": "https://bns.beldex.io/",
+  "kind": "official",
+  "lang": "en",
+  "text": "BNS (Beldex Name Service) replaces long, hard-to-type IDs with human-readable names ending in .bdx. A BNS name can point to a BChat ID, a BelNet address, a wallet address and, since the Hermes hardfork, an Ethereum address. It was introduced with the Bern hardfork. Registration fees are burned on-chain, reducing BDX supply as adoption grows. Names can be bought from the Beldex Electron, mobile and CLI wallets. On 30 May 2026 Beldex launched the BNS Marketplace to mint, trade and manage BNS domains, integrated with the Beldex Wallet and BChat."
+ },
+ {
+  "title": "Privacy Protocol, Beldex Bridge and BDex",
+  "url": "https://beldex.io/",
+  "kind": "official",
+  "lang": "en",
+  "text": "The Beldex Privacy Protocol enables private transactions across multiple chains. The Beldex Bridge lets users move BDX between the Beldex chain and other networks; bridged BDX exists on Ethereum, BNB Smart Chain and Solana, and Beldex integrated LayerZero/Stargate for cross-chain transfers. BDex is Beldex's decentralised exchange. In June 2026 a problem in the BSC bridge infrastructure allowed unauthorised minting of BDX-BSC tokens; the team responded with a new BDX-BSC contract and a 1:1 swap for eligible holders based on the 10 June 2026 snapshot."
+ },
+ {
+  "title": "Beldex hardfork history",
+  "url": "https://beldex.io/",
+  "kind": "reference",
+  "lang": "en",
+  "text": "Beldex upgrades its network through named hardforks. Bern introduced the Beldex Name Service (BNS) with on-chain fee burning. Hermes added Ethereum address support to BNS. Obscura went live on 7 December 2025 at block height 4,939,540 and introduced Bulletproofs++ for smaller, faster range proofs. Hardfork 21 (2026) required users of the Electron desktop wallet to update to stay compatible. Earlier, the network moved from Proof-of-Work to Proof-of-Stake with masternodes."
+ },
+ {
+  "title": "Beldex team, company and funding",
+  "url": "https://www.cbinsights.com/company/beldex/financials",
+  "kind": "reference",
+  "lang": "en",
+  "text": "Beldex was launched in March 2018. Its founder and chairman is Afanddy B. Hushni, described as an investor and crypto economist with around 20 years of traditional finance experience. The project names Beldex International Inc. as its governing entity, alongside masternode operators who vote on protocol proposals. CB Insights reports that Beldex raised about 28 million US dollars over two rounds, the latest listed being a 3 million dollar Series A-II on 12 October 2023 with Block Alpha as an investor. Beldex also runs a grants programme for developers (beldex.io/grants.html)."
+ },
+ {
+  "title": "BDX supply, emissions and coin burns",
+  "url": "https://www.coins.ph/en-ph/academy/what-is-bdx",
+  "kind": "reference",
+  "lang": "en",
+  "text": "BDX supply combines block-reward emissions with fee burning. Coins.ph lists a maximum supply of about 9.93 billion BDX, while CoinMarketCap shows no maximum supply; circulating supply was about 7.87 billion BDX in early 2026. Beldex burns fees from services such as BNS registrations and Flash transactions, and beldex.io shows a live 'coins burned' counter. Beldex also publishes quarterly scheduled-release updates for ecosystem-development and seed/VC allocation wallets (for example the tokenomics update of 30 June 2026)."
+ },
+ {
+  "title": "Beldex in the market — rankings and recognition",
+  "url": "https://www.mexc.com/news/825576",
+  "kind": "news",
+  "published": "2026-03-01",
+  "lang": "en",
+  "text": "BDX is a mid-cap asset whose rank differs by tracker (roughly around the top 90 to 200 during 2026). Grayscale's Q4 2025 report (30 December 2025) named BDX among the top performing assets on a volatility-adjusted basis. In January 2026 BDX was listed on BloFin (21 January) and Kraken (22 January). Prices and rankings change every day, so check a live tracker before making decisions; this assistant does not give price predictions."
+ },
+ {
+  "title": "Risks and challenges for Beldex",
+  "url": "https://yellow.com/036.html/asset/bdx",
+  "kind": "reference",
+  "lang": "en",
+  "text": "The main risk for privacy coins, including Beldex, is regulation: some regulators see strong privacy as an anti-money-laundering risk, and privacy coins have been delisted from some exchanges in some regions. Other risks: price volatility; bridge security (shown by the June 2026 BDX-BSC incident); the need for real adoption of apps like BChat and BelNet; competition from other privacy projects such as Monero, Nym and Secret Network; and governance that depends on a company and masternode operators. Independent research describes Beldex as a privacy infrastructure network rather than a DeFi platform."
+ },
+ {
+  "title": "How to buy BDX safely (general steps)",
+  "url": "https://beldex.io/partners",
+  "kind": "guide",
+  "lang": "en",
+  "text": "General steps, not financial advice: 1) Choose a well-known exchange from the beldex.io partners list (for example KuCoin, MEXC, Gate.io, BingX, CoinEx or Kraken) and check that it is allowed in your country. 2) Create an account and complete identity verification. 3) Deposit funds and buy USDT. 4) Trade USDT for BDX on the BDX/USDT pair. 5) For long-term holding, withdraw BDX to your own Beldex wallet and back up the seed phrase offline. Watch out for fake exchange sites and for anyone promising guaranteed returns."
+ },
+ {
+  "title": "Glossary of crypto words",
+  "url": "https://en.wikipedia.org/wiki/Glossary_of_blockchain_and_cryptocurrency",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Address: where you receive coins. Private key: secret that lets you spend. Seed phrase: words that restore a wallet. Block: a batch of transactions. Hash: a digital fingerprint of data. Node: a computer keeping a copy of the blockchain. Mining: Proof-of-Work block production. Staking: locking coins to secure a Proof-of-Stake chain. Masternode: a staked server with extra duties (Beldex: 10,000 BDX). Hardfork: a network upgrade every node must adopt. Gas/fee: payment for processing a transaction. Bridge: moves tokens between blockchains. DEX/CEX: decentralised/centralised exchange. KYC: identity checks. Burn: permanently removing coins from supply. dApp: decentralised application. Stablecoin: token pegged to a currency like the US dollar."
+ },
+ {
+  "title": "Beldex 2026 roadmap in detail",
+  "url": "https://www.mexc.com/news/577016",
+  "kind": "news",
+  "published": "2026-01-15",
+  "lang": "en",
+  "text": "Beldex describes 2026 as a year for infrastructure, adoption and ecosystem depth. Planned or announced items: research on scaling on-chain settlement while keeping privacy and keeping settlement on the Beldex mainnet; a VRF-based consensus upgrade published as a research paper for peer review; FHE (fully homomorphic encryption) research; a merchant point-of-sale dashboard so shops can accept BDX in person (targeted for Q3 2026 in the Q1 report); the MNApp Store for web apps hosted on .bdx domains using masternode infrastructure; and continued work on BNS, including the BNS Marketplace launched on 30 May 2026."
+ },
+ {
+  "title": "கிரிப்டோகரன்சி என்றால் என்ன?",
+  "url": "https://en.wikipedia.org/wiki/Cryptocurrency",
+  "kind": "guide",
+  "lang": "ta",
+  "text": "கிரிப்டோகரன்சி என்பது வங்கி அல்லது அரசு இடையில் இல்லாமல் இயங்கும் டிஜிட்டல் பணம். யாரிடம் எவ்வளவு உள்ளது என்பது பிளாக்செயின் (blockchain) என்ற பொது பதிவேட்டில் பதிவாகிறது. Cryptography (கணித பூட்டு-சாவி முறை) மூலம் உரிமையாளர் மட்டுமே தன் நாணயங்களை செலவழிக்க முடியும். உலகம் முழுவதும் ஆயிரக்கணக்கான கணினிகள் இந்த பதிவேட்டின் நகலை வைத்திருப்பதால் எந்த ஒரு நிறுவனமும் அதை கட்டுப்படுத்த முடியாது. முதல் கிரிப்டோகரன்சி Bitcoin (2009). இன்று Ethereum, Monero, Beldex (BDX) உட்பட ஆயிரக்கணக்கானவை உள்ளன. விலை வேகமாக ஏறி இறங்கும், அதனால் ஆபத்தும் அதிகம்."
+ },
+ {
+  "title": "பிளாக்செயின் என்றால் என்ன? அதன் நோக்கம் என்ன?",
+  "url": "https://en.wikipedia.org/wiki/Blockchain",
+  "kind": "guide",
+  "lang": "ta",
+  "text": "பிளாக்செயின் என்பது ஒன்றோடு ஒன்று இணைக்கப்பட்ட பதிவுத் தொகுப்புகளின் (blocks) சங்கிலி. ஒவ்வொரு block-இலும் பரிவர்த்தனைகள், நேரம், மற்றும் முந்தைய block-இன் hash (டிஜிட்டல் கைரேகை) இருக்கும். பழைய பதிவை மாற்றினால் அதன் hash மாறி, அதன் பின் உள்ள எல்லா blocks-உம் உடைந்துவிடும்; மற்ற கணினிகள் அதை உடனே நிராகரிக்கும். நோக்கம்: ஒருவரை ஒருவர் அறியாத பலர் ஒரே பொதுப் பதிவேட்டில் நம்பிக்கையுடன் ஒப்புக்கொள்ள உதவுவது — இடைத்தரகர் இல்லாத பணம், தனியுரிமை பரிவர்த்தனைகள், smart contracts, டிஜிட்டல் பெயர்கள் (BNS போன்றவை) ஆகியவற்றுக்கு பயன்படுகிறது."
+ },
+ {
+  "title": "Bitcoin என்றால் என்ன?",
+  "url": "https://bitcoin.org/bitcoin.pdf",
+  "kind": "guide",
+  "lang": "ta",
+  "text": "Bitcoin (BTC) தான் முதல் கிரிப்டோகரன்சி. Satoshi Nakamoto என்ற புனைப்பெயர் கொண்டவர் 2008-இல் வெளியிட்ட white paper அடிப்படையில், 3 ஜனவரி 2009 அன்று இயங்கத் தொடங்கியது. Proof-of-Work mining மூலம் சுமார் 10 நிமிடத்துக்கு ஒரு block சேர்க்கப்படுகிறது. மொத்தம் 21 மில்லியன் BTC மட்டுமே உருவாகும்; சுமார் நான்கு ஆண்டுக்கு ஒருமுறை block reward பாதியாகும் (2024 முதல் 3.125 BTC). Bitcoin பரிவர்த்தனைகள் பொதுவானவை — முகவரிகளையும் தொகைகளையும் யார் வேண்டுமானாலும் பார்க்கலாம்."
+ },
+ {
+  "title": "Bitcoin மற்றும் Beldex — வேறுபாடுகள்",
+  "url": "https://beldex.io/",
+  "kind": "guide",
+  "lang": "ta",
+  "text": "Bitcoin முக்கியமாக டிஜிட்டல் பணமும் மதிப்பு சேமிப்பும். Beldex ஒரு privacy coin — அதோடு BChat, BelNet, Beldex Browser, BNS போன்ற தனியுரிமை apps-ஐயும் இயக்குகிறது. தனியுரிமை: Bitcoin பரிவர்த்தனைகள் எல்லோருக்கும் தெரியும்; Beldex-இல் அனுப்புபவர், பெறுபவர், தொகை மூன்றும் மறைக்கப்படுகின்றன (ring signatures, stealth addresses, RingCT). Consensus: Bitcoin அதிக மின்சாரம் பயன்படுத்தும் Proof-of-Work; Beldex Proof-of-Stake masternodes (ஒவ்வொன்றுக்கும் 10,000 BDX). Bitcoin 2009-இல் தொடங்கியது; Beldex மார்ச் 2018-இல் Monero-வின் fork ஆக தொடங்கியது."
+ },
+ {
+  "title": "பெல்டெக்ஸ் என்றால் என்ன? அதன் பயன் என்ன?",
+  "url": "https://beldex.io/",
+  "kind": "official",
+  "lang": "ta",
+  "text": "பெல்டெக்ஸ் (BDX) ஒரு தனியுரிமை (privacy) மையமான blockchain சூழல். நோக்கம்: தரவையும் பணத்தையும் பாதுகாப்பாகவும் ரகசியமாகவும் பரிமாற ஒரு தளம் தருவது. BDX மூலம் ரகசிய பணப் பரிமாற்றம் செய்யலாம், BNS பெயர்கள் வாங்கலாம், 10,000 BDX stake செய்து masternode இயக்கி வெகுமதி பெறலாம், Bridge மூலம் மற்ற blockchains-க்கு அனுப்பலாம். BChat (ரகசிய குறுஞ்செய்தி), BelNet (IP முகவரியை மறைக்கும் நெட்வொர்க்), Beldex Browser (விளம்பரம், tracker தடுக்கும் browser) ஆகியவை இதன் முக்கிய apps. நிறுவனர்: Afanddy B. Hushni; 2018 மார்ச்சில் தொடங்கப்பட்டது."
+ },
+ {
+  "title": "Masternode மற்றும் staking — தமிழில்",
+  "url": "https://beldex.io/",
+  "kind": "reference",
+  "lang": "ta",
+  "text": "Beldex Proof-of-Stake முறையில் இயங்குகிறது. ஒரு masternode இயக்க 10,000 BDX-ஐ collateral ஆக பூட்டி வைக்க வேண்டும். Masternodes blocks-ஐ உறுதிசெய்கின்றன, BChat, BelNet, Beldex Browser போக்குவரத்தை கொண்டு செல்கின்றன, அதற்காக block rewards பெறுகின்றன. வெகுமதிகள் ஒரு வரிசை (queue) மூலம் எல்லா masternodes-க்கும் நியாயமாக பகிரப்படுகின்றன. Server தொடர்ந்து online-ஆக இருக்க வேண்டும்; இல்லையெனில் அபராதம் அல்லது நீக்கம் நடக்கலாம். Masternode இயக்குபவர்கள் protocol முடிவுகளில் வாக்களிக்கவும் செய்கிறார்கள்."
+ },
+ {
+  "title": "Crypto wallet மற்றும் பாதுகாப்பு — தமிழில்",
+  "url": "https://en.wikipedia.org/wiki/Cryptocurrency_wallet",
+  "kind": "guide",
+  "lang": "ta",
+  "text": "Wallet உங்கள் நாணயங்களை அல்ல, அவற்றை செலவழிக்கும் சாவிகளை (keys) வைத்திருக்கிறது. Public address-ஐ மற்றவர்களிடம் பகிரலாம்; private key மற்றும் seed phrase (12 அல்லது 25 வார்த்தைகள்) யாரிடமும் ஒருபோதும் பகிரக்கூடாது — 'support' என்று சொல்லி கேட்பவர்களிடமும் கூட. Seed phrase-ஐ காகிதத்தில் எழுதி offline-ஆக வைத்திருங்கள். Beldex-க்கு Electron desktop wallet, mobile wallet, CLI wallet உள்ளன; beldex.io அல்லது அதிகாரப்பூர்வ GitHub-இலிருந்து மட்டும் பதிவிறக்கவும்."
+ },
+ {
+  "title": "கிரிப்டோ மோசடிகளில் இருந்து பாதுகாப்பு",
+  "url": "https://en.wikipedia.org/wiki/Pig_butchering_scam",
+  "kind": "guide",
+  "lang": "ta",
+  "text": "சமூக வலைதளம் அல்லது WhatsApp-இல் நட்பாக பழகி, ஒரு முதலீட்டு இணையதளத்திற்கு அழைத்துச் சென்று போலி லாபம் காட்டும் 'pig butchering' மோசடி மிகவும் பொதுவானது. பணத்தை எடுக்க 'tax', 'verification' அல்லது 'release fee' கேட்டால் ஒருபோதும் செலுத்தாதீர்கள். Seed phrase அல்லது private key கேட்கும் யாரும் உண்மையான support இல்லை. 'உத்தரவாத' தினசரி லாபம், இரட்டிப்பு திட்டங்கள், அவசரப்படுத்துதல் — இவை எச்சரிக்கை அறிகுறிகள். இணையதள முகவரியை (beldex.io) சரிபார்த்து, நன்கு அறியப்பட்ட exchanges-ஐ மட்டும் பயன்படுத்துங்கள்."
+ },
+ {
+  "title": "BNS, BChat, BelNet — தமிழில் சுருக்கம்",
+  "url": "https://bns.beldex.io/",
+  "kind": "official",
+  "lang": "ta",
+  "text": "BNS (Beldex Name Service): நீண்ட ID-களுக்கு பதிலாக .bdx என முடியும் எளிய பெயர்கள்; Bern hardfork-இல் அறிமுகம்; கட்டணங்கள் burn செய்யப்படுகின்றன; 30 மே 2026 அன்று BNS Marketplace தொடங்கியது. BChat: phone number இல்லாமல் பயன்படுத்தக்கூடிய end-to-end encrypted messenger; masternodes வழியாக செய்திகள் செல்கின்றன (Android v3.0.2). BelNet: IP முகவரி, இருப்பிடம், metadata-வை மறைக்கும் decentralised VPN போன்ற நெட்வொர்க் (Android v1.4.1). Beldex Browser: விளம்பரம், cookies, trackers-ஐ தடுக்கும் தனியுரிமை browser (v1.4.2-beta)."
+ },
+ {
+  "title": "2026-இல் பெல்டெக்ஸ் — முக்கிய அப்டேட்ஸ்",
+  "url": "https://www.mexc.com/news/825576",
+  "kind": "news",
+  "published": "2026-06-30",
+  "lang": "ta",
+  "text": "ஜனவரி 2026: BloFin (21), Kraken (22) exchanges-இல் BDX listing. ஏப்ரல் 2026: quantum பாதுகாப்பு மற்றும் zero-knowledge வயது சரிபார்ப்பு ஆராய்ச்சி. 30 மே 2026: BNS Marketplace அறிமுகம். 12 ஜூன் 2026: BDX-BSC bridge-இல் அங்கீகாரமில்லா minting கண்டறியப்பட்டது; 10 ஜூன் snapshot அடிப்படையில் 1:1 token swap. 30 ஜூன் 2026: tokenomics மற்றும் release schedule அப்டேட். Hardfork 21: Electron desktop wallet பயனர்கள் update செய்ய வேண்டும். முன்னதாக 7 டிசம்பர் 2025 அன்று Obscura hardfork Bulletproofs++ கொண்டு வந்தது."
+ },
+ {
+  "title": "What is a stablecoin?",
+  "url": "https://en.wikipedia.org/wiki/Stablecoin",
+  "kind": "guide",
+  "lang": "en",
+  "text": "A stablecoin is a crypto token designed to keep a steady price, usually 1 US dollar. The best known are USDT (Tether) and USDC. There are three main types: fiat-backed stablecoins hold cash and short-term government bonds in reserve for every token; crypto-backed stablecoins lock up more crypto than the value they issue; algorithmic stablecoins try to hold the price with code alone and are the riskiest — TerraUSD (UST) lost its dollar peg and collapsed in May 2022. People use stablecoins to park money between trades, to send dollars across borders quickly, and as the main trading pair on exchanges — BDX is usually traded as BDX/USDT. Risks: the issuer may not hold full reserves, tokens can be frozen by the issuer, and a stablecoin can lose its peg in a crisis."
+ },
+ {
+  "title": "Altcoins, coins and tokens",
+  "url": "https://en.wikipedia.org/wiki/Cryptocurrency",
+  "kind": "guide",
+  "lang": "en",
+  "text": "Altcoin means any cryptocurrency other than Bitcoin — Ethereum, Monero and Beldex are all altcoins. A coin runs on its own blockchain (BDX on the Beldex chain), while a token is issued on top of another chain (for example bridged BDX tokens on Ethereum, BNB Smart Chain or Solana, or USDT on many chains). Meme coins are tokens driven mainly by hype and are extremely risky."
+ },
+ {
+  "title": "Stablecoin என்றால் என்ன?",
+  "url": "https://en.wikipedia.org/wiki/Stablecoin",
+  "kind": "guide",
+  "lang": "ta",
+  "text": "Stablecoin என்பது விலை நிலையாக — பொதுவாக 1 அமெரிக்க டாலருக்கு சமமாக — இருக்கும்படி வடிவமைக்கப்பட்ட கிரிப்டோ token. USDT (Tether), USDC மிகவும் பிரபலமானவை. மூன்று வகைகள்: ஒவ்வொரு token-க்கும் பணம்/அரசு பத்திரங்களை இருப்பாக வைத்திருக்கும் fiat-backed; அதிக மதிப்புள்ள கிரிப்டோவை பூட்டி வைக்கும் crypto-backed; code மூலம் மட்டும் விலையை நிலைநிறுத்த முயலும் algorithmic — இது மிக ஆபத்தானது (TerraUSD மே 2022-இல் சரிந்தது). பயன்: trades இடையே பணத்தை நிறுத்தி வைக்க, வெளிநாட்டுக்கு விரைவாக டாலர் அனுப்ப, exchanges-இல் முக்கிய ஜோடியாக (BDX/USDT). ஆபத்துகள்: வெளியீட்டாளர் முழு இருப்பு வைக்காமல் இருக்கலாம், token-களை முடக்கலாம், நெருக்கடியில் 1 டாலர் மதிப்பை இழக்கலாம்."
+ },
+ {
+  "title": "Nexus (nexus.vin) — what it says it offers",
+  "url": "https://n-k.co.in/nexus-vin-building-a-global-crypto-community-through-staking/",
+  "kind": "caution",
+  "published": "2026-03-16",
+  "lang": "en",
+  "text": "Nexus (nexus.vin) presents itself as a crypto staking platform and community. According to a March 2026 blog post about it, it claims multi-network staking, 'passive rewards', a community-driven ecosystem and global access, with support at support@nexus.vin and a registered office listed in Panama City, Panama. The post gives no reward rates, no technical details of how staking works and no independent verification. Promoters in Tamil Nadu have shared nexus.vin on YouTube and WhatsApp as a 'rebranded' link for withdrawing to a Beldex wallet (January 2026). Important: Nexus is NOT mentioned on the official site beldex.io, and it is not part of the Beldex project. Official Beldex staking is done by running a masternode with 10,000 BDX in your own official Beldex wallet."
+ },
+ {
+  "title": "Nexus (nexus.vin) — warnings and what to check",
+  "url": "https://fraudtracewatch.com/reviews/nexus-vin/",
+  "kind": "caution",
+  "published": "2026-07-15",
+  "lang": "en",
+  "text": "Several independent scam-review sites describe nexus.vin as an unlicensed crypto investment platform with no registration at regulators such as the FCA, SEC or CFTC. One reports that multiple security vendors blacklist the domain with a trust score of about 30 out of 100, and that it is linked to 'pig butchering', where a friendly contact builds trust and then sends people to the site, which later demands a tax, verification or 'release fee' before withdrawals. A 2026 citizen complaint from Chennai on the Makkal Saatchi portal alleges that Beldex 'staking' schemes in Tamil Nadu collect money through weekly Zoom meetings and send it to the shell company nexus.vin. These are allegations and reviews, not court findings, but they are serious red flags. Before using any staking platform: check that it is regulated in India, never pay a fee to unlock a withdrawal, test a small withdrawal first, never share your seed phrase, and prefer official Beldex masternode staking."
+ },
+ {
+  "title": "Nexus (nexus.vin) — Tamil Nadu complaint",
+  "url": "https://makkal-saatchi.com/report-details/44df459b-5181-4639-83ca-c907ed43199a",
+  "kind": "caution",
+  "lang": "en",
+  "text": "A citizen report on the Makkal Saatchi portal (Chennai, around 2026, addressed to the Enforcement Department and the Financial Intelligence Unit) describes an 'extreme rise of Beldex crypto staking scams' that make people invest through the 'shell' nexus.vin. It alleges unauthorised collection of money that is sent to overseas shell companies, weekly Zoom meetings aimed at villagers, and compares it to the earlier GainBitcoin scam. The report is unverified and auto-masked by the portal."
+ },
+ {
+  "title": "Nexus (nexus.vin) பற்றி — தமிழில்",
+  "url": "https://fraudtracewatch.com/reviews/nexus-vin/",
+  "kind": "caution",
+  "published": "2026-07-15",
+  "lang": "ta",
+  "text": "Nexus (nexus.vin) தன்னை ஒரு crypto staking தளம் மற்றும் community என்று சொல்லிக்கொள்கிறது — பல நெட்வொர்க் staking, 'passive rewards' என்று கூறுகிறது; பனாமா நகரில் அலுவலகம் இருப்பதாக ஒரு blog கூறுகிறது. ஆனால் இது beldex.io அதிகாரப்பூர்வ தளத்தில் குறிப்பிடப்படவில்லை; Beldex திட்டத்தின் பகுதி அல்ல. பல scam-review தளங்கள் இதை FCA, SEC போன்ற எந்த ஒழுங்குமுறை அமைப்பிலும் பதிவு இல்லாத தளம் என்றும், பல security நிறுவனங்கள் blacklist செய்துள்ளன (trust score சுமார் 30/100) என்றும் கூறுகின்றன. பணம் எடுக்க 'release fee' கேட்கும் 'pig butchering' முறையுடன் தொடர்புபடுத்துகின்றன. 2026-இல் சென்னையிலிருந்து மக்கள் சாட்சி தளத்தில் ஒரு புகார்: தமிழ்நாட்டில் Beldex 'staking' திட்டங்கள் வாராந்திர Zoom கூட்டங்கள் மூலம் பணம் வசூலித்து nexus.vin என்ற shell நிறுவனத்துக்கு அனுப்புவதாக குற்றம் சாட்டுகிறது. இவை குற்றச்சாட்டுகள், நீதிமன்ற தீர்ப்பு அல்ல — ஆனால் கடுமையான எச்சரிக்கை அறிகுறிகள். அதிகாரப்பூர்வ Beldex staking: உங்கள் சொந்த Beldex wallet-இல் 10,000 BDX கொண்டு masternode இயக்குவது. எந்த தளத்திலும் பணம் எடுக்க கட்டணம் செலுத்தாதீர்கள், seed phrase-ஐ பகிராதீர்கள்."
+ }
+]

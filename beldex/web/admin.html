@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beldex AI — Admin</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+<script src="vendor/chart.umd.min.js"></script>
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/purify.min.js"></script>
+</head>
+<body>
+<div class="admin">
+  <nav class="a-side" aria-label="Admin">
+    <a class="brand" href="admin.html"><img src="img/logo.svg" alt="">Beldex AI <small>ADMIN</small></a>
+    <button class="nav on" data-view="overview"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Overview</button>
+    <button class="nav" data-view="users"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M16 4a4 4 0 0 1 0 8M22 21c0-3-2-5-4-6"/></svg>Users & sessions</button>
+    <button class="nav" data-view="usage"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Questions log</button>
+    <button class="nav" data-view="knowledge"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Knowledge base</button>
+    <div class="foot">
+      <a class="nav" href="app.html" style="padding:8px 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M10 14L21 3M21 14v7H3V3h7"/></svg>Open user app</a>
+      <div style="display:flex;align-items:center;gap:10px" id="meBox"></div>
+    </div>
+  </nav>
+  <main class="a-main" id="view"></main>
+</div>
+<div id="drawerRoot"></div>
+
+<script src="js/core.js"></script>
+<script>
+const me = requireLogin('admin');
+startHeartbeat();
+bgFx();
+const $ = id => document.getElementById(id);
+const view = $('view');
+let current = 'overview', timer = null, charts = {}, days = 14;
+
+Chart.defaults.font.family = "'Manrope', system-ui, sans-serif";
+Chart.defaults.color = '#5E5D57';
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+Chart.defaults.plugins.tooltip.backgroundColor = '#121318';
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+
+$('meBox').innerHTML = `${avatar(me.name, 30)}<div style="flex:1;min-width:0"><b style="color:#fff;font-size:13px;display:block">${esc(me.name)}</b><small>${esc(me.email)}</small></div>
+  <button class="icon-btn" style="color:#CFCCC3" aria-label="Sign out" title="Sign out" onclick="signOut()">${ICON.out}</button>`;
+
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
+function go(v) {
+  current = v; clearInterval(timer);
+  Object.values(charts).forEach(c => c.destroy()); charts = {};
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  location.hash = v;
+  ({ overview, users, usage, knowledge })[v]();
+}
+
+function greet() { const h = (new Date().getUTCHours() + 5.5) % 24; return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; }
+const statusPill = s => `<span class="pill ${s === 'Online' ? 'good' : s === 'Suspended' ? 'bad' : ''}">${s === 'Online' ? '<span class="dot live"></span>' : ''}${esc(s)}</span>`;
+const ACT = { sign_in: ['#11704A', '→', 'signed in'], sign_out: ['#5E5D57', '←', 'signed out'], sign_up: ['#E2531D', '★', 'created an account'],
+  view_page: ['#3B5BDB', '◉', 'opened'], sign_in_failed: ['#B3261E', '!', 'failed sign-in'], admin_denied: ['#B3261E', '!', 'tried admin access'],
+  voice_in: ['#E2531D', '🎙', 'asked by voice'], voice_out: ['#7C3AED', '♪', 'listened to an answer'],
+  kb_refresh: ['#8A5A00', '↻', 'refreshed the knowledge base'], news_digest: ['#8A5A00', '✎', 'rebuilt the news digest'], admin_update_user: ['#7C3AED', '✓', 'updated a user'] };
+
+function spark(values, color = '#121318') {
+  const max = Math.max(1, ...values), w = 70, h = 22;
+  const pts = values.map((v, i) => `${(i / (values.length - 1 || 1)) * w},${h - (v / max) * (h - 2) - 1}`).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
+// ======================================================= OVERVIEW
+async function overview() {
+  view.innerHTML = `
+  <div class="hero-band stagger">
+    <div class="a-head" style="margin:0;--i:0">
+      <div><h1>${greet()}, ${esc(me.name.split(' ')[0])}</h1><p>Here's how people are using Beldex AI right now. <span class="pill good" style="margin-left:6px"><span class="dot live"></span>Live</span></p></div>
+      <div class="seg" id="period">${[7, 14, 30, 90].map(d => `<button data-d="${d}" class="${d === days ? 'on' : ''}">${d} days</button>`).join('')}</div>
+    </div>
+    <div class="hero-stats" id="heroStats" style="--i:1"></div>
+  </div>
+  <div class="kpis" id="k1"></div>
+  <div class="kpis" id="k2"></div>
+  <div class="row r-2-1">
+    <div class="card panel"><h3>Activity <small id="actSub"></small></h3><div class="chart-box"><canvas id="cAct"></canvas></div></div>
+    <div class="card panel"><h3>Questions by language</h3><div class="chart-box" style="height:200px"><canvas id="cLang"></canvas></div><div id="langNote" class="muted" style="font-size:13px;text-align:center;margin-top:8px"></div></div>
+  </div>
+  <div class="row r-1-1-1">
+    <div class="card panel"><h3>What people ask about <small>by top source</small></h3><div class="bars" id="topics"></div></div>
+    <div class="card panel"><h3>Busiest hours <small>IST</small></h3><div class="chart-box" style="height:200px"><canvas id="cHour"></canvas></div></div>
+    <div class="card panel"><h3>Server health</h3><div id="server"></div></div>
+  </div>
+  <div class="row r-1-1">
+    <div class="card panel"><h3>Live activity <small>refreshes every 20 s</small></h3><ul class="feed" id="feed"></ul></div>
+    <div class="card panel"><h3>Questions we couldn't answer <small>add content for these</small></h3><ul class="feed" id="unans"></ul></div>
+  </div>`;
+  $('period').querySelectorAll('button').forEach(b => b.onclick = () => { days = +b.dataset.d; go('overview'); });
+  await drawOverview(true);
+  timer = setInterval(() => drawOverview(false), 20000);
+}
+
+async function drawOverview(first) {
+  let o;
+  try { o = await api('/admin/overview?days=' + days); } catch (e) { toast(e.message, true); return; }
+  const k = o.kpis, s = o.series;
+  const KI = { users: 'M9 8a4 4 0 1 0 0-.01M2 21c0-4 3-6 7-6s7 2 7 6', live: 'M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0', q: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z', ok: 'M5 12l5 5 9-10',
+    time: 'M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18', sess: 'M4 6h16M4 12h10M4 18h6', tok: 'M4 7h16v10H4zM8 11h8', mic: 'M9 3h6v11H9zM5 11a7 7 0 0 0 14 0M12 18v3' };
+  const card = (id, lbl, val, sub, opt = {}) => `<div class="card kpi" style="--kc:${opt.c || '#121318'}"><span class="lbl"><span class="kic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="${KI[opt.i] || KI.q}"/></svg></span>${lbl}</span><span class="val" id="${id}">${first ? '0' : val}</span><span class="sub">${sub}</span>${opt.spark ? `<canvas id="${id}s"></canvas>` : ''}</div>`;
+  $('heroStats').innerHTML = `<div><b>${k.questions}</b><span>questions in ${days} days</span></div><div><b>${k.answered_pct}%</b><span>answered with sources</span></div>
+    <div><b>${k.voice_pct}%</b><span>asked by voice</span></div><div><b>${(k.avg_latency_ms / 1000).toFixed(1)} s</b><span>average answer time</span></div>
+    <div><b>${o.voice.server ? 'On' : 'Browser'}</b><span>voice engine ${o.voice.server ? '(OpenAI)' : 'fallback'}</span></div>`;
+  $('k1').innerHTML =
+    card('kUsers', 'Registered users', k.users, `<b style="color:var(--good)">+${k.new_users}</b> new in ${days} days`, { c: '#3B5BDB', i: 'users' }) +
+    card('kOnline', 'Online now', k.online, o.online_people.length ? '<span class="dot live"></span> ' + esc(o.online_people.slice(0, 3).join(', ')) + (o.online_people.length > 3 ? ` +${o.online_people.length - 3}` : '') : 'Nobody right now', { c: '#11704A', i: 'live' }) +
+    card('kQ', 'Questions asked', k.questions, `${(k.questions / Math.max(1, s.length)).toFixed(1)} per day`, { spark: 1, c: '#E2531D', i: 'q' }) +
+    card('kAns', 'Answered from sources', k.answered_pct + '%', `${k.helpful_pct}% rated helpful`, { c: '#0E7490', i: 'ok' });
+  $('k2').innerHTML =
+    card('kHours', 'Time spent in app', k.total_hours + ' h', 'all users, this period', { spark: 1, c: '#7C3AED', i: 'time' }) +
+    card('kSess', 'Average session', k.avg_session_min + ' min', 'per sign-in', { c: '#B7791F', i: 'sess' }) +
+    card('kTok', 'AI tokens used', compact(k.tokens), `≈ $${k.cost_usd.toFixed(2)} model cost`, { c: '#121318', i: 'tok' }) +
+    card('kLat', 'Voice questions', k.voice_pct + '%', `avg answer ${(k.avg_latency_ms / 1000).toFixed(1)} s`, { c: '#E2531D', i: 'mic' });
+  if (first) {
+    countUp($('kUsers'), k.users); countUp($('kOnline'), k.online); countUp($('kQ'), k.questions);
+    countUp($('kAns'), k.answered_pct, { suffix: '%' }); countUp($('kHours'), k.total_hours, { dec: 1, suffix: ' h' });
+    countUp($('kSess'), k.avg_session_min, { dec: 1, suffix: ' min' }); $('kTok').textContent = compact(k.tokens);
+    countUp($('kLat'), k.voice_pct, { suffix: '%' });
+  }
+  const sparkChart = (id, data, color) => { const c = $(id); if (!c) return; new Chart(c, { type: 'line', data: { labels: data.map((_, i) => i), datasets: [{ data, borderColor: color, borderWidth: 2, pointRadius: 0, tension: .35, fill: true, backgroundColor: color + '18' }] },
+    options: { animation: first, responsive: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } } } }); };
+  sparkChart('kQs', s.map(d => d.questions), '#E2531D');
+  sparkChart('kHourss', s.map(d => d.minutes), '#7C3AED');
+
+  const labels = s.map(d => new Date(d.day).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }));
+  $('actSub').textContent = `last ${days} days`;
+  const actData = { labels, datasets: [
+    { type: 'bar', label: 'Questions', data: s.map(d => d.questions), backgroundColor: '#121318', borderRadius: 6, maxBarThickness: 22, yAxisID: 'y' },
+    { type: 'line', label: 'Active users', data: s.map(d => d.active_users), borderColor: '#E2531D', backgroundColor: '#E2531D', tension: .35, pointRadius: 3, pointHoverRadius: 6, borderWidth: 2.5, yAxisID: 'y1' },
+    { type: 'line', label: 'Minutes used', data: s.map(d => d.minutes), borderColor: '#11704A', borderDash: [5, 4], tension: .35, pointRadius: 0, borderWidth: 2, yAxisID: 'y2' } ] };
+  if (charts.act) { charts.act.data = actData; charts.act.update('none'); }
+  else charts.act = new Chart($('cAct'), { data: actData, options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { position: 'bottom' } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: '#EFEDE6' }, beginAtZero: true, title: { display: true, text: 'questions' } },
+      y1: { position: 'right', grid: { display: false }, beginAtZero: true, title: { display: true, text: 'users' } }, y2: { display: false, beginAtZero: true } } } });
+
+  const lg = o.languages, en = lg.English || 0, ta = lg.Tamil || 0;
+  const langData = { labels: ['English', 'தமிழ்'], datasets: [{ data: [en, ta], backgroundColor: ['#121318', '#E2531D'], borderWidth: 0, hoverOffset: 6 }] };
+  if (charts.lang) { charts.lang.data = langData; charts.lang.update('none'); }
+  else charts.lang = new Chart($('cLang'), { type: 'doughnut', data: langData, options: { maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom' } } } });
+  $('langNote').textContent = (en + ta) ? `${Math.round(100 * ta / (en + ta))}% of questions are in Tamil` : 'No questions yet';
+
+  const maxT = Math.max(1, ...o.top_topics.map(x => x.questions));
+  $('topics').innerHTML = o.top_topics.length ? o.top_topics.map(x => `<div class="bar-row" title="${esc(x.topic)}"><span>${esc(x.topic)}</span><b>${x.questions}</b><i style="--w:${first ? 0 : 100 * x.questions / maxT}%" data-w="${100 * x.questions / maxT}%"></i></div>`).join('') : '<p class="muted">No questions yet.</p>';
+  if (first) requestAnimationFrame(() => $('topics').querySelectorAll('i').forEach(i => i.style.setProperty('--w', i.dataset.w)));
+
+  const hourData = { labels: [...Array(24).keys()].map(h => h % 6 === 0 ? (h % 12 || 12) + (h < 12 ? 'am' : 'pm') : ''), datasets: [{ data: o.by_hour_ist, backgroundColor: o.by_hour_ist.map(v => v === Math.max(...o.by_hour_ist) && v ? '#E2531D' : '#121318'), borderRadius: 4 }] };
+  if (charts.hour) { charts.hour.data = hourData; charts.hour.update('none'); }
+  else charts.hour = new Chart($('cHour'), { type: 'bar', data: hourData, options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+    tooltip: { callbacks: { title: i => `${i[0].dataIndex}:00–${i[0].dataIndex + 1}:00`, label: i => i.raw + ' questions' } } },
+    scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0 } }, y: { display: false, beginAtZero: true } } } });
+
+  const sv = o.server, g = (lbl, pct, txt) => `<div class="gauge"><div><span>${lbl}</span><b>${txt}</b></div><i style="--w:${pct}%;"></i></div>`;
+  $('server').innerHTML = g('CPU', sv.cpu_percent, sv.cpu_percent + '%') + g('Memory', sv.ram_percent, `${sv.ram_used_gb} / ${sv.ram_total_gb} GB`) + g('Disk', sv.disk_percent, sv.disk_percent + '%') +
+    `<p class="muted" style="font-size:12.5px;margin:6px 0 0">AI model: <b>${o.llm.configured ? esc(o.llm.model) : 'not set'}</b> · Search: <b>${esc(o.knowledge.backend.toUpperCase())}</b><br>${o.knowledge.sources} sources · ${o.knowledge.chunks} passages · API ${sv.api_process_mb} MB</p>`;
+  $('server').querySelectorAll('.gauge i').forEach(i => { const w = parseFloat(i.style.getPropertyValue('--w')); if (w > 85) i.style.setProperty('--good', 'var(--bad)'); });
+
+  $('feed').innerHTML = o.feed.length ? o.feed.map(f => { const a = ACT[f.action] || ['#5E5D57', '•', f.action];
+    return `<li><span class="ic" style="background:${a[0]}1A;color:${a[0]}">${a[1]}</span><span><b>${esc(f.who)}</b> ${a[2]}${f.action === 'view_page' ? ' <i>' + esc(f.detail) + '</i>' : ''}</span><time>${ago(f.at)}</time></li>`; }).join('') : '<p class="muted">No activity yet.</p>';
+  $('unans').innerHTML = o.unanswered.length ? o.unanswered.slice().reverse().slice(0, 8).map(u => `<li><span class="ic" style="background:var(--warn-soft);color:var(--warn)">?</span><span>${esc(u.question)}</span><time>${ago(u.at)}</time></li>`).join('')
+    : '<li><span class="ic" style="background:var(--good-soft);color:var(--good)">✓</span><span>Every question found an answer in the sources.</span></li>';
+}
+
+// ======================================================= USERS
+let allUsers = [], filt = 'All', sortKey = 'last_login', sortDir = -1;
+async function users() {
+  view.innerHTML = `
+  <div class="a-head"><div><h1>Users & sessions</h1><p>Click anyone to see their sessions, questions and activity.</p></div>
+    <button class="btn btn-sm" id="csvU">Export CSV</button></div>
+  <div class="kpis" id="uk"></div>
+  <div class="card panel">
+    <div class="toolbar">
+      <input class="input" id="uq" placeholder="Search name or email" aria-label="Search users">
+      <div class="seg" id="uf">${['All', 'Online', 'Offline', 'Suspended'].map(x => `<button data-f="${x}" class="${x === filt ? 'on' : ''}">${x}</button>`).join('')}</div>
+      <span class="muted" id="ucount" style="margin-left:auto;font-size:13px"></span>
+    </div>
+    <div class="table-wrap"><table class="t"><thead><tr>
+      <th data-k="name">User</th><th data-k="status">Status</th><th data-k="last_login">Last seen</th><th class="num" data-k="sessions">Sessions</th>
+      <th class="num" data-k="minutes">Time used</th><th class="num" data-k="questions">Questions</th><th>Last 7 days</th><th class="num" data-k="tokens">Tokens</th><th class="num" data-k="cost_usd">Cost</th>
+    </tr></thead><tbody id="ub"><tr><td colspan="9"><div class="skeleton" style="height:120px"></div></td></tr></tbody></table></div>
+  </div>`;
+  try { allUsers = await api('/admin/users'); } catch (e) { return toast(e.message, true); }
+  const on = allUsers.filter(u => u.status === 'Online').length, tm = allUsers.reduce((a, u) => a + u.minutes, 0);
+  $('uk').innerHTML = `<div class="card kpi"><span class="lbl">People</span><span class="val">${allUsers.length}</span><span class="sub">${allUsers.filter(u => u.role === 'admin').length} admins</span></div>
+    <div class="card kpi"><span class="lbl"><span class="dot live"></span> Online now</span><span class="val">${on}</span><span class="sub">active in the last 5 min</span></div>
+    <div class="card kpi"><span class="lbl">Total time used</span><span class="val">${fmtMin(tm)}</span><span class="sub">all sessions</span></div>
+    <div class="card kpi"><span class="lbl">Total AI cost</span><span class="val">$${allUsers.reduce((a, u) => a + u.cost_usd, 0).toFixed(2)}</span><span class="sub">${compact(allUsers.reduce((a, u) => a + u.tokens, 0))} tokens</span></div>`;
+  $('uq').oninput = renderUsers;
+  $('uf').querySelectorAll('button').forEach(b => b.onclick = () => { filt = b.dataset.f; $('uf').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderUsers(); });
+  document.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => { sortDir = sortKey === th.dataset.k ? -sortDir : -1; sortKey = th.dataset.k; renderUsers(); });
+  $('csvU').onclick = () => csv('beldex_ai_users.csv', allUsers, ['name', 'email', 'role', 'status', 'last_login', 'sessions', 'minutes', 'questions', 'tokens', 'cost_usd', 'last_ip']);
+  renderUsers();
+  timer = setInterval(async () => { try { allUsers = await api('/admin/users'); renderUsers(); } catch {} }, 30000);
+}
+function renderUsers() {
+  const q = $('uq').value.toLowerCase();
+  let rows = allUsers.filter(u => (filt === 'All' || u.status === filt) && (!q || (u.name + u.email).toLowerCase().includes(q)));
+  rows.sort((a, b) => { const x = a[sortKey] ?? '', y = b[sortKey] ?? ''; return (x > y ? 1 : x < y ? -1 : 0) * sortDir; });
+  $('ucount').textContent = `${rows.length} of ${allUsers.length}`;
+  $('ub').innerHTML = rows.map(u => `<tr data-id="${u.id}">
+    <td><div class="who">${avatar(u.name)}<div><b>${esc(u.name)}${u.role === 'admin' ? ' <span class="pill accent">admin</span>' : ''}</b><small>${esc(u.email)}</small></div></div></td>
+    <td>${statusPill(u.status)}</td><td class="muted">${ago(u.last_login)}</td><td class="num">${u.sessions}</td><td class="num">${fmtMin(u.minutes)}</td>
+    <td class="num">${u.questions}</td><td>${spark(u.spark, '#E2531D')}</td><td class="num">${compact(u.tokens)}</td><td class="num">$${u.cost_usd.toFixed(3)}</td></tr>`).join('')
+    || '<tr><td colspan="9" class="muted" style="text-align:center;padding:30px">No one matches this filter.</td></tr>';
+  $('ub').querySelectorAll('tr[data-id]').forEach(tr => tr.onclick = () => openUser(+tr.dataset.id));
+}
+
+async function openUser(id) {
+  const root = $('drawerRoot');
+  root.innerHTML = `<div class="drawer-bg"></div><aside class="drawer" role="dialog" aria-label="User details"><section><div class="skeleton" style="height:300px"></div></section></aside>`;
+  const close = () => { root.innerHTML = ''; document.removeEventListener('keydown', esc_); };
+  const esc_ = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', esc_);
+  root.querySelector('.drawer-bg').onclick = close;
+  let d; try { d = await api('/admin/users/' + id); } catch (e) { close(); return toast(e.message, true); }
+  const u = d.user, row = allUsers.find(x => x.id === id) || {};
+  const maxMin = Math.max(1, ...d.sessions.map(s => s.minutes));
+  root.querySelector('.drawer').innerHTML = `
+    <header>${avatar(u.name, 52)}<div style="flex:1;min-width:0"><h2 style="margin:0;font-size:20px">${esc(u.name)}</h2>
+      <div class="muted" style="font-size:13.5px">${esc(u.email)} · ${u.lang === 'ta' ? 'Tamil' : 'English'} · ${statusPill(row.status || 'Offline')}</div></div>
+      <button class="icon-btn" id="dClose" aria-label="Close">${ICON.x}</button></header>
+    <section>
+      <div class="mini-kpis">
+        <div><b>${fmtMin(row.minutes)}</b><span>time used</span></div><div><b>${row.sessions ?? 0}</b><span>sessions</span></div>
+        <div><b>${row.questions ?? 0}</b><span>questions</span></div><div><b>$${(row.cost_usd || 0).toFixed(3)}</b><span>AI cost</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-sm ${u.active ? 'btn-danger' : ''}" id="dAct">${u.active ? 'Suspend account' : 'Reactivate account'}</button>
+        <button class="btn btn-sm" id="dRole">${u.role === 'admin' ? 'Remove admin rights' : 'Make admin'}</button>
+      </div>
+    </section>
+    <section style="padding-top:0">
+      <div class="tabs"><button class="on" data-tab="q">Questions (${d.queries.length})</button><button data-tab="s">Sessions (${d.sessions.length})</button><button data-tab="a">Activity</button></div>
+      <div id="tab-q">${d.queries.map(q => `<details class="q"><summary><span>${q.via === 'voice' ? '<span class="via">voice</span> ' : ''}${esc(q.question)}</span><span class="muted mono" style="font-size:11.5px;white-space:nowrap">${ago(q.at)}</span></summary>
+        <div class="answer">${md(q.answer)}</div>
+        <div class="muted" style="font-size:12px;margin-top:8px">${q.found ? '<span class="pill good">answered</span>' : '<span class="pill warn">not in sources</span>'} ${q.lang === 'ta' ? 'Tamil' : 'English'} · ${q.tokens} tokens · $${q.cost_usd.toFixed(4)} · ${(q.latency_ms / 1000).toFixed(1)} s · CPU ${q.cpu_ms} ms · ${q.mem_mb} MB${q.feedback === 1 ? ' · 👍' : q.feedback === -1 ? ' · 👎' : ''}</div>
+        ${q.sources.length ? `<div style="margin-top:8px;font-size:12.5px">${q.sources.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">[${s.n}] ${esc(s.title)}</a>`).join('<br>')}</div>` : ''}</details>`).join('') || '<p class="muted">No questions yet.</p>'}</div>
+      <div id="tab-s" class="hidden">${d.sessions.map(s => `<div class="sess"><span class="mono" style="font-size:12px">${fmtDate(s.started_at)}</span>
+        <div><div class="bar" style="width:${Math.max(3, 100 * s.minutes / maxMin)}%;background:${s.online ? '#19A463' : 'var(--ink)'}"></div><small class="muted">${esc(s.device || '—')} · ${esc(s.ip || '')}</small></div>
+        <b class="mono" style="font-size:12.5px">${s.online ? '<span class="dot live"></span> ' : ''}${fmtMin(s.minutes)}</b></div>`).join('') || '<p class="muted">No sessions yet.</p>'}</div>
+      <div id="tab-a" class="hidden"><ul class="feed">${d.activity.map(a => { const x = ACT[a.action] || ['#5E5D57', '•', a.action];
+        return `<li><span class="ic" style="background:${x[0]}1A;color:${x[0]}">${x[1]}</span><span>${x[2]} <span class="muted">${esc(a.detail)}</span></span><time>${fmtDate(a.at)}</time></li>`; }).join('')}</ul></div>
+    </section>`;
+  $('dClose').onclick = close;
+  root.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { root.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b)); ['q', 's', 'a'].forEach(k => $('tab-' + k).classList.toggle('hidden', k !== b.dataset.tab)); });
+  const patch = async body => { try { await api('/admin/users/' + id, { method: 'PATCH', body }); toast('Saved'); allUsers = await api('/admin/users'); renderUsers(); openUser(id); } catch (e) { toast(e.message, true); } };
+  $('dAct').onclick = () => patch({ active: !u.active });
+  $('dRole').onclick = () => patch({ role: u.role === 'admin' ? 'user' : 'admin' });
+}
+
+// ======================================================= QUESTIONS LOG
+let allQ = [], qLang = 'all', qFound = 'all', qVia = 'all';
+async function usage() {
+  view.innerHTML = `
+  <div class="a-head"><div><h1>Questions log</h1><p>Every question, the resources it used and whether the sources could answer it.</p></div>
+    <button class="btn btn-sm" id="csvQ">Export CSV</button></div>
+  <div class="kpis" id="qk"></div>
+  <div class="card panel">
+    <div class="toolbar">
+      <input class="input" id="qq" placeholder="Search questions or people" aria-label="Search questions">
+      <div class="seg" id="ql">${[['all', 'All languages'], ['en', 'English'], ['ta', 'தமிழ்']].map(([k, v]) => `<button data-v="${k}" class="${k === qLang ? 'on' : ''}">${v}</button>`).join('')}</div>
+      <div class="seg" id="qv">${[['all', 'Text + voice'], ['voice', 'Voice only']].map(([k, v]) => `<button data-v="${k}" class="${k === qVia ? 'on' : ''}">${v}</button>`).join('')}</div>
+      <div class="seg" id="qf">${[['all', 'All'], ['yes', 'Answered'], ['no', 'Not in sources']].map(([k, v]) => `<button data-v="${k}" class="${k === qFound ? 'on' : ''}">${v}</button>`).join('')}</div>
+    </div>
+    <div class="table-wrap"><table class="t"><thead><tr><th>When</th><th>Who</th><th>Question</th><th>Lang</th><th>Via</th><th>Result</th>
+      <th class="num">Tokens</th><th class="num">Cost</th><th class="num">Time</th><th class="num">CPU</th><th>Rating</th></tr></thead><tbody id="qb"></tbody></table></div>
+  </div>`;
+  try { allQ = await api('/admin/queries?limit=1000'); } catch (e) { return toast(e.message, true); }
+  $('qq').oninput = renderQ;
+  $('ql').querySelectorAll('button').forEach(b => b.onclick = () => { qLang = b.dataset.v; $('ql').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderQ(); });
+  $('qv').querySelectorAll('button').forEach(b => b.onclick = () => { qVia = b.dataset.v; $('qv').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderQ(); });
+  $('qf').querySelectorAll('button').forEach(b => b.onclick = () => { qFound = b.dataset.v; $('qf').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderQ(); });
+  $('csvQ').onclick = () => csv('beldex_ai_questions.csv', filteredQ(), ['at', 'user', 'question', 'lang', 'via', 'found', 'tokens', 'cost_usd', 'latency_ms', 'cpu_ms', 'mem_mb', 'feedback']);
+  renderQ();
+}
+function filteredQ() {
+  const q = $('qq').value.toLowerCase();
+  return allQ.filter(r => (qLang === 'all' || r.lang === qLang) && (qVia === 'all' || r.via === 'voice') && (qFound === 'all' || r.found === (qFound === 'yes')) && (!q || (r.question + r.user).toLowerCase().includes(q)));
+}
+function renderQ() {
+  const rows = filteredQ(), sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
+  $('qk').innerHTML = `<div class="card kpi" style="--kc:#E2531D"><span class="lbl">Questions</span><span class="val">${rows.length}</span><span class="sub">${rows.filter(r => r.found).length} answered · ${rows.filter(r => r.via === 'voice').length} by voice</span></div>
+    <div class="card kpi"><span class="lbl">Tokens</span><span class="val">${compact(sum('tokens'))}</span><span class="sub">${rows.length ? Math.round(sum('tokens') / rows.length) : 0} per question</span></div>
+    <div class="card kpi"><span class="lbl">AI cost</span><span class="val">$${sum('cost_usd').toFixed(3)}</span><span class="sub">for this selection</span></div>
+    <div class="card kpi"><span class="lbl">Server CPU time</span><span class="val">${(sum('cpu_ms') / 1000).toFixed(1)} s</span><span class="sub">avg answer ${(rows.length ? sum('latency_ms') / rows.length / 1000 : 0).toFixed(1)} s</span></div>`;
+  $('qb').innerHTML = rows.slice(0, 300).map(r => `<tr>
+    <td class="muted mono" style="font-size:12px;white-space:nowrap">${fmtDate(r.at)}</td><td><div class="who">${avatar(r.user, 26)}<span>${esc(r.user)}</span></div></td>
+    <td style="max-width:360px">${esc(r.question)}</td><td>${r.lang === 'ta' ? 'TA' : 'EN'}</td>
+    <td>${r.via === 'voice' ? `<span class="via">${ICON.mic.replace('width="19" height="19"', 'width="12" height="12"')} voice</span>` : '<span class="muted">text</span>'}</td>
+    <td>${r.found ? '<span class="pill good">answered</span>' : '<span class="pill warn">not in sources</span>'}</td>
+    <td class="num">${r.tokens}</td><td class="num">$${r.cost_usd.toFixed(4)}</td><td class="num">${(r.latency_ms / 1000).toFixed(1)}s</td><td class="num">${r.cpu_ms}ms</td>
+    <td>${r.feedback === 1 ? '<span class="pill good">helpful</span>' : r.feedback === -1 ? '<span class="pill bad">not helpful</span>' : '<span class="muted">—</span>'}</td></tr>`).join('')
+    || '<tr><td colspan="11" class="muted" style="text-align:center;padding:30px">No questions match.</td></tr>';
+}
+
+// ======================================================= KNOWLEDGE
+async function knowledge() {
+  view.innerHTML = `
+  <div class="a-head"><div><h1>Knowledge base</h1><p>The assistant answers only from these sources. Refresh to re-read beldex.io and rebuild the index.</p></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-sm" id="digest">Rebuild news digest</button><button class="btn btn-primary btn-sm" id="refresh">Refresh knowledge</button></div></div>
+  <div id="running" class="card panel hidden" style="margin-bottom:14px"><h3>Refreshing… <small>reading beldex.io with Playwright, then re-indexing</small></h3><div class="progress"><i></i></div></div>
+  <div class="kpis" id="kk"></div>
+  <div class="row r-2-1">
+    <div class="card panel"><h3>Sources</h3><div class="table-wrap"><table class="t"><thead><tr><th>Source</th><th>Type</th><th>Date</th><th class="num">Passages</th></tr></thead><tbody id="kb"></tbody></table></div></div>
+    <div class="card panel"><h3>Refresh history</h3><div id="runs"></div></div>
+  </div>`;
+  $('refresh').onclick = async () => { try { await api('/admin/kb/refresh', { method: 'POST' }); toast('Refresh started'); pollRuns(); } catch (e) { toast(e.message, true); } };
+  $('digest').onclick = async () => { $('digest').disabled = true; $('digest').textContent = 'Writing digest…';
+    try { const r = await api('/admin/news/run', { method: 'POST' }); toast('Digest ready (' + r.engine + ')'); } catch (e) { toast(e.message, true); }
+    $('digest').disabled = false; $('digest').textContent = 'Rebuild news digest'; };
+  await drawKb(); pollRuns();
+}
+async function drawKb() {
+  const k = await api('/kb/sources');
+  const off = k.sources.filter(s => s.kind === 'official').length;
+  $('kk').innerHTML = `<div class="card kpi"><span class="lbl">Sources</span><span class="val">${k.sources.length}</span><span class="sub">${off} official beldex.io pages</span></div>
+    <div class="card kpi"><span class="lbl">Passages indexed</span><span class="val">${k.chunks}</span><span class="sub">searchable pieces of text</span></div>
+    <div class="card kpi"><span class="lbl">Search engine</span><span class="val" style="font-size:22px">${k.backend === 'faiss' ? 'FAISS' : 'BM25'}</span><span class="sub">${k.backend === 'faiss' ? 'meaning-based (vector)' : 'keyword-based'}</span></div>
+    <div class="card kpi"><span class="lbl">News items</span><span class="val">${k.sources.filter(s => s.published).length}</span><span class="sub">dated updates</span></div>`;
+  const kindPill = s => s === 'official' ? '<span class="pill accent">official</span>' : s === 'news' ? '<span class="pill good">news</span>' : s === 'guide' ? '<span class="pill" style="background:#EDE9FE;color:#5B21B6">crypto guide</span>' : s === 'caution' ? '<span class="pill bad">caution</span>' : '<span class="pill">reference</span>';
+  $('kb').innerHTML = k.sources.map(s => `<tr><td><a href="${esc(s.url)}" target="_blank" rel="noopener" style="font-weight:600;color:var(--ink);text-decoration:none">${esc(s.title)}</a><br><small class="muted">${esc(s.url)}</small></td>
+    <td>${kindPill(s.kind)}</td><td class="muted mono" style="font-size:12px">${esc(s.published || (s.fetched_at || '').slice(0, 10) || '—')}</td><td class="num">${s.chunks}</td></tr>`).join('');
+}
+async function pollRuns() {
+  clearInterval(timer);
+  const draw = async () => {
+    const runs = await api('/admin/kb/runs');
+    const running = runs.some(r => r.status === 'running');
+    $('running')?.classList.toggle('hidden', !running);
+    if ($('runs')) $('runs').innerHTML = runs.length ? runs.map(r => `<details class="q"><summary><span>${fmtDate(r.started_at)}</span>
+      <span class="pill ${r.status === 'done' ? 'good' : r.status === 'failed' ? 'bad' : 'warn'}">${r.status}</span></summary>
+      <div class="muted" style="font-size:12.5px;margin-top:6px">${r.pages} pages · ${r.chunks} passages</div><pre class="mono" style="font-size:11.5px;white-space:pre-wrap;max-height:200px;overflow:auto">${esc(r.message || '')}</pre></details>`).join('')
+      : '<p class="muted">Not refreshed yet — using the built-in starter knowledge. Click "Refresh knowledge" to read beldex.io.</p>';
+    if (!running) { clearInterval(timer); if (current === 'knowledge') drawKb(); }
+  };
+  await draw();
+  timer = setInterval(draw, 3000);
+}
+
+function csv(name, rows, cols) {
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const blob = new Blob([[cols.join(','), ...rows.map(r => cols.map(c => q(r[c])).join(','))].join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+}
+
+go(['overview', 'users', 'usage', 'knowledge'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'overview');
+</script>
+</body>
+</html>

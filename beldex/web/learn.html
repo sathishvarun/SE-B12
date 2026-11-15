@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beldex Academy — Beldex AI</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+<style>
+.ac { max-width: 1180px; margin: 0 auto; padding: 22px 28px 70px; display: flex; flex-direction: column; gap: 34px; }
+.ac-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.ac-hero { border-radius: 22px; padding: 34px 36px; color: #fff; position: relative; overflow: hidden; background: linear-gradient(125deg, #121318 0%, #24170F 50%, #6A2A0F 100%); display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
+.ac-hero::before { content: ""; position: absolute; width: 520px; height: 520px; left: -160px; bottom: -320px; border-radius: 50%; background: radial-gradient(circle, rgba(124,58,237,.45), transparent 65%); animation: drift 18s ease-in-out infinite alternate; }
+.ac-hero::after { content: ""; position: absolute; width: 460px; height: 460px; right: -120px; top: -220px; border-radius: 50%; background: radial-gradient(circle, rgba(226,83,29,.6), transparent 65%); animation: drift 14s ease-in-out infinite alternate-reverse; }
+.ac-hero > * { position: relative; z-index: 1; }
+.ac-hero h1 { margin: 0 0 8px; font-size: 40px; letter-spacing: -0.03em; font-weight: 800; }
+.ac-hero p { margin: 0; color: #D9D5CB; font-size: 16.5px; max-width: 620px; }
+.ring { width: 132px; height: 132px; position: relative; }
+.ring svg { transform: rotate(-90deg); }
+.ring b { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font: 600 28px var(--mono); }
+.ring b small { font: 600 11px var(--font); color: #CFCBC2; letter-spacing: .06em; }
+.sec-h { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.sec-h h2 { margin: 0; font-size: 24px; letter-spacing: -0.02em; font-weight: 800; }
+.sec-h p { margin: 4px 0 0; color: var(--muted); }
+.lessons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.lesson { text-align: left; border: 1px solid var(--line); background: rgba(255,255,255,.9); border-radius: 18px; padding: 18px; cursor: pointer; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s; min-height: 178px; }
+.lesson:hover { transform: translateY(-4px) rotate(-.3deg); box-shadow: 0 22px 40px -24px rgba(18,19,24,.5); }
+.lesson .num { font: 600 12px var(--mono); color: var(--faint); }
+.lesson .em { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.lesson b { font-size: 16px; line-height: 1.3; } .lesson span.d { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.lesson .done-badge { position: absolute; top: 14px; right: 14px; width: 26px; height: 26px; border-radius: 50%; background: var(--good); color: #fff; display: none; align-items: center; justify-content: center; }
+.lesson.done .done-badge { display: flex; animation: pop .4s both; }
+.lesson .bar { position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: var(--c); transition: width .5s; }
+.lesson.done .bar { width: 100%; }
+/* lesson player */
+.player-bg { position: fixed; inset: 0; background: rgba(18,19,24,.55); backdrop-filter: blur(4px); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fade .2s; }
+.player { width: min(760px, 100%); background: var(--paper); border-radius: 24px; overflow: hidden; box-shadow: 0 40px 80px -30px rgba(0,0,0,.6); animation: rise .3s; }
+.player .art { height: 230px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.player .art svg { width: 100%; height: 100%; }
+.player .body { padding: 24px 28px 22px; display: flex; flex-direction: column; gap: 12px; min-height: 210px; }
+.player h3 { margin: 0; font-size: 24px; letter-spacing: -0.02em; }
+.player .txt { font-size: 16.5px; line-height: 1.7; color: var(--ink-2); animation: rise .35s both; }
+.player .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 28px 24px; }
+.dots { display: flex; gap: 6px; } .dots i { width: 8px; height: 8px; border-radius: 4px; background: #D4D0C5; transition: all .25s; } .dots i.on { width: 26px; background: var(--accent); }
+/* playground */
+.chain { display: flex; gap: 0; overflow-x: auto; padding: 6px 2px 14px; align-items: stretch; }
+.blk { flex: 0 0 250px; border-radius: 16px; padding: 14px; background: #fff; border: 2px solid var(--good); display: flex; flex-direction: column; gap: 8px; transition: border-color .3s, background .3s, transform .2s; }
+.blk.bad { border-color: var(--bad); background: #FFF6F5; }
+.blk.mining { transform: scale(1.02); }
+.blk h4 { margin: 0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.blk label { font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+.blk textarea { width: 100%; min-height: 60px; resize: vertical; border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13.5px; }
+.blk textarea:focus { outline: none; border-color: var(--ink); }
+.blk .h { font: 500 11px var(--mono); word-break: break-all; background: var(--soft); border-radius: 8px; padding: 6px 8px; line-height: 1.45; }
+.blk.bad .h.mine { background: var(--bad-soft); color: var(--bad); } .blk:not(.bad) .h.mine { background: var(--good-soft); color: var(--good); }
+.link { flex: 0 0 34px; display: flex; align-items: center; justify-content: center; color: var(--faint); }
+.link.broken { color: var(--bad); animation: shake .4s; }
+@keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+.pg-note { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 4px; }
+.pg-note div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-size: 13.5px; color: var(--ink-2); }
+.pg-note b { display: block; font-size: 13px; margin-bottom: 2px; color: var(--ink); }
+/* compare */
+.cmp { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: start; }
+.coin-card { background: #fff; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.coin-card header { padding: 16px 18px; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.coin-card header select { background: rgba(255,255,255,.18); color: #fff; border: 0; border-radius: 8px; padding: 6px 10px; font-weight: 700; }
+.coin-card header select option { color: #121318; }
+.coin-card header b { font-size: 20px; }
+.coin-row { padding: 11px 18px; border-top: 1px solid var(--soft); font-size: 14px; display: flex; flex-direction: column; gap: 2px; transition: background .3s; }
+.coin-row small { font-size: 11.5px; color: var(--faint); font-weight: 700; letter-spacing: .04em; }
+.coin-row.diff { background: #FFF8F3; }
+.vs { align-self: center; width: 54px; height: 54px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; box-shadow: 0 0 0 8px rgba(18,19,24,.06); cursor: pointer; transition: transform .3s; }
+.vs:hover { transform: rotate(180deg); }
+/* quiz */
+.quiz { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 24px; position: relative; overflow: hidden; }
+.qbar { height: 6px; background: var(--soft); border-radius: 4px; overflow: hidden; margin-bottom: 18px; } .qbar i { display: block; height: 100%; background: var(--accent); transition: width .4s; }
+.quiz h3 { margin: 0 0 14px; font-size: 20px; }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.opt { text-align: left; padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; cursor: pointer; font-weight: 600; transition: all .15s; }
+.opt:hover:not(:disabled) { border-color: var(--ink); transform: translateY(-1px); }
+.opt.right { border-color: var(--good); background: var(--good-soft); color: var(--good); animation: pop .3s; }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); animation: shake .35s; }
+.explain { margin-top: 14px; padding: 12px 14px; background: var(--soft); border-radius: 12px; font-size: 14px; animation: rise .3s; }
+#confetti { position: absolute; inset: 0; pointer-events: none; }
+/* glossary */
+.gloss { display: flex; flex-wrap: wrap; gap: 8px; }
+.term { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 13.5px; transition: all .15s; }
+.term:hover, .term.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.def { margin-top: 12px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; padding: 14px 16px; font-size: 15px; animation: rise .25s; }
+@media (max-width: 980px) { .lessons { grid-template-columns: 1fr 1fr; } .cmp { grid-template-columns: 1fr; } .vs { margin: 0 auto; } .pg-note { grid-template-columns: 1fr; } .ac-hero { grid-template-columns: 1fr; } .opts { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="ac">
+  <div class="ac-top">
+    <a class="brand" href="app.html"><img src="img/logo.svg" alt="">Beldex AI <small>ACADEMY</small></a>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="seg" role="group" aria-label="Language"><button id="lEn">English</button><button id="lTa" class="ta">தமிழ்</button></div>
+      <a class="btn btn-sm" href="app.html" data-t="back">← Back to chat</a>
+    </div>
+  </div>
+
+  <section class="ac-hero">
+    <div><h1 data-t="h1">Learn crypto & Beldex, the easy way</h1><p data-t="sub">Short visual lessons, a blockchain you can play with, a side-by-side comparison and a quick quiz. Tap anything — then ask Beldex AI to go deeper.</p></div>
+    <div class="ring"><svg width="132" height="132"><circle cx="66" cy="66" r="56" stroke="rgba(255,255,255,.15)" stroke-width="10" fill="none"/><circle id="ringC" cx="66" cy="66" r="56" stroke="#E2531D" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="352" stroke-dashoffset="352" style="transition:stroke-dashoffset 1s"/></svg><b><span id="ringN">0/8</span><small data-t="done">LESSONS DONE</small></b></div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div><h2 data-t="lessonsH">Lessons</h2><p data-t="lessonsP">2 minutes each. Start from 1 if you are new to crypto.</p></div></div>
+    <div class="lessons stagger" id="lessons"></div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div><h2 data-t="pgH">Blockchain playground</h2><p data-t="pgP">Change any text in a block and watch the chain break. Then press "Mine" to repair it — exactly why blockchains are hard to cheat.</p></div>
+      <button class="btn btn-sm" id="pgReset" data-t="reset">Reset</button></div>
+    <div class="chain" id="chain"></div>
+    <div class="pg-note">
+      <div><b data-t="n1h">Hash = fingerprint</b><span data-t="n1">Any tiny change in the data gives a completely different hash.</span></div>
+      <div><b data-t="n2h">Blocks are linked</b><span data-t="n2">Each block stores the previous block's hash, so one change breaks every block after it.</span></div>
+      <div><b data-t="n3h">Mining = finding a nonce</b><span data-t="n3">The computer tries numbers until the hash starts with 000. Beldex uses staking (masternodes) instead of mining.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div><h2 data-t="cmpH">Compare coins</h2><p data-t="cmpP">Pick any two. Rows that differ are highlighted.</p></div></div>
+    <div class="cmp"><div class="coin-card" id="cA"></div><button class="vs" id="swap" title="Swap" aria-label="Swap coins">VS</button><div class="coin-card" id="cB"></div></div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div><h2 data-t="qH">Quick quiz</h2><p data-t="qP">6 questions. See how much you learned.</p></div></div>
+    <div class="quiz" id="quiz"><canvas id="confetti"></canvas><div id="qBody"></div></div>
+  </section>
+
+  <section>
+    <div class="sec-h"><div><h2 data-t="gH">Crypto words</h2><p data-t="gP">Tap a word to see what it means.</p></div>
+      <input class="input" id="gSearch" style="max-width:260px;min-height:40px" aria-label="Search words"></div>
+    <div class="gloss" id="gloss"></div>
+    <div id="gDef"></div>
+  </section>
+</div>
+
+<script src="js/core.js"></script>
+<script>
+const me = requireLogin();
+startHeartbeat();
+bgFx();
+const $ = id => document.getElementById(id);
+let lang = (me && me.lang) || 'en';
+const L = (en, ta) => ({ en, ta });
+const tr = o => (o && typeof o === 'object' && 'en' in o) ? o[lang] : o;
+
+const UI = {
+  back: L('← Back to chat', '← உரையாடலுக்கு'), h1: L('Learn crypto & Beldex, the easy way', 'கிரிப்டோ & பெல்டெக்ஸ் — எளிதாக கற்றுக்கொள்ளுங்கள்'),
+  sub: L('Short visual lessons, a blockchain you can play with, a side-by-side comparison and a quick quiz. Tap anything — then ask Beldex AI to go deeper.', 'சிறு படப் பாடங்கள், நீங்களே விளையாடக்கூடிய blockchain, நாணய ஒப்பீடு, ஒரு சிறு வினாடி வினா. எதையும் தட்டுங்கள் — மேலும் அறிய Beldex AI-இடம் கேளுங்கள்.'),
+  done: L('LESSONS DONE', 'பாடங்கள் முடிந்தன'), lessonsH: L('Lessons', 'பாடங்கள்'), lessonsP: L('2 minutes each. Start from 1 if you are new to crypto.', 'ஒவ்வொன்றும் 2 நிமிடம். புதியவர் என்றால் 1-இலிருந்து தொடங்குங்கள்.'),
+  pgH: L('Blockchain playground', 'Blockchain விளையாட்டு'), pgP: L('Change any text in a block and watch the chain break. Then press "Mine" to repair it — exactly why blockchains are hard to cheat.', 'ஏதாவது block-இல் உரையை மாற்றுங்கள் — சங்கிலி உடைவதைப் பாருங்கள். பின் "Mine" அழுத்தி சரிசெய்யுங்கள். இதனால்தான் blockchain-ஐ ஏமாற்றுவது கடினம்.'),
+  reset: L('Reset', 'மீட்டமை'), n1h: L('Hash = fingerprint', 'Hash = கைரேகை'), n1: L('Any tiny change in the data gives a completely different hash.', 'தரவில் சிறு மாற்றம் கூட முற்றிலும் வேறு hash தரும்.'),
+  n2h: L('Blocks are linked', 'Blocks இணைக்கப்பட்டுள்ளன'), n2: L("Each block stores the previous block's hash, so one change breaks every block after it.", 'ஒவ்வொரு block-உம் முந்தைய block-இன் hash-ஐ வைத்திருக்கிறது; ஒரு மாற்றம் பின் உள்ள எல்லாவற்றையும் உடைக்கும்.'),
+  n3h: L('Mining = finding a nonce', 'Mining = nonce கண்டுபிடித்தல்'), n3: L('The computer tries numbers until the hash starts with 000. Beldex uses staking (masternodes) instead of mining.', 'Hash 000-இல் தொடங்கும் வரை கணினி எண்களை முயற்சிக்கும். Beldex mining-க்கு பதில் staking (masternodes) பயன்படுத்துகிறது.'),
+  cmpH: L('Compare coins', 'நாணயங்களை ஒப்பிடுங்கள்'), cmpP: L('Pick any two. Rows that differ are highlighted.', 'ஏதாவது இரண்டைத் தேர்ந்தெடுங்கள். வேறுபாடுகள் குறிக்கப்படும்.'),
+  qH: L('Quick quiz', 'சிறு வினாடி வினா'), qP: L('6 questions. See how much you learned.', '6 கேள்விகள். எவ்வளவு கற்றீர்கள் என்று பாருங்கள்.'),
+  gH: L('Crypto words', 'கிரிப்டோ சொற்கள்'), gP: L('Tap a word to see what it means.', 'ஒரு சொல்லைத் தட்டி அர்த்தம் பாருங்கள்.'),
+  next: L('Next', 'அடுத்து'), prev: L('Back', 'பின்'), finish: L('Mark as done', 'முடிந்தது'), askMore: L('Ask Beldex AI more', 'Beldex AI-இடம் மேலும் கேள்'),
+  mine: L('Mine', 'Mine'), mining: L('Mining…', 'Mining…'), data: L('DATA', 'தரவு'), prevH: L('PREVIOUS HASH', 'முந்தைய HASH'), hash: L('THIS BLOCK\'S HASH', 'இந்த BLOCK HASH'), valid: L('valid', 'சரி'), broken: L('broken', 'உடைந்தது'),
+  search: L('Search words…', 'சொற்களைத் தேடு…'), again: L('Try again', 'மீண்டும் முயற்சி'), score: L('Your score', 'உங்கள் மதிப்பெண்'),
+};
+
+// ---------------- lessons (each slide: [title, text]) ----------------
+const ART = {
+  coin: c => `<svg viewBox="0 0 400 230"><defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="#121318"/></linearGradient></defs><rect width="400" height="230" fill="url(#g1)"/><g style="animation:drift 6s ease-in-out infinite alternate"><circle cx="200" cy="115" r="62" fill="#fff" opacity=".12"/><circle cx="200" cy="115" r="46" fill="#fff" opacity=".9"/><text x="200" y="129" text-anchor="middle" font-size="40" font-weight="800" fill="${c}" font-family="Manrope">₿</text></g><circle cx="80" cy="60" r="10" fill="#fff" opacity=".3"><animate attributeName="cy" values="60;40;60" dur="3s" repeatCount="indefinite"/></circle><circle cx="330" cy="170" r="14" fill="#fff" opacity=".25"><animate attributeName="cy" values="170;150;170" dur="4s" repeatCount="indefinite"/></circle></svg>`,
+  chain: c => `<svg viewBox="0 0 400 230"><rect width="400" height="230" fill="${c}"/>${[0, 1, 2, 3].map(i => `<g><rect x="${22 + i * 94}" y="80" width="70" height="70" rx="12" fill="#fff" opacity=".95"><animate attributeName="y" values="80;72;80" dur="2s" begin="${i * .3}s" repeatCount="indefinite"/></rect><text x="${57 + i * 94}" y="122" text-anchor="middle" font-size="16" font-weight="800" fill="${c}" font-family="IBM Plex Mono">#${i + 1}</text>${i < 3 ? `<line x1="${92 + i * 94}" y1="115" x2="${116 + i * 94}" y2="115" stroke="#fff" stroke-width="4" stroke-dasharray="4 4"><animate attributeName="stroke-dashoffset" values="8;0" dur=".6s" repeatCount="indefinite"/></line>` : ''}</g>`).join('')}</svg>`,
+  shield: c => `<svg viewBox="0 0 400 230"><rect width="400" height="230" fill="${c}"/><circle cx="200" cy="115" r="80" fill="#fff" opacity=".08"><animate attributeName="r" values="70;95;70" dur="3s" repeatCount="indefinite"/></circle><path d="M200 50l60 26v40c0 38-26 66-60 74-34-8-60-36-60-74V76z" fill="#fff"/><path d="M175 118l17 17 34-36" stroke="${c}" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  nodes: c => `<svg viewBox="0 0 400 230"><rect width="400" height="230" fill="${c}"/>${[[80, 60], [200, 40], [320, 70], [110, 170], [250, 160], [340, 180], [200, 115]].map(([x, y], i, a) => a.slice(i + 1).map(([x2, y2]) => `<line x1="${x}" y1="${y}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-opacity=".25"/>`).join('')).join('')}${[[80, 60], [200, 40], [320, 70], [110, 170], [250, 160], [340, 180], [200, 115]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i === 6 ? 16 : 9}" fill="#fff"><animate attributeName="r" values="${i === 6 ? '14;19;14' : '8;11;8'}" dur="${2 + i * .3}s" repeatCount="indefinite"/></circle>`).join('')}</svg>`,
+  key: c => `<svg viewBox="0 0 400 230"><rect width="400" height="230" fill="${c}"/><g transform="translate(200 115)"><g><animateTransform attributeName="transform" type="rotate" values="-8;8;-8" dur="3s" repeatCount="indefinite"/><circle cx="-50" cy="0" r="34" fill="none" stroke="#fff" stroke-width="14"/><rect x="-18" y="-7" width="110" height="14" rx="7" fill="#fff"/><rect x="62" y="0" width="12" height="28" rx="4" fill="#fff"/><rect x="82" y="0" width="12" height="20" rx="4" fill="#fff"/></g></g></svg>`,
+  alert: c => `<svg viewBox="0 0 400 230"><rect width="400" height="230" fill="${c}"/><path d="M200 45l85 150H115z" fill="#fff"><animate attributeName="opacity" values="1;.75;1" dur="1.4s" repeatCount="indefinite"/></path><rect x="192" y="95" width="16" height="52" rx="8" fill="${c}"/><circle cx="200" cy="168" r="9" fill="${c}"/></svg>`,
+};
+const LESSONS = [
+  { c: '#E2531D', art: 'coin', t: L('What is cryptocurrency?', 'கிரிப்டோகரன்சி என்றால் என்ன?'), d: L('Digital money without a bank in the middle.', 'வங்கி இல்லாத டிஜிட்டல் பணம்.'),
+    s: [[L('Money, without a middleman', 'இடைத்தரகர் இல்லாத பணம்'), L('Cryptocurrency is digital money that moves directly between people. No bank approves it — a network of thousands of computers does.', 'கிரிப்டோகரன்சி நேரடியாக மக்களிடையே நகரும் டிஜிட்டல் பணம். வங்கி அல்ல — ஆயிரக்கணக்கான கணினிகளின் நெட்வொர்க் அதை உறுதிசெய்கிறது.')],
+        [L('Locked by maths', 'கணிதத்தால் பூட்டப்பட்டது'), L('Cryptography works like a lock and key: only the person with the private key can spend the coins.', 'Cryptography ஒரு பூட்டு-சாவி போல: private key உள்ளவர் மட்டுமே நாணயங்களை செலவழிக்க முடியும்.')],
+        [L('Thousands of coins', 'ஆயிரக்கணக்கான நாணயங்கள்'), L('Bitcoin came first in 2009. Today there are thousands — Ethereum for apps, Monero and Beldex for privacy. Prices move fast, so it is risky.', '2009-இல் Bitcoin முதலில் வந்தது. இன்று ஆயிரக்கணக்கானவை — apps-க்கு Ethereum, தனியுரிமைக்கு Monero, Beldex. விலை வேகமாக மாறும், ஆபத்தும் உண்டு.')]],
+    ask: L('What is cryptocurrency and why do people use it?', 'கிரிப்டோகரன்சி என்றால் என்ன, ஏன் பயன்படுத்துகிறார்கள்?') },
+  { c: '#3B5BDB', art: 'chain', t: L('What is a blockchain?', 'பிளாக்செயின் என்றால் என்ன?'), d: L('A shared record that is very hard to change.', 'மாற்றுவதற்கு மிகக் கடினமான பொதுப் பதிவேடு.'),
+    s: [[L('Blocks in a chain', 'சங்கிலியில் blocks'), L('A blockchain stores transactions in blocks. Each block carries the fingerprint (hash) of the block before it.', 'Blockchain பரிவர்த்தனைகளை blocks-இல் சேமிக்கிறது. ஒவ்வொரு block-உம் முந்தைய block-இன் hash-ஐ வைத்திருக்கிறது.')],
+        [L('Change one, break all', 'ஒன்றை மாற்றினால் எல்லாம் உடையும்'), L('Edit an old block and its hash changes — every later block no longer matches, and the network rejects it.', 'பழைய block-ஐ மாற்றினால் hash மாறும் — பின் உள்ள blocks பொருந்தாது, நெட்வொர்க் நிராகரிக்கும்.')],
+        [L('Why it matters', 'ஏன் முக்கியம்'), L('Strangers can agree on one record without trusting a company. Try it yourself in the playground below!', 'நிறுவனத்தை நம்பாமலே அந்நியர்கள் ஒரே பதிவில் ஒப்புக்கொள்ளலாம். கீழே உள்ள playground-இல் நீங்களே முயற்சிக்கவும்!')]],
+    ask: L('What is the purpose of a blockchain?', 'பிளாக்செயினின் நோக்கம் என்ன?') },
+  { c: '#B7791F', art: 'coin', t: L('What is Bitcoin?', 'Bitcoin என்றால் என்ன?'), d: L('The first cryptocurrency, since 2009.', '2009 முதல் உள்ள முதல் கிரிப்டோ.'),
+    s: [[L('Born in 2009', '2009-இல் பிறந்தது'), L('Satoshi Nakamoto published the Bitcoin white paper in 2008; the network started on 3 January 2009.', 'Satoshi Nakamoto 2008-இல் white paper வெளியிட்டார்; நெட்வொர்க் 3 ஜனவரி 2009 அன்று தொடங்கியது.')],
+        [L('Only 21 million', '21 மில்லியன் மட்டுமே'), L('There will never be more than 21 million BTC. Miners earn new coins, and the reward halves about every 4 years.', '21 மில்லியனுக்கு மேல் BTC உருவாகாது. Miners புதிய நாணயங்கள் பெறுவர்; reward சுமார் 4 ஆண்டுக்கு ஒருமுறை பாதியாகும்.')],
+        [L('Public by design', 'வடிவமைப்பிலேயே பொதுவானது'), L('Every Bitcoin payment is visible on the blockchain. That is the biggest difference from privacy coins like Beldex.', 'ஒவ்வொரு Bitcoin பரிவர்த்தனையும் blockchain-இல் தெரியும். Beldex போன்ற privacy coins-இலிருந்து இதுவே பெரிய வேறுபாடு.')]],
+    ask: L('What is the difference between Bitcoin and Beldex?', 'Bitcoin மற்றும் Beldex இடையே என்ன வேறுபாடு?') },
+  { c: '#11704A', art: 'nodes', t: L('Mining vs staking', 'Mining மற்றும் Staking'), d: L('Two ways a network agrees on new blocks.', 'புதிய blocks-ஐ ஒப்புக்கொள்ள இரண்டு வழிகள்.'),
+    s: [[L('Proof-of-Work = mining', 'Proof-of-Work = mining'), L('Miners burn electricity to solve a puzzle; the winner adds the block. Bitcoin works this way.', 'Miners மின்சாரம் செலவழித்து புதிரைத் தீர்க்கிறார்கள்; வென்றவர் block சேர்க்கிறார். Bitcoin இப்படி இயங்குகிறது.')],
+        [L('Proof-of-Stake = staking', 'Proof-of-Stake = staking'), L('Validators lock coins as a deposit instead. Honest work earns rewards; cheating or going offline is penalised. Far less energy.', 'Validators நாணயங்களை வைப்புத்தொகையாக பூட்டுகிறார்கள். நேர்மையான வேலைக்கு வெகுமதி; ஏமாற்றினால் அபராதம். மிகக் குறைந்த மின்சாரம்.')],
+        [L('Beldex masternodes', 'Beldex masternodes'), L('Beldex uses staking with masternodes: each locks 10,000 BDX, secures the chain and relays BChat and BelNet traffic.', 'Beldex masternodes மூலம் staking செய்கிறது: ஒவ்வொன்றும் 10,000 BDX பூட்டி, chain-ஐ பாதுகாத்து BChat, BelNet போக்குவரத்தைக் கொண்டு செல்கிறது.')]],
+    ask: L('What do I need to run a Beldex masternode?', 'Beldex masternode இயக்க என்ன தேவை?') },
+  { c: '#7C3AED', art: 'shield', t: L('What is Beldex?', 'பெல்டெக்ஸ் என்றால் என்ன?'), d: L('A privacy coin with its own private apps.', 'தனியுரிமை apps கொண்ட privacy coin.'),
+    s: [[L('Privacy first', 'முதலில் தனியுரிமை'), L('Beldex (BDX) launched in March 2018 as a fork of Monero. It hides who sent, who received and how much.', 'Beldex (BDX) மார்ச் 2018-இல் Monero fork ஆக தொடங்கியது. அனுப்பியவர், பெற்றவர், தொகை — மூன்றையும் மறைக்கிறது.')],
+        [L('More than a coin', 'நாணயத்தை விட அதிகம்'), L('BChat for messages, BelNet to hide your IP, Beldex Browser to block trackers, and BNS for simple .bdx names.', 'செய்திகளுக்கு BChat, IP-ஐ மறைக்க BelNet, trackers-ஐ தடுக்க Beldex Browser, எளிய .bdx பெயர்களுக்கு BNS.')],
+        [L('How BDX is used', 'BDX பயன்பாடு'), L('Private payments, BNS fees (which are burned), masternode staking and moving value across chains with the bridge.', 'ரகசிய பணம் அனுப்புதல், BNS கட்டணம் (burn ஆகும்), masternode staking, bridge மூலம் மற்ற chains-க்கு அனுப்புதல்.')]],
+    ask: L('What is Beldex and what is BDX used for?', 'பெல்டெக்ஸ் என்றால் என்ன, BDX எதற்கு பயன்படுகிறது?') },
+  { c: '#0E7490', art: 'shield', t: L('How privacy works', 'தனியுரிமை எப்படி செயல்படுகிறது'), d: L('Ring signatures, stealth addresses, RingCT.', 'Ring signatures, stealth addresses, RingCT.'),
+    s: [[L('Hide the sender', 'அனுப்பியவரை மறை'), L('Ring signatures mix your signature with decoys, so nobody can tell which one really paid.', 'Ring signatures உங்கள் கையொப்பத்தை போலிகளுடன் கலக்கிறது; யார் உண்மையில் அனுப்பினார் என்று சொல்ல முடியாது.')],
+        [L('Hide the receiver', 'பெற்றவரை மறை'), L('Stealth addresses create a new one-time address for every payment, so payments cannot be linked to you.', 'Stealth addresses ஒவ்வொரு பணத்துக்கும் புதிய ஒருமுறை முகவரி உருவாக்குகிறது.')],
+        [L('Hide the amount', 'தொகையை மறை'), L('RingCT hides amounts; Bulletproofs++ (Obscura hardfork, Dec 2025) proves they are valid with small, fast proofs.', 'RingCT தொகையை மறைக்கிறது; Bulletproofs++ (Obscura hardfork, டிச 2025) சிறிய, வேகமான நிரூபணங்களுடன் சரிபார்க்கிறது.')]],
+    ask: L('How do ring signatures, stealth addresses and RingCT protect privacy?', 'Ring signatures, stealth addresses, RingCT தனியுரிமையை எப்படி பாதுகாக்கின்றன?') },
+  { c: '#121318', art: 'key', t: L('Wallets & keys', 'Wallets & keys'), d: L('Your keys, your coins.', 'உங்கள் சாவி, உங்கள் நாணயம்.'),
+    s: [[L('A wallet holds keys', 'Wallet சாவிகளை வைத்திருக்கிறது'), L('Coins live on the blockchain. Your wallet holds the private key that lets you spend them.', 'நாணயங்கள் blockchain-இல் உள்ளன. அவற்றை செலவழிக்கும் private key-ஐ wallet வைத்திருக்கிறது.')],
+        [L('Guard the seed phrase', 'Seed phrase-ஐ பாதுகாக்கவும்'), L('The seed phrase restores everything. Write it on paper, keep it offline, and never share it — not even with "support".', 'Seed phrase எல்லாவற்றையும் மீட்டெடுக்கும். காகிதத்தில் எழுதி offline-ஆக வையுங்கள்; "support"-இடம் கூட பகிராதீர்கள்.')],
+        [L('Beldex wallets', 'Beldex wallets'), L('Use the official Electron desktop, mobile or CLI wallet — download only from beldex.io or the official GitHub.', 'அதிகாரப்பூர்வ Electron desktop, mobile அல்லது CLI wallet — beldex.io அல்லது GitHub-இலிருந்து மட்டும் பதிவிறக்கவும்.')]],
+    ask: L('How do I keep my BDX safe in a wallet?', 'என் BDX-ஐ wallet-இல் எப்படி பாதுகாப்பாக வைப்பது?') },
+  { c: '#B3261E', art: 'alert', t: L('Avoid crypto scams', 'கிரிப்டோ மோசடிகளைத் தவிர்க்கவும்'), d: L('Spot the red flags early.', 'எச்சரிக்கை அறிகுறிகளை அறியுங்கள்.'),
+    s: [[L('Too good to be true', 'நம்பமுடியாத லாபம்'), L('"Guaranteed daily profit" or "double your money" is always a red flag.', '"உத்தரவாத தினசரி லாபம்", "பணம் இரட்டிப்பு" — எப்போதும் எச்சரிக்கை.')],
+        [L('The withdrawal trap', 'பணம் எடுக்கும் பொறி'), L('Fake sites show big profits, then ask for a "tax" or "release fee" before you can withdraw. Never pay it.', 'போலி தளங்கள் பெரிய லாபம் காட்டி, பணம் எடுக்க "tax" அல்லது "release fee" கேட்கும். ஒருபோதும் செலுத்தாதீர்கள்.')],
+        [L('Check before you trust', 'நம்பும் முன் சரிபார்க்கவும்'), L('Check the exact web address, use well-known exchanges, and never share your seed phrase or private key.', 'சரியான இணைய முகவரியை சரிபார்க்கவும், நன்கு அறியப்பட்ட exchanges-ஐ பயன்படுத்தவும், seed phrase-ஐ பகிராதீர்கள்.')]],
+    ask: L('How can I avoid crypto scams?', 'கிரிப்டோ மோசடிகளை எப்படி தவிர்ப்பது?') },
+];
+
+let done = new Set(JSON.parse(localStorage.getItem('bx_lessons') || '[]'));
+function renderLessons() {
+  $('lessons').innerHTML = LESSONS.map((l, i) => `<button class="lesson ${done.has(i) ? 'done' : ''}" style="--i:${i};--c:${l.c}" data-i="${i}">
+    <span class="done-badge">${ICON.check}</span><span class="num">0${i + 1}</span>
+    <span class="em" style="background:${l.c}1A;color:${l.c}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M9 9h4.5a2 2 0 0 1 0 4H9V8M9 13h5a2 2 0 0 1 0 4H9', 'M3 8h6v8H3zM15 8h6v8h-6zM9 12h6', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M10 8h3a2 2 0 0 1 0 4h-3V7M10 12h4a2 2 0 0 1 0 4h-4z', 'M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4', 'M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7z', 'M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7zM9 12l2 2 4-4', 'M8 15a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM11 11h10M18 11v3M21 11v2', 'M12 3l10 18H2zM12 10v5M12 18h.01'][i]}"/></svg></span>
+    <b>${esc(tr(l.t))}</b><span class="d">${esc(tr(l.d))}</span><i class="bar"></i></button>`).join('');
+  $('lessons').querySelectorAll('.lesson').forEach(b => b.onclick = () => openLesson(+b.dataset.i));
+  const n = done.size; $('ringN').textContent = `${n}/${LESSONS.length}`;
+  $('ringC').style.strokeDashoffset = 352 - 352 * n / LESSONS.length;
+}
+function openLesson(i) {
+  const l = LESSONS[i]; let s = 0;
+  const bg = document.createElement('div'); bg.className = 'player-bg';
+  const close = () => { bg.remove(); document.removeEventListener('keydown', key); };
+  const key = e => { if (e.key === 'Escape') close(); if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); };
+  const draw = () => {
+    const last = s === l.s.length - 1;
+    bg.innerHTML = `<div class="player" role="dialog" aria-label="${esc(tr(l.t))}"><div class="art">${ART[l.art](l.c)}</div>
+      <div class="body"><span class="pill" style="align-self:flex-start;background:${l.c}1A;color:${l.c}">${String(i + 1).padStart(2, '0')} · ${esc(tr(l.t))}</span>
+        <h3>${esc(tr(l.s[s][0]))}</h3><div class="txt" ${lang === 'ta' ? 'lang="ta"' : ''}>${esc(tr(l.s[s][1]))}</div></div>
+      <div class="foot"><div class="dots">${l.s.map((_, k) => `<i class="${k === s ? 'on' : ''}"></i>`).join('')}</div>
+        <div style="display:flex;gap:8px">${s ? `<button class="btn btn-sm" data-go="-1">${tr(UI.prev)}</button>` : `<button class="btn btn-sm" data-x>✕</button>`}
+        ${last ? `<a class="btn btn-sm" href="app.html?q=${encodeURIComponent(tr(l.ask))}">${tr(UI.askMore)}</a><button class="btn btn-primary btn-sm" data-fin>${tr(UI.finish)}</button>` : `<button class="btn btn-primary btn-sm" data-go="1">${tr(UI.next)} →</button>`}</div></div></div>`;
+    bg.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(+b.dataset.go));
+    bg.querySelector('[data-x]')?.addEventListener('click', close);
+    bg.querySelector('[data-fin]')?.addEventListener('click', () => { done.add(i); localStorage.setItem('bx_lessons', JSON.stringify([...done])); close(); renderLessons(); toast(lang === 'ta' ? 'பாடம் முடிந்தது!' : 'Lesson complete!'); if (done.size === LESSONS.length) burst(); });
+  };
+  const go = d => { s = Math.min(l.s.length - 1, Math.max(0, s + d)); draw(); };
+  bg.onclick = e => { if (e.target === bg) close(); };
+  document.addEventListener('keydown', key);
+  draw(); document.body.appendChild(bg);
+}
+
+// ---------------- blockchain playground ----------------
+const DEFAULT_DATA = ['Genesis: Beldex Academy', 'Priya pays Arun 25 BDX', 'Arun pays Kavya 10 BDX', 'Kavya stakes 10,000 BDX'];
+let blocks = [];
+async function sha(text) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+async function recompute() {
+  let prev = '0'.repeat(64);
+  for (const b of blocks) { b.prev = prev; b.hash = await sha(b.i + b.prev + b.data + b.nonce); b.ok = b.hash.startsWith('000'); prev = b.hash; }
+  let broken = false;
+  blocks.forEach((b, i) => { if (!b.ok) broken = true; b.valid = !broken; });
+  drawChain();
+}
+async function mine(i) {
+  const b = blocks[i]; const el = $('chain').querySelectorAll('.blk')[i];
+  el.classList.add('mining'); el.querySelector('.mbtn').textContent = tr(UI.mining);
+  let n = 0;
+  while (true) {
+    const h = await sha(b.i + b.prev + b.data + n);
+    if (h.startsWith('000')) { b.nonce = n; break; }
+    n++; if (n % 400 === 0) { el.querySelector('.nonce').textContent = n; await new Promise(r => setTimeout(r)); }
+  }
+  el.classList.remove('mining'); await recompute();
+}
+function drawChain() {
+  $('chain').innerHTML = blocks.map((b, i) => `${i ? `<div class="link ${b.valid ? '' : 'broken'}">${b.valid ? '⟶' : '✕'}</div>` : ''}
+    <div class="blk ${b.valid ? '' : 'bad'}"><h4><span>Block #${i + 1}</span><span class="pill ${b.valid ? 'good' : 'bad'}">${b.valid ? tr(UI.valid) : tr(UI.broken)}</span></h4>
+      <label>${tr(UI.data)}</label><textarea data-i="${i}" aria-label="Block ${i + 1} data">${esc(b.data)}</textarea>
+      <label>NONCE</label><div class="h nonce">${b.nonce}</div>
+      <label>${tr(UI.prevH)}</label><div class="h">${b.prev.slice(0, 32)}…</div>
+      <label>${tr(UI.hash)}</label><div class="h mine">${b.hash.slice(0, 32)}…</div>
+      <button class="btn btn-sm ${b.ok ? '' : 'btn-primary'} mbtn" data-m="${i}">⛏ ${tr(UI.mine)}</button></div>`).join('');
+  $('chain').querySelectorAll('textarea').forEach(t => t.oninput = () => { blocks[t.dataset.i].data = t.value; clearTimeout(t._d); t._d = setTimeout(async () => { const pos = t.selectionStart; await recompute(); const nt = $('chain').querySelector(`textarea[data-i="${t.dataset.i}"]`); nt.focus(); nt.setSelectionRange(pos, pos); }, 150); });
+  $('chain').querySelectorAll('[data-m]').forEach(b => b.onclick = () => mine(+b.dataset.m));
+}
+async function resetChain() {
+  blocks = DEFAULT_DATA.map((d, i) => ({ i, data: d, nonce: 0, prev: '', hash: '' }));
+  for (let i = 0; i < blocks.length; i++) { await recompute(); let n = 0; while (!(await sha(i + blocks[i].prev + blocks[i].data + n)).startsWith('000')) n++; blocks[i].nonce = n; }
+  await recompute();
+}
+$('pgReset').onclick = resetChain;
+
+// ---------------- compare ----------------
+const COINS = {
+  BDX: { name: 'Beldex', c: '#E2531D', launched: L('March 2018 (fork of Monero)', 'மார்ச் 2018 (Monero fork)'), consensus: L('Proof-of-Stake — masternodes (10,000 BDX)', 'Proof-of-Stake — masternodes (10,000 BDX)'),
+    privacy: L('Private by default (ring signatures, stealth addresses, RingCT)', 'இயல்பாகவே ரகசியம் (ring signatures, stealth addresses, RingCT)'), supply: L('Billions; emissions + fee burns (max ≈9.93B per Coins.ph)', 'பில்லியன்கள்; emissions + fee burn (அதிகபட்சம் ≈9.93B, Coins.ph)'),
+    use: L('Private payments + privacy apps (BChat, BelNet, Browser, BNS)', 'ரகசிய பணம் + privacy apps (BChat, BelNet, Browser, BNS)'), energy: L('Low', 'குறைவு') },
+  BTC: { name: 'Bitcoin', c: '#B7791F', launched: L('January 2009', 'ஜனவரி 2009'), consensus: L('Proof-of-Work — mining', 'Proof-of-Work — mining'),
+    privacy: L('Public / pseudonymous', 'பொது / புனைப்பெயர்'), supply: L('Fixed 21 million', 'நிலையான 21 மில்லியன்'), use: L('Digital money, store of value', 'டிஜிட்டல் பணம், மதிப்பு சேமிப்பு'), energy: L('High', 'அதிகம்') },
+  ETH: { name: 'Ethereum', c: '#3B5BDB', launched: L('July 2015', 'ஜூலை 2015'), consensus: L('Proof-of-Stake (since Sept 2022)', 'Proof-of-Stake (செப் 2022 முதல்)'),
+    privacy: L('Public / pseudonymous', 'பொது / புனைப்பெயர்'), supply: L('No fixed cap', 'நிலையான வரம்பு இல்லை'), use: L('Smart contracts, DeFi, NFTs', 'Smart contracts, DeFi, NFTs'), energy: L('Low', 'குறைவு') },
+  XMR: { name: 'Monero', c: '#0E7490', launched: L('April 2014', 'ஏப்ரல் 2014'), consensus: L('Proof-of-Work — mining', 'Proof-of-Work — mining'),
+    privacy: L('Private by default (ring signatures, stealth addresses, RingCT)', 'இயல்பாகவே ரகசியம் (ring signatures, stealth addresses, RingCT)'), supply: L('Small permanent tail emission', 'சிறிய நிரந்தர tail emission'), use: L('Private money', 'ரகசிய பணம்'), energy: L('Medium', 'நடுத்தரம்') },
+};
+const ROWS = [['launched', L('LAUNCHED', 'தொடக்கம்')], ['consensus', L('HOW BLOCKS ARE MADE', 'Blocks உருவாகும் விதம்')], ['privacy', L('PRIVACY', 'தனியுரிமை')], ['supply', L('SUPPLY', 'விநியோகம்')], ['use', L('MAIN USE', 'முக்கிய பயன்')], ['energy', L('ENERGY USE', 'மின்சார பயன்பாடு')]];
+let pickA = 'BDX', pickB = 'BTC';
+function drawCompare() {
+  const A = COINS[pickA], B = COINS[pickB];
+  const card = (k, x, side) => `<header style="background:${x.c}"><b>${x.name}</b><select aria-label="Choose coin" data-side="${side}">${Object.keys(COINS).map(c => `<option value="${c}" ${c === k ? 'selected' : ''}>${c}</option>`).join('')}</select></header>
+    ${ROWS.map(([r, lbl]) => `<div class="coin-row ${tr(A[r]) !== tr(B[r]) ? 'diff' : ''}"><small>${tr(lbl)}</small>${esc(tr(x[r]))}</div>`).join('')}`;
+  $('cA').innerHTML = card(pickA, A, 'A'); $('cB').innerHTML = card(pickB, B, 'B');
+  document.querySelectorAll('.coin-card select').forEach(s => s.onchange = () => { s.dataset.side === 'A' ? pickA = s.value : pickB = s.value; drawCompare(); });
+  [$('cA'), $('cB')].forEach(c => { c.style.animation = 'none'; c.offsetHeight; c.style.animation = 'rise .35s'; });
+}
+$('swap').onclick = () => { [pickA, pickB] = [pickB, pickA]; drawCompare(); };
+
+// ---------------- quiz ----------------
+const QUIZ = [
+  { q: L('Who controls a public blockchain?', 'பொது blockchain-ஐ யார் கட்டுப்படுத்துகிறார்கள்?'), o: [L('One bank', 'ஒரு வங்கி'), L('Many independent computers', 'பல சுயாதீன கணினிகள்'), L('The government', 'அரசு'), L('Nobody keeps a copy', 'யாரும் நகல் வைப்பதில்லை')], a: 1, e: L('Thousands of nodes keep copies and agree on new blocks.', 'ஆயிரக்கணக்கான nodes நகல் வைத்து, புதிய blocks-இல் ஒப்புக்கொள்கின்றன.') },
+  { q: L('How many bitcoin can ever exist?', 'அதிகபட்சம் எத்தனை bitcoin உருவாகும்?'), o: [L('1 million', '1 மில்லியன்'), L('Unlimited', 'வரம்பில்லை'), L('21 million', '21 மில்லியன்'), L('9.93 billion', '9.93 பில்லியன்')], a: 2, e: L('Bitcoin is capped at 21 million coins.', 'Bitcoin 21 மில்லியனுக்கு வரம்பிடப்பட்டுள்ளது.') },
+  { q: L('How much BDX does a Beldex masternode lock?', 'Beldex masternode எவ்வளவு BDX பூட்டுகிறது?'), o: [L('100 BDX', '100 BDX'), L('1,000 BDX', '1,000 BDX'), L('10,000 BDX', '10,000 BDX'), L('No stake needed', 'Stake தேவையில்லை')], a: 2, e: L('Each masternode stakes 10,000 BDX as collateral.', 'ஒவ்வொரு masternode-உம் 10,000 BDX collateral வைக்கிறது.') },
+  { q: L('Which Beldex app hides your IP address?', 'எந்த Beldex app உங்கள் IP-ஐ மறைக்கிறது?'), o: [L('BNS', 'BNS'), L('BelNet', 'BelNet'), L('BDex', 'BDex'), L('Bridge', 'Bridge')], a: 1, e: L('BelNet routes traffic through masternodes to mask IP, location and metadata.', 'BelNet masternodes வழியாக IP, இருப்பிடம், metadata-வை மறைக்கிறது.') },
+  { q: L('What hides the receiver in a Beldex payment?', 'Beldex பணத்தில் பெறுபவரை மறைப்பது எது?'), o: [L('Stealth addresses', 'Stealth addresses'), L('Mining', 'Mining'), L('Stablecoins', 'Stablecoins'), L('KYC', 'KYC')], a: 0, e: L('A new one-time stealth address is made for every payment.', 'ஒவ்வொரு பணத்துக்கும் புதிய ஒருமுறை stealth address உருவாகிறது.') },
+  { q: L('A website asks a "release fee" before you can withdraw. You should…', 'பணம் எடுக்க "release fee" கேட்கிறார்கள். நீங்கள்…'), o: [L('Pay quickly', 'உடனே செலுத்து'), L('Share your seed phrase', 'Seed phrase கொடு'), L('Never pay — it is a scam sign', 'செலுத்தாதே — மோசடி அறிகுறி'), L('Deposit more', 'மேலும் பணம் போடு')], a: 2, e: L('Withdrawal fees demanded up front are a classic scam pattern.', 'முன்கூட்டியே கேட்கும் கட்டணம் வழக்கமான மோசடி முறை.') },
+];
+let qi = 0, qs = 0;
+function drawQuiz() {
+  const body = $('qBody');
+  if (qi >= QUIZ.length) {
+    const pct = Math.round(100 * qs / QUIZ.length);
+    body.innerHTML = `<div style="text-align:center;padding:20px 0"><div class="muted">${tr(UI.score)}</div><div class="grad-text" style="font:800 64px var(--font)">${qs}/${QUIZ.length}</div>
+      <p style="font-size:16px">${pct === 100 ? (lang === 'ta' ? 'அருமை! நீங்கள் கிரிப்டோ நிபுணர்!' : 'Perfect! You are a crypto pro!') : pct >= 50 ? (lang === 'ta' ? 'நன்று! பாடங்களை மீண்டும் பார்த்து 100% பெறுங்கள்.' : 'Nice! Review a lesson to reach 100%.') : (lang === 'ta' ? 'பரவாயில்லை — மேலே உள்ள பாடங்களில் தொடங்குங்கள்.' : 'No worries — start with the lessons above.')}</p>
+      <button class="btn btn-primary" id="qAgain">${tr(UI.again)}</button></div>`;
+    $('qAgain').onclick = () => { qi = 0; qs = 0; drawQuiz(); };
+    if (pct >= 50) burst();
+    return;
+  }
+  const Q = QUIZ[qi];
+  body.innerHTML = `<div class="qbar"><i style="width:${100 * qi / QUIZ.length}%"></i></div><div class="muted mono" style="font-size:12px;margin-bottom:6px">${qi + 1} / ${QUIZ.length}</div>
+    <h3>${esc(tr(Q.q))}</h3><div class="opts">${Q.o.map((o, k) => `<button class="opt" data-k="${k}">${esc(tr(o))}</button>`).join('')}</div><div id="qEx"></div>`;
+  body.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    const k = +b.dataset.k, right = k === Q.a;
+    if (right) qs++;
+    body.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (+x.dataset.k === Q.a) x.classList.add('right'); });
+    if (!right) b.classList.add('wrong');
+    $('qEx').innerHTML = `<div class="explain"><b>${right ? '✓ ' : '✕ '}</b>${esc(tr(Q.e))}</div><div style="text-align:right;margin-top:12px"><button class="btn btn-primary btn-sm" id="qNext">${tr(UI.next)} →</button></div>`;
+    $('qNext').onclick = () => { qi++; drawQuiz(); };
+  });
+}
+function burst() {
+  const cv = $('confetti'), g = cv.getContext('2d'), r = cv.getBoundingClientRect();
+  cv.width = r.width; cv.height = r.height;
+  const parts = Array.from({ length: 140 }, () => ({ x: r.width / 2, y: r.height / 3, vx: (Math.random() - .5) * 12, vy: Math.random() * -10 - 2, s: Math.random() * 6 + 4, c: ['#E2531D', '#11704A', '#3B5BDB', '#7C3AED', '#B7791F'][Math.floor(Math.random() * 5)], r: Math.random() * 6 }));
+  let t = 0;
+  (function f() { g.clearRect(0, 0, cv.width, cv.height); parts.forEach(p => { p.vy += .3; p.x += p.vx; p.y += p.vy; p.r += .1; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c; g.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); g.restore(); }); if (++t < 140) requestAnimationFrame(f); else g.clearRect(0, 0, cv.width, cv.height); })();
+}
+
+// ---------------- glossary ----------------
+const GLOSS = [
+  [L('Address', 'Address'), L('Where you receive coins — safe to share.', 'நாணயம் பெறும் முகவரி — பகிரலாம்.')],
+  [L('Private key', 'Private key'), L('The secret that lets you spend. Never share it.', 'செலவழிக்க உதவும் ரகசியம். பகிராதீர்கள்.')],
+  [L('Seed phrase', 'Seed phrase'), L('12 or 25 words that restore your wallet. Keep it offline.', 'Wallet-ஐ மீட்கும் 12 அல்லது 25 வார்த்தைகள். Offline-ஆக வையுங்கள்.')],
+  [L('Block', 'Block'), L('A batch of transactions added to the chain.', 'Chain-இல் சேர்க்கப்படும் பரிவர்த்தனைத் தொகுப்பு.')],
+  [L('Hash', 'Hash'), L('A digital fingerprint of data — changes completely if the data changes.', 'தரவின் டிஜிட்டல் கைரேகை — தரவு மாறினால் முழுதாக மாறும்.')],
+  [L('Node', 'Node'), L('A computer that keeps a copy of the blockchain.', 'Blockchain நகலை வைத்திருக்கும் கணினி.')],
+  [L('Mining', 'Mining'), L('Proof-of-Work: using computing power to add blocks.', 'Proof-of-Work: கணினி சக்தியால் blocks சேர்த்தல்.')],
+  [L('Staking', 'Staking'), L('Locking coins to help secure a Proof-of-Stake chain.', 'Proof-of-Stake chain-ஐ பாதுகாக்க நாணயங்களைப் பூட்டுதல்.')],
+  [L('Masternode', 'Masternode'), L('A staked server with extra duties — 10,000 BDX on Beldex.', 'கூடுதல் பணிகள் கொண்ட staked server — Beldex-இல் 10,000 BDX.')],
+  [L('Hardfork', 'Hardfork'), L('A network upgrade every node must adopt (e.g. Obscura).', 'எல்லா nodes-உம் ஏற்க வேண்டிய upgrade (எ.கா. Obscura).')],
+  [L('Bridge', 'Bridge'), L('Moves tokens between blockchains.', 'Blockchains இடையே tokens-ஐ நகர்த்துகிறது.')],
+  [L('Stablecoin', 'Stablecoin'), L('A token kept close to 1 US dollar, like USDT.', '1 அமெரிக்க டாலருக்கு அருகில் இருக்கும் token, எ.கா. USDT.')],
+  [L('Burn', 'Burn'), L('Removing coins from supply forever — BNS fees are burned.', 'நாணயங்களை நிரந்தரமாக நீக்குதல் — BNS கட்டணம் burn ஆகிறது.')],
+  [L('dApp', 'dApp'), L('An app that runs on a decentralised network, like BChat.', 'Decentralised நெட்வொர்க்கில் இயங்கும் app, எ.கா. BChat.')],
+  [L('KYC', 'KYC'), L('Identity checks that exchanges ask for.', 'Exchanges கேட்கும் அடையாள சரிபார்ப்பு.')],
+  [L('DEX / CEX', 'DEX / CEX'), L('Decentralised exchange (you keep keys) / centralised exchange (company holds funds).', 'Decentralised exchange (சாவி உங்களிடம்) / centralised exchange (நிறுவனம் வைத்திருக்கும்).')],
+];
+function drawGloss(filter = '') {
+  const f = filter.toLowerCase();
+  $('gloss').innerHTML = GLOSS.map(([t, d], i) => (tr(t) + tr(d)).toLowerCase().includes(f) ? `<button class="term" data-i="${i}">${esc(tr(t))}</button>` : '').join('');
+  $('gloss').querySelectorAll('.term').forEach(b => b.onclick = () => {
+    $('gloss').querySelectorAll('.term').forEach(x => x.classList.toggle('on', x === b));
+    const [t, d] = GLOSS[b.dataset.i];
+    $('gDef').innerHTML = `<div class="def"><b>${esc(tr(t))}</b> — ${esc(tr(d))} <a href="app.html?q=${encodeURIComponent((lang === 'ta' ? 'விளக்கவும்: ' : 'Explain: ') + tr(t))}" style="margin-left:6px">${tr(UI.askMore)} →</a></div>`;
+  });
+}
+$('gSearch').oninput = () => drawGloss($('gSearch').value);
+
+// ---------------- language ----------------
+function applyLang() {
+  document.documentElement.lang = lang;
+  $('lEn').classList.toggle('on', lang === 'en'); $('lTa').classList.toggle('on', lang === 'ta');
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = tr(UI[el.dataset.t]));
+  $('gSearch').placeholder = tr(UI.search);
+  renderLessons(); drawCompare(); drawQuiz(); drawGloss($('gSearch').value); $('gDef').innerHTML = '';
+  if (blocks.length) drawChain();
+}
+$('lEn').onclick = () => { lang = 'en'; applyLang(); };
+$('lTa').onclick = () => { lang = 'ta'; applyLang(); };
+
+applyLang();
+resetChain();
+api('/activity', { method: 'POST', body: { action: 'view_page', detail: 'Academy' } }).catch(() => {});
+</script>
+</body>
+</html>
