@@ -1,0 +1,15 @@
+# secrets
+.env
+
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# runtime data: users, usage log, crawled pages, vector index (rebuilt automatically)
+data/
+
+# mac
+.DS_Store

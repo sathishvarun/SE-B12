@@ -8,6 +8,9 @@ Demo projects by **[Sathish Sakthivel](https://github.com/sathishvarun)** — se
 - **AI Help Desk** (AutoGen + RAG + human approval) — https://helpdesk.sathishsakthivel.tech · [code](Week5/smart-helpdesk-agents)
 - **AI Customer Support Desk** (3-agent AutoGen) — https://support.sathishsakthivel.tech · [code](Week5/support-desk-project)
 
+## ⭐ Newest project
+- **bdx.insight — bilingual Beldex AI assistant** (FastAPI + Streamlit + LangChain RAG + FAISS + CrewAI + Playwright + Docker): sign-in with separate user/admin access, answers in English or Tamil with sources, and an admin console for sessions, time used, tokens, cost and CPU. [code & setup](bdx-insight-ai)
+
 ## 🗂️ Projects by folder
 | Folder | Focus | Highlights |
 |---|---|---|
@@ -17,6 +20,7 @@ Demo projects by **[Sathish Sakthivel](https://github.com/sathishvarun)** — se
 | [Week 4](Week4) | n8n agents & CrewAI | [Telegram agents](Week4/Day1), [n8n agent workflows](Week4/Day2), [Travel planner](Week4/Day3), [Newsletter crew](Week4/Day4), [Support crew](Week4/Day5/support-agent) |
 | [Week 5](Week5) | AutoGen multi-agent | [HR agent](Week5/Day1/hr-agent), [Weather agent](Week5/Day2/weather-news-agent), [Support hub](Week5/Day3/autogen-support-hub), [Support desk](Week5/support-desk-project), [AI Help Desk](Week5/smart-helpdesk-agents) |
 | [Week 6](Week6) | Fine-tuning & distillation | [Marketing AI Assistant (LoRA + RAG)](Week6/Day1-Day2/Marketing_AI_Assistant), [SLM distillation](Week6/Day3-Day4/slm-distillation) |
+| [bdx-insight-ai](bdx-insight-ai) | Full-stack AI product | [Beldex assistant: RAG + agents + admin analytics](bdx-insight-ai) |
 | [Live session](Offline%20Session/Live%20Session%2024-10-2026) | Vector search | [Hybrid music search (Qdrant)](Offline%20Session/Live%20Session%2024-10-2026/spotify-hybrid-search) |
 
 > Each project folder has its own README or source with setup steps. API keys are loaded from a local `.env` file (see `.env.example`) — never commit real keys.

@@ -1,0 +1,86 @@
+[
+  {
+    "title": "Beldex — official site overview",
+    "url": "https://beldex.io/",
+    "published": "",
+    "kind": "official",
+    "text": "Beldex is a privacy-focused blockchain ecosystem. Its native coin is BDX. The official site beldex.io presents the dApps BChat, BelNet, Beldex Browser, BNS (Beldex Name Service) and the Privacy Protocol. Listed features: confidential transactions, privacy dApps, masternodes, Web3 domains through BNS, cross-chain transfers between Beldex and Binance Smart Chain, and open-source code. The site shows live network stats: block height, number of masternodes, BNS domains and coins burned. The whitepaper is published at beldex.io/whitepaper.pdf. Other official pages: grants (beldex.io/grants.html), Use BDX (beldex.io/usebdx) and partners (beldex.io/partners)."
+  },
+  {
+    "title": "Beldex dApps and app versions (beldex.io)",
+    "url": "https://beldex.io/",
+    "published": "2026-11-15",
+    "kind": "official",
+    "text": "BChat is an encrypted messenger that keeps the user in control of their data; beldex.io offers an Android APK version 3.0.2. BelNet hides the user's IP address, location and metadata; Android APK version 1.4.1. Beldex Browser offers private, censorship-resistant browsing; APK version 1.4.2-beta. BNS gives human-readable names for identities instead of long wallet addresses. The Privacy Protocol enables private transactions across multiple chains. Downloads for BChat, BelNet and Beldex Browser are also published as GitHub releases."
+  },
+  {
+    "title": "Where BDX trades (beldex.io partners)",
+    "url": "https://beldex.io/partners",
+    "published": "2026-11-15",
+    "kind": "official",
+    "text": "Where to buy, sell or trade BDX: the partners section of beldex.io lists exchanges with a BDX-USDT pair: BingX, CoinEx, Gate.io, KCEX, KuCoin, MEXC and NonKYC. In January 2026 BDX was also listed on BloFin (21 January) and Kraken (22 January)."
+  },
+  {
+    "title": "Origin and history of Beldex",
+    "url": "https://www.coins.ph/en-ph/academy/what-is-bdx",
+    "published": "",
+    "kind": "reference",
+    "text": "Beldex launched in March 2018 as a fork of Monero. Its founder and chairman is Afanddy B. Hushni. The mainnet launched in 2019. The project began on Proof-of-Work and later moved to Proof-of-Stake with masternodes to improve scalability, lower fees and speed up transactions. Privacy comes from RingCT (ring confidential transactions), ring signatures and stealth addresses. Over time Beldex grew from a privacy coin into an ecosystem of privacy dApps."
+  },
+  {
+    "title": "Masternodes and staking",
+    "url": "https://beldex.io/",
+    "published": "",
+    "kind": "reference",
+    "text": "Beldex is secured by masternodes using Proof-of-Stake. Running a masternode needs a collateral stake of 10,000 BDX, locked for a period, with penalties tied to uptime and deregistration. Masternodes secure the chain, route traffic for BChat, BelNet and Beldex Browser, and earn block rewards. Rewards are distributed through a queue so payouts are spread across masternodes. Masternode operators also vote on protocol proposals."
+  },
+  {
+    "title": "BNS — Beldex Name Service and fee burning",
+    "url": "https://beldex.io/",
+    "published": "",
+    "kind": "reference",
+    "text": "The Beldex Name Service (BNS) was introduced with the Bern hardfork. BNS fees are burned on-chain, which the project describes as moving BDX from inflationary toward deflationary as BNS adoption grows. The Hermes hardfork added Ethereum address support to BNS. BNS names can be bought with the Beldex Electron wallet, the mobile wallet and the CLI wallet. On 30 May 2026 Beldex launched the BNS Marketplace to mint, trade and manage BNS domains; it integrates with the Beldex Wallet and BChat."
+  },
+  {
+    "title": "Obscura hardfork (Bulletproofs++)",
+    "url": "https://yellow.com/036.html/asset/bdx",
+    "published": "2025-12-07",
+    "kind": "news",
+    "text": "The Obscura hardfork went live on 7 December 2025 at block height 4,939,540. It introduced Bulletproofs++, which reduces the size of transaction proofs and the work needed to verify them."
+  },
+  {
+    "title": "2026 roadmap priorities",
+    "url": "https://www.mexc.com/news/577016",
+    "published": "2026-01-15",
+    "kind": "news",
+    "text": "Beldex's 2026 roadmap focuses on infrastructure, adoption and ecosystem depth. Items include research into scaling on-chain settlement while keeping privacy, a VRF-based consensus upgrade to be published as a research paper for peer review, a point-of-sale dashboard for merchants to accept BDX in stores, and the MNApp Store: web applications hosted on .bdx domains using masternode infrastructure."
+  },
+  {
+    "title": "Exchange listings and institutional mention (early 2026)",
+    "url": "https://www.mexc.com/news/825576",
+    "published": "2026-03-01",
+    "kind": "news",
+    "text": "BDX was listed on BloFin on 21 January 2026 and on Kraken on 22 January 2026. Grayscale's Q4 2025 report (30 December 2025) named BDX among top performers for volatility-adjusted returns. Beldex also integrated LayerZero for cross-chain transfers."
+  },
+  {
+    "title": "Research: quantum safety and zero-knowledge age verification",
+    "url": "https://coinmarketcap.com/cmc-ai/beldex/latest-updates/",
+    "published": "2026-04-16",
+    "kind": "news",
+    "text": "In April 2026 Beldex Research Labs announced work on protecting transactions against future quantum-computing threats (14 April) and research on zero-knowledge age verification, which proves a person's age without revealing their identity (16 April)."
+  },
+  {
+    "title": "BDX-BSC bridge incident and 1:1 swap",
+    "url": "https://www.coinlore.com/coin/beldex/news",
+    "published": "2026-06-12",
+    "kind": "news",
+    "text": "On 12 June 2026 the Beldex team found unauthorized minting of BDX-BSC tokens caused by an issue in the bridge infrastructure for BDX on BNB Smart Chain. Eligible BDX-BSC holdings are swapped 1:1 to a new BDX-BSC contract based on a snapshot taken on 10 June 2026 at 23:36 UTC. Exchanges such as BingX supported the contract upgrade and swap."
+  },
+  {
+    "title": "Tokenomics update and Hardfork 21 wallet update",
+    "url": "https://www.coinlore.com/coin/beldex/news",
+    "published": "2026-06-30",
+    "kind": "news",
+    "text": "Beldex published a BDX tokenomics update and release schedule on 30 June 2026, covering scheduled releases from ecosystem development and seed/VC allocation wallets. For Hardfork 21, users of the Beldex Electron desktop wallet must update to the latest version on Windows, macOS or Linux to stay compatible with the network."
+  }
+]
