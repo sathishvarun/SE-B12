@@ -1,6 +1,6 @@
 # Beldex AI — bilingual (English / தமிழ்) crypto assistant with an admin dashboard
 
-**Live demo:** https://beldex.sathishsakthivel.tech
+**Live demo:** https://demo.sathishsakthivel.tech
 
 People sign in and ask anything about **Beldex (BDX)** and crypto basics — by typing or by **voice** — in **English or Tamil**. The AI agent answers **only from its own knowledge base** (beldex.io, the whitepaper, official updates and a curated crypto guide) and shows the **sources under every answer**. Admins get a separate console that shows who signed in, how long they stayed, what they asked, and how many tokens, how much cost and CPU each question used.
 
@@ -163,7 +163,7 @@ Open **http://localhost:8501** (API docs: http://localhost:8501/docs). Stop with
 
 ## Put it live (Hostinger VPS with Traefik)
 
-1. **DNS:** in the domain's DNS panel add an **A record**: Name `beldex` → Value `YOUR_VPS_IP`.
+1. **DNS:** in the domain's DNS panel add an **A record**: Name `demo` → Value `YOUR_VPS_IP`.
 2. **Open a terminal on the VPS:** hPanel → **VPS → Browser terminal** (or `ssh root@YOUR_VPS_IP`).
 3. **Get only this project folder from GitHub:**
    ```bash
@@ -179,12 +179,12 @@ Open **http://localhost:8501** (API docs: http://localhost:8501/docs). Stop with
    ```
 5. **Start it with HTTPS:**
    ```bash
-   bash deploy/connect_domain_traefik.sh beldex.sathishsakthivel.tech
+   bash deploy/connect_domain_traefik.sh demo.sathishsakthivel.tech
    ```
    It finds Traefik, builds the image, starts the `beldex-ai` container and prints the live link.
-6. **Share** https://beldex.sathishsakthivel.tech — users create their own accounts; you sign in through the **Admin** tab.
+6. **Share** https://demo.sathishsakthivel.tech — users create their own accounts; you sign in through the **Admin** tab.
 
-**Update later:** `cd ~/beldex-app/beldex && git pull && bash deploy/connect_domain_traefik.sh beldex.sathishsakthivel.tech`. Users and history in `data/` are kept.
+**Update later:** `cd ~/beldex-app/beldex && git pull && bash deploy/connect_domain_traefik.sh demo.sathishsakthivel.tech`. Users and history in `data/` are kept.
 
 **Useful commands on the VPS:** `docker logs -f beldex-ai` (live log) · `docker restart beldex-ai` · `docker ps` (is it running?)
 

@@ -4,7 +4,7 @@
 #  on this VPS (Hostinger Docker / n8n style setups). Free HTTPS included.
 #
 #  Run INSIDE the project folder on the VPS:
-#      bash deploy/connect_domain_traefik.sh beldex.sathishsakthivel.tech
+#      bash deploy/connect_domain_traefik.sh demo.sathishsakthivel.tech
 #
 #  What it does (other apps are NOT touched):
 #    1. reads how your Traefik is configured (network, entrypoint, certificate resolver)

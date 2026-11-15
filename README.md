@@ -9,7 +9,7 @@ Demo projects by **[Sathish Sakthivel](https://github.com/sathishvarun)** — se
 - **AI Customer Support Desk** (3-agent AutoGen) — https://support.sathishsakthivel.tech · [code](Week5/support-desk-project)
 
 ## ⭐ Newest project
-- **Beldex AI — bilingual crypto assistant** (FastAPI + LangChain RAG + FAISS/BM25 + CrewAI + Playwright + voice + Docker): separate user/admin sign-in, answers in English or Tamil (text or voice) with sources, and an admin console for sessions, time used, tokens, cost and CPU. [code & setup](beldex) · [live demo](https://beldex.sathishsakthivel.tech)
+- **Beldex AI — bilingual crypto assistant** (FastAPI + LangChain RAG + FAISS/BM25 + CrewAI + Playwright + voice + Docker): separate user/admin sign-in, answers in English or Tamil (text or voice) with sources, and an admin console for sessions, time used, tokens, cost and CPU. [code & setup](beldex) · [live demo](https://demo.sathishsakthivel.tech)
 
 ## 🗂️ Projects by folder
 | Folder | Focus | Highlights |
