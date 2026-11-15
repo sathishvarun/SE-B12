@@ -3,6 +3,7 @@
 It answers ONLY from the knowledge base. If the answer is not there it says so instead of guessing.
 """
 from __future__ import annotations
+import logging
 
 import re
 from dataclasses import dataclass, field
@@ -12,6 +13,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from app.config import settings
 from app.rag.knowledge import Hit, kb
 from app.rag.llm import get_llm, token_usage
+
+log = logging.getLogger("beldex.chain")
 
 TAMIL = re.compile(r"[஀-௿]")
 
@@ -107,6 +110,17 @@ def _sources(hits: list[Hit]) -> list[dict]:
     return out
 
 
+def _extractive(ans: "Answer", hits, lang: str, question: str) -> "Answer":
+    ans.mode = "extractive"
+    head = ("The AI model is not available right now, so here are the most relevant passages:" if lang == "en"
+            else "AI மாடல் இப்போது கிடைக்கவில்லை; தொடர்புடைய பகுதிகள் கீழே (ஆங்கிலத்தில்):")
+    lines = [f"- {h.doc.page_content[:300].strip()} [{i}]" for i, h in enumerate(hits[:3], 1)]
+    ans.text = head + "\n" + "\n".join(lines)
+    ans.steps.append("Showed matching passages (AI model not available)")
+    ans.follow_ups = _bank_follow_ups(" ".join(h.doc.page_content for h in hits), lang, question)
+    return ans
+
+
 def ask(question: str, lang: str = "en") -> Answer:
     lang = "ta" if lang == "ta" else "en"
     ans = Answer(text="", lang=lang)
@@ -114,12 +128,16 @@ def ask(question: str, lang: str = "en") -> Answer:
     query = question
 
     if TAMIL.search(question) and llm is not None:
-        msg = (TRANSLATE_PROMPT | llm).invoke({"question": question})
-        query = f"{question}\n{msg.content}"
-        p, c = token_usage(msg)
-        ans.prompt_tokens += p
-        ans.completion_tokens += c
-        ans.steps.append(f"Translated the question for search: “{msg.content.strip()[:80]}”")
+        try:
+            msg = (TRANSLATE_PROMPT | llm).invoke({"question": question})
+            query = f"{question}\n{msg.content}"
+            p, c = token_usage(msg)
+            ans.prompt_tokens += p
+            ans.completion_tokens += c
+            ans.steps.append(f"Translated the question for search: “{msg.content.strip()[:80]}”")
+        except Exception as e:  # bad key, quota or network: keep going with the original question
+            log.warning("translate failed: %s", e)
+            llm = None
 
     hits = kb.search(query, k=6)
     pages = len({h.doc.metadata['url'] for h in hits})
@@ -131,19 +149,16 @@ def ask(question: str, lang: str = "en") -> Answer:
     ans.sources = _sources(hits)
 
     if llm is None:  # no API key: show the best passages, still with sources
-        ans.mode = "extractive"
-        head = ("AI model is not configured, so here are the most relevant passages:" if lang == "en"
-                else "AI மாடல் அமைக்கப்படவில்லை; தொடர்புடைய பகுதிகள் கீழே (ஆங்கிலத்தில்):")
-        lines = [f"- {h.doc.page_content[:300].strip()} [{i}]" for i, h in enumerate(hits[:3], 1)]
-        ans.text = head + "\n" + "\n".join(lines)
-        ans.steps.append("Showed matching passages (no LLM key set)")
-        ans.follow_ups = _bank_follow_ups(" ".join(h.doc.page_content for h in hits), lang, question)
-        return ans
+        return _extractive(ans, hits, lang, question)
 
     context = "\n\n".join(f"[{s['n']}] {s['title']} ({s['url']})\n{h.doc.page_content}"
                           for s, h in zip(ans.sources, hits))
-    msg = (ANSWER_PROMPT | llm).invoke({"context": context, "question": question,
-                                        "language": "Tamil" if lang == "ta" else "English"})
+    try:
+        msg = (ANSWER_PROMPT | llm).invoke({"context": context, "question": question,
+                                            "language": "Tamil" if lang == "ta" else "English"})
+    except Exception as e:  # bad key, quota or network: still answer with the passages
+        log.warning("answer failed: %s", e)
+        return _extractive(ans, hits, lang, question)
     p, c = token_usage(msg)
     ans.prompt_tokens += p
     ans.completion_tokens += c
