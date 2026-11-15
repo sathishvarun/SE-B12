@@ -74,6 +74,19 @@ class QueryLog(Base):
     via: Mapped[str] = mapped_column(String(10), default="text")  # "text" | "voice"
 
 
+class PasswordReset(Base):
+    """A one-time password-reset link. Only a hash of the secret is stored."""
+    __tablename__ = "password_resets"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    source: Mapped[str] = mapped_column(String(20), default="email")  # email | request | admin
+    ip: Mapped[str] = mapped_column(String(64), default="")
+
+
 class Activity(Base):
     """Audit trail: sign-ins, sign-outs, page views, admin actions."""
     __tablename__ = "activity"

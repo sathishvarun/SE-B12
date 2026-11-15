@@ -4,10 +4,13 @@ Run:  uvicorn app.api:app --reload --port 8000      Docs: http://127.0.0.1:8000/
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+import secrets
 import threading
-from collections import Counter, defaultdict
+import time
+from collections import Counter, defaultdict, deque
 from datetime import timedelta
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
@@ -20,12 +23,12 @@ from sqlalchemy.orm import Session
 
 from app.agents.news_crew import load_digest, run_crew
 from app.config import ROOT, settings
-from app.db import (Activity, KnowledgeRun, LoginSession, QueryLog, SessionLocal, User, get_db,
-                    init_db, now)
+from app.db import (Activity, KnowledgeRun, LoginSession, PasswordReset, QueryLog, SessionLocal, User,
+                    get_db, init_db, now)
 from app.metrics import measure, server_snapshot
 from app.rag.chain import ask
 from app.rag.knowledge import kb
-from app import voice
+from app import mailer, voice
 from app.security import Caller, admin_only, check_password, current, hash_password, make_token
 
 app = FastAPI(title="Beldex AI API", version="1.0.0",
@@ -146,14 +149,33 @@ def check_email(email: str, db: Session = Depends(get_db)):
     return {"valid": valid, "available": valid and not taken}
 
 
+# ---- brute-force protection: too many wrong passwords -> wait a while (kept in memory)
+_FAILS: dict[str, deque] = defaultdict(deque)
+FAIL_LIMIT, IP_LIMIT, FAIL_WINDOW = 5, 30, 15 * 60  # per account / per network address
+TOO_MANY = "Too many wrong attempts. Please wait 15 minutes, or use 'Forgot password?'."
+
+
+def _too_many(key: str, limit: int = FAIL_LIMIT) -> bool:
+    q, t = _FAILS[key], time.time()
+    while q and t - q[0] > FAIL_WINDOW:
+        q.popleft()
+    return len(q) >= limit
+
+
 @app.post("/auth/login")
 def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
     key = body.login.strip().lower()
+    ip, _ = _client(request)
+    if _too_many(key) or _too_many("ip:" + ip, IP_LIMIT):
+        raise HTTPException(429, TOO_MANY)
     user = db.scalar(select(User).where(or_(func.lower(User.username) == key, User.email == key)))
     if not user or not check_password(body.password, user.password_hash):
+        _FAILS[key].append(time.time())
+        _FAILS["ip:" + ip].append(time.time())
         _log(db, user.id if user else None, "sign_in_failed", key)
         db.commit()
         raise HTTPException(401, "Wrong email or password")
+    _FAILS.pop(key, None)
     if not user.active:
         raise HTTPException(403, "This account is suspended")
     if body.as_role == "admin" and user.role != "admin":
@@ -188,6 +210,127 @@ def set_lang(body: PrefIn, caller: Caller = Depends(current), db: Session = Depe
     u.lang = "ta" if body.lang == "ta" else "en"
     db.commit()
     return _user_out(u)
+
+
+# ---------------------------------------------------------------- passwords
+RESET_MINUTES, ADMIN_LINK_HOURS = 30, 24
+
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _base_url(request: Request) -> str:
+    if settings.public_url:
+        return settings.public_url
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+    return f"{proto}://{host}"
+
+
+def _new_reset(db: Session, user: User, source: str, ttl: timedelta, ip: str = "") -> str:
+    """Create a one-time link secret; older unused links for this person stop working."""
+    for old in db.scalars(select(PasswordReset).where(PasswordReset.user_id == user.id, PasswordReset.used_at.is_(None))):
+        old.used_at = now()
+    token = secrets.token_urlsafe(32)
+    db.add(PasswordReset(user_id=user.id, token_hash=_hash_token(token), expires_at=now() + ttl, source=source, ip=ip))
+    return token
+
+
+def _valid_reset(db: Session, token: str) -> PasswordReset | None:
+    r = db.scalar(select(PasswordReset).where(PasswordReset.token_hash == _hash_token(token or "")))
+    if not r or r.used_at or r.expires_at < now():
+        return None
+    return r
+
+
+def _end_sessions(db: Session, user_id: int, keep: int | None = None) -> None:
+    for s in db.scalars(select(LoginSession).where(LoginSession.user_id == user_id, LoginSession.ended_at.is_(None))):
+        if s.id != keep:
+            s.ended_at = now()
+
+
+class ForgotIn(BaseModel):
+    email: str = Field(max_length=200)
+    lang: str = "en"
+
+
+@app.post("/auth/forgot")
+def forgot(body: ForgotIn, request: Request, db: Session = Depends(get_db)):
+    """Always gives the same reply, so nobody can use it to find out which emails are registered."""
+    ip, _ = _client(request)
+    email = (body.email or "").strip().lower()
+    if _too_many("forgot:" + ip, 10):
+        raise HTTPException(429, "Too many requests. Please try again later.")
+    _FAILS["forgot:" + ip].append(time.time())
+    user = db.scalar(select(User).where(User.email == email)) if email else None
+    if user and user.active:
+        if mailer.enabled():
+            token = _new_reset(db, user, "email", timedelta(minutes=RESET_MINUTES), ip)
+            link = f"{_base_url(request)}/reset.html?token={token}"
+            mailer.send_reset(user.email, user.name.split(" ")[0], link, RESET_MINUTES,
+                              "ta" if body.lang == "ta" else user.lang)
+        else:  # no email server: the admin sees the request and sends a link
+            db.add(PasswordReset(user_id=user.id, token_hash=_hash_token(secrets.token_urlsafe(32)),
+                                 expires_at=now() + timedelta(days=7), source="request", ip=ip))
+        _log(db, user.id, "password_reset_requested", "email" if mailer.enabled() else "sent to admin")
+        db.commit()
+    return {"ok": True, "via": "email" if mailer.enabled() else "admin"}
+
+
+@app.get("/auth/reset/check")
+def reset_check(token: str, db: Session = Depends(get_db)):
+    r = _valid_reset(db, token)
+    if not r or r.source == "request":
+        return {"valid": False}
+    u = db.get(User, r.user_id)
+    name, domain = u.email.split("@", 1)
+    return {"valid": True, "email": f"{name[:2]}{'•' * max(1, len(name) - 2)}@{domain}", "lang": u.lang}
+
+
+class ResetIn(BaseModel):
+    token: str
+    password: str = Field(max_length=128)
+
+
+@app.post("/auth/reset")
+def reset_password(body: ResetIn, db: Session = Depends(get_db)):
+    r = _valid_reset(db, body.token)
+    if not r or r.source == "request":
+        raise HTTPException(400, "This reset link is invalid or has expired. Please ask for a new one.")
+    if not _password_ok(body.password):
+        raise HTTPException(422, PASSWORD_RULE)
+    u = db.get(User, r.user_id)
+    u.password_hash = hash_password(body.password)
+    r.used_at = now()
+    for other in db.scalars(select(PasswordReset).where(PasswordReset.user_id == u.id, PasswordReset.used_at.is_(None))):
+        other.used_at = now()  # pending admin requests are now done too
+    _end_sessions(db, u.id)    # sign out everywhere with the old password
+    _FAILS.pop(u.email, None)
+    _log(db, u.id, "password_reset", f"via {r.source}")
+    db.commit()
+    return {"ok": True, "email": u.email}
+
+
+class ChangePwIn(BaseModel):
+    current: str = Field(max_length=128)
+    new: str = Field(max_length=128)
+
+
+@app.post("/me/password")
+def change_password(body: ChangePwIn, caller: Caller = Depends(current), db: Session = Depends(get_db)):
+    u = db.get(User, caller.user.id)
+    if not check_password(body.current, u.password_hash):
+        raise HTTPException(400, "Your current password is not correct.")
+    if not _password_ok(body.new):
+        raise HTTPException(422, PASSWORD_RULE)
+    if body.current == body.new:
+        raise HTTPException(422, "Choose a password different from the current one.")
+    u.password_hash = hash_password(body.new)
+    _end_sessions(db, u.id, keep=caller.session.id if caller.session else None)  # other devices are signed out
+    _log(db, u.id, "password_changed")
+    db.commit()
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------- the agent
@@ -436,6 +579,35 @@ def admin_patch_user(uid: int, body: UserPatch, caller: Caller = Depends(admin_o
     _log(db, caller.user.id, "admin_update_user", f"{u.username}: active={u.active} role={u.role}")
     db.commit()
     return _user_out(u)
+
+
+@app.post("/admin/users/{uid}/reset-link")
+def admin_reset_link(uid: int, request: Request, caller: Caller = Depends(admin_only), db: Session = Depends(get_db)):
+    """Creates a one-time link (valid 24 hours) the admin can send to the person by WhatsApp, SMS or email."""
+    u = db.get(User, uid)
+    if not u:
+        raise HTTPException(404, "No such user")
+    token = _new_reset(db, u, "admin", timedelta(hours=ADMIN_LINK_HOURS))
+    _log(db, caller.user.id, "admin_reset_link", u.email)
+    db.commit()
+    return {"link": f"{_base_url(request)}/reset.html?token={token}", "hours": ADMIN_LINK_HOURS, "email": u.email,
+            "emailed": False}
+
+
+@app.get("/admin/reset-requests")
+def admin_reset_requests(_: Caller = Depends(admin_only), db: Session = Depends(get_db)):
+    rows = db.execute(select(PasswordReset, User).join(User, User.id == PasswordReset.user_id)
+                      .where(PasswordReset.source == "request", PasswordReset.used_at.is_(None),
+                             PasswordReset.expires_at > now())
+                      .order_by(PasswordReset.id.desc())).all()
+    return [{"id": r.id, "user_id": u.id, "name": u.name, "email": u.email, "at": r.created_at.isoformat()}
+            for r, u in rows]
+
+
+@app.get("/admin/settings")
+def admin_settings(_: Caller = Depends(admin_only)):
+    return {"email_reset": mailer.enabled(), "allow_signup": settings.allow_signup,
+            "public_url": settings.public_url}
 
 
 @app.get("/admin/queries")

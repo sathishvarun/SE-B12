@@ -130,3 +130,65 @@ def test_tamil_answer_has_tamil_steps(client):
     assert a["found"] is True
     assert any("அறிவுத் தளத்தில்" in s for s in a["steps"])
     assert all("title_ta" in s for s in a["sources"])
+
+
+def _admin(client):
+    tok = client.post("/auth/login", json={"login": "admin@test.dev", "password": "Admin@12345", "as_role": "admin"}).json()["token"]
+    return {"Authorization": f"Bearer {tok}"}
+
+
+def test_forgot_password_admin_link_flow(client):
+    r = client.post("/auth/register", json={"first_name": "Reset", "email": "reset.me@gmail.com", "password": "oldpass11"})
+    old = {"Authorization": f"Bearer {r.json()['token']}"}
+    # same reply for known and unknown emails (no way to find out who is registered)
+    assert client.post("/auth/forgot", json={"email": "nobody@gmail.com"}).json() == client.post(
+        "/auth/forgot", json={"email": "reset.me@gmail.com"}).json()
+    adm = _admin(client)
+    reqs = client.get("/admin/reset-requests", headers=adm).json()
+    me = [x for x in reqs if x["email"] == "reset.me@gmail.com"]
+    assert me, reqs
+    link = client.post(f"/admin/users/{me[0]['user_id']}/reset-link", headers=adm).json()["link"]
+    token = link.split("token=")[1]
+    assert client.get("/auth/reset/check", params={"token": token}).json()["valid"] is True
+    assert client.post("/auth/reset", json={"token": token, "password": "short"}).status_code == 422
+    assert client.post("/auth/reset", json={"token": token, "password": "newpass22"}).status_code == 200
+    # link works only once; request is cleared; old sessions are signed out; new password works
+    assert client.post("/auth/reset", json={"token": token, "password": "another33"}).status_code == 400
+    assert not [x for x in client.get("/admin/reset-requests", headers=adm).json() if x["email"] == "reset.me@gmail.com"]
+    assert client.get("/me", headers=old).status_code == 401
+    assert client.post("/auth/login", json={"login": "reset.me@gmail.com", "password": "oldpass11"}).status_code == 401
+    assert client.post("/auth/login", json={"login": "reset.me@gmail.com", "password": "newpass22"}).status_code == 200
+
+
+def test_bad_reset_token(client):
+    assert client.get("/auth/reset/check", params={"token": "nope"}).json()["valid"] is False
+    assert client.post("/auth/reset", json={"token": "nope", "password": "newpass22"}).status_code == 400
+
+
+def test_change_password(client):
+    tok = client.post("/auth/register", json={"first_name": "Ch", "email": "change.me@gmail.com", "password": "first111"}).json()["token"]
+    h = {"Authorization": f"Bearer {tok}"}
+    assert client.post("/me/password", json={"current": "wrong111", "new": "second22"}, headers=h).status_code == 400
+    assert client.post("/me/password", json={"current": "first111", "new": "second22"}, headers=h).status_code == 200
+    assert client.get("/me", headers=h).status_code == 200  # this device stays signed in
+    assert client.post("/auth/login", json={"login": "change.me@gmail.com", "password": "second22"}).status_code == 200
+
+
+def test_too_many_wrong_passwords(client):
+    client.post("/auth/register", json={"first_name": "Br", "email": "brute@gmail.com", "password": "right1234"})
+    codes = [client.post("/auth/login", json={"login": "brute@gmail.com", "password": f"bad{i}xxxx"}).status_code for i in range(6)]
+    assert codes[:5] == [401] * 5 and codes[5] == 429
+    # even the right password waits now
+    assert client.post("/auth/login", json={"login": "brute@gmail.com", "password": "right1234"}).status_code == 429
+
+
+def test_forgot_password_sends_email_when_smtp_is_set(client, monkeypatch):
+    from app import mailer
+    sent = {}
+    monkeypatch.setattr(mailer, "enabled", lambda: True)
+    monkeypatch.setattr(mailer, "send_reset", lambda to, name, link, minutes, lang="en": sent.update(to=to, link=link))
+    client.post("/auth/register", json={"first_name": "Mail", "email": "mail.me@gmail.com", "password": "mailpass1"})
+    assert client.post("/auth/forgot", json={"email": "mail.me@gmail.com"}).json()["via"] == "email"
+    assert sent["to"] == "mail.me@gmail.com" and "/reset.html?token=" in sent["link"]
+    token = sent["link"].split("token=")[1]
+    assert client.post("/auth/reset", json={"token": token, "password": "fresh1234"}).status_code == 200

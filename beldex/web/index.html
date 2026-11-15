@@ -55,7 +55,10 @@
             <input class="input" id="inEmail" type="text" autocomplete="username" placeholder="you@example.com" required>
           </div>
           <div class="field">
-            <label for="inPw" data-t="pw">Password</label>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+              <label for="inPw" data-t="pw">Password</label>
+              <a href="#" id="toForgot" data-t="forgot" style="font-size:13px;font-weight:600">Forgot password?</a>
+            </div>
             <div class="input-wrap">
               <input class="input" id="inPw" type="password" autocomplete="current-password" placeholder="Your password" required>
               <button type="button" class="icon-btn suffix" data-toggle="inPw" aria-label="Show password"></button>
@@ -67,6 +70,24 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:1px"><path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7z"/></svg>
             <span data-t="adminNote">Admin accounts are created by the owner. Every admin sign-in is recorded in the activity log.</span>
           </div>
+        </form>
+      </section>
+
+      <!-- FORGOT PASSWORD -->
+      <section id="viewForgot" class="hidden">
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
+          <h2 data-t="fTitle">Forgot your password?</h2>
+          <p class="muted" style="margin:0" data-t="fSub">Enter the email you signed up with and we'll help you set a new password.</p>
+        </div>
+        <form id="formForgot" novalidate>
+          <div class="field">
+            <label for="fEmail" data-t="email">Email</label>
+            <input class="input" id="fEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+          </div>
+          <div class="form-error hidden" id="fErr" role="alert"></div>
+          <div class="ok-box hidden" id="fOk" role="status"></div>
+          <button class="btn btn-primary" id="fBtn" type="submit" style="min-height:50px" data-t="fBtn">Send reset link</button>
+          <p class="muted" style="margin:14px 0 0;font-size:13.5px"><a href="#" id="fBack" data-t="back">← Back to sign in</a></p>
         </form>
       </section>
 
@@ -137,7 +158,12 @@ const T = {
         upBtn: 'Create account', creating: 'Creating your account…', checking: 'Checking…',
         badEmail: 'Enter a real email address, like name@gmail.com', taken: 'This email is already registered.', goIn: 'Sign in instead', good: 'Looks good',
         need: 'Enter your email and password.', expired: 'Your session ended. Please sign in again.',
-        foot: 'Independent assistant, not affiliated with the Beldex project. Information only — not financial advice.' },
+        foot: 'Independent assistant, not affiliated with the Beldex project. Information only — not financial advice.',
+        forgot: 'Forgot password?', fTitle: 'Forgot your password?', fSub: 'Enter the email you signed up with and we\'ll help you set a new password.',
+        fBtn: 'Send reset link', sending: 'Sending…', back: '← Back to sign in',
+        fSentEmail: 'If this email is registered, a reset link is on its way. It works for 30 minutes — check your spam folder too.',
+        fSentAdmin: 'Request received. If this email is registered, the admin will send you a reset link shortly (by email or WhatsApp).',
+        reset: 'Your password was changed. Please sign in with the new password.' },
   ta: { h1: 'ஒவ்வொரு Beldex பதிலும்,<br><em class="grad-text">ஆதாரத்துடன்.</em>',
         lead: 'BDX, masternodes, BChat, BelNet, BNS அல்லது சமீபத்திய அப்டேட்ஸ் பற்றி தமிழிலோ ஆங்கிலத்திலோ எழுதியோ பேசியோ கேளுங்கள் — பதிலை குரலிலும் கேட்கலாம். ஒவ்வொரு பதிலும் beldex.io, whitepaper மற்றும் அதிகாரப்பூர்வ செய்திகளிலிருந்து மட்டுமே.',
         st1: 'மொழிகள்', st2: 'ஆதாரத்துடன் பதில்கள்', st3b: 'குரல்', st3: 'பேசுங்கள், கேளுங்கள்', user: 'பயனர்', admin: 'நிர்வாகி',
@@ -149,7 +175,12 @@ const T = {
         upBtn: 'கணக்கை உருவாக்கு', creating: 'கணக்கு உருவாகிறது…', checking: 'சரிபார்க்கிறது…',
         badEmail: 'சரியான மின்னஞ்சலை உள்ளிடுங்கள், உதா. name@gmail.com', taken: 'இந்த மின்னஞ்சல் ஏற்கனவே பதிவில் உள்ளது.', goIn: 'உள்நுழையவும்', good: 'சரியாக உள்ளது',
         need: 'மின்னஞ்சலும் கடவுச்சொல்லும் உள்ளிடுங்கள்.', expired: 'உங்கள் அமர்வு முடிந்தது. மீண்டும் உள்நுழையவும்.',
-        foot: 'சுயாதீன உதவியாளர்; Beldex திட்டத்துடன் தொடர்பில்லை. தகவலுக்கு மட்டும் — நிதி ஆலோசனை அல்ல.' },
+        foot: 'சுயாதீன உதவியாளர்; Beldex திட்டத்துடன் தொடர்பில்லை. தகவலுக்கு மட்டும் — நிதி ஆலோசனை அல்ல.',
+        forgot: 'கடவுச்சொல் மறந்துவிட்டதா?', fTitle: 'கடவுச்சொல் மறந்துவிட்டதா?', fSub: 'பதிவு செய்த மின்னஞ்சலை உள்ளிடுங்கள்; புதிய கடவுச்சொல் அமைக்க உதவுகிறோம்.',
+        fBtn: 'மாற்றும் இணைப்பை அனுப்பு', sending: 'அனுப்புகிறது…', back: '← உள்நுழைவுக்குத் திரும்பு',
+        fSentEmail: 'இந்த மின்னஞ்சல் பதிவில் இருந்தால், மாற்றும் இணைப்பு அனுப்பப்பட்டுள்ளது. 30 நிமிடங்களுக்கு மட்டும் — spam folder-ஐயும் பாருங்கள்.',
+        fSentAdmin: 'கோரிக்கை பெறப்பட்டது. இந்த மின்னஞ்சல் பதிவில் இருந்தால், நிர்வாகி விரைவில் இணைப்பை அனுப்புவார் (மின்னஞ்சல் அல்லது WhatsApp).',
+        reset: 'உங்கள் கடவுச்சொல் மாற்றப்பட்டது. புதிய கடவுச்சொல்லுடன் உள்நுழையவும்.' },
 };
 const t = k => T[lang][k];
 // Server messages, shown in Tamil when Tamil is chosen
@@ -160,6 +191,8 @@ const ERR_TA = {
   'Please enter your first name.': 'உங்கள் முதல் பெயரை உள்ளிடுங்கள்.',
   'Sign-up is closed. Ask the admin for an account.': 'பதிவு தற்போது மூடப்பட்டுள்ளது. நிர்வாகியிடம் கணக்கு கேளுங்கள்.',
   'Cannot reach the server. Check that the app is running.': 'சர்வரை அணுக முடியவில்லை. சிறிது நேரம் கழித்து முயற்சிக்கவும்.',
+  "Too many wrong attempts. Please wait 15 minutes, or use 'Forgot password?'.": 'பல முறை தவறான முயற்சிகள். 15 நிமிடம் காத்திருங்கள், அல்லது "கடவுச்சொல் மறந்துவிட்டதா?" பயன்படுத்துங்கள்.',
+  'Too many requests. Please try again later.': 'பல கோரிக்கைகள். சிறிது நேரம் கழித்து முயற்சிக்கவும்.',
 };
 const tr = msg => (lang === 'ta' && (ERR_TA[msg] || (/suspend/i.test(msg) ? 'உங்கள் கணக்கு நிறுத்தி வைக்கப்பட்டுள்ளது. நிர்வாகியைத் தொடர்பு கொள்ளுங்கள்.' : /admin/i.test(msg) ? 'இந்த கணக்குக்கு நிர்வாகி அனுமதி இல்லை.' : /password|8/i.test(msg) ? 'கடவுச்சொல்லில் குறைந்தது 8 எழுத்துகள், ஒரு எழுத்து, ஒரு எண் இருக்க வேண்டும்.' : null))) || msg;
 
@@ -168,7 +201,7 @@ function applyLang() {
   $('lEn').classList.toggle('on', lang === 'en'); $('lTa').classList.toggle('on', lang === 'ta');
   document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
   document.querySelector('[data-th]').innerHTML = t('h1');
-  $('inEmail').placeholder = t('phEmail'); $('upEmail').placeholder = t('phEmail'); $('inPw').placeholder = t('phPw');
+  $('inEmail').placeholder = t('phEmail'); $('upEmail').placeholder = t('phEmail'); $('fEmail').placeholder = t('phEmail'); $('inPw').placeholder = t('phPw');
   $('upFirst').placeholder = t('phFirst'); $('upLast').placeholder = t('phLast'); $('upPw').placeholder = t('phNewPw');
   $('inTitle').textContent = role === 'admin' ? t('adminTitle') : t('welcome');
   $('inBtn').textContent = role === 'admin' ? t('openAdmin') : t('signin');
@@ -186,8 +219,25 @@ document.querySelectorAll('[data-toggle]').forEach(b => {
 function show(view) {
   $('viewIn').classList.toggle('hidden', view !== 'in');
   $('viewUp').classList.toggle('hidden', view !== 'up');
-  (view === 'in' ? $('inEmail') : $('upFirst')).focus();
+  $('viewForgot').classList.toggle('hidden', view !== 'forgot');
+  ({ in: $('inEmail'), up: $('upFirst'), forgot: $('fEmail') })[view].focus();
 }
+$('toForgot').onclick = e => { e.preventDefault(); $('fEmail').value = $('inEmail').value.includes('@') ? $('inEmail').value.trim() : '';
+  $('fOk').classList.add('hidden'); $('fErr').classList.add('hidden'); $('fBtn').classList.remove('hidden'); show('forgot'); };
+$('fBack').onclick = e => { e.preventDefault(); show('in'); };
+$('formForgot').onsubmit = async e => {
+  e.preventDefault();
+  const email = $('fEmail').value.trim();
+  $('fErr').classList.add('hidden');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) return fail($('fErr'), t('badEmail'));
+  $('fBtn').disabled = true; $('fBtn').textContent = t('sending');
+  try {
+    const r = await api('/auth/forgot', { method: 'POST', auth: false, body: { email, lang } });
+    $('fOk').textContent = r.via === 'email' ? t('fSentEmail') : t('fSentAdmin');
+    $('fOk').classList.remove('hidden'); $('fBtn').classList.add('hidden');
+  } catch (err) { fail($('fErr'), tr(err.message)); }
+  $('fBtn').disabled = false; $('fBtn').textContent = t('fBtn');
+};
 $('toUp').onclick = e => { e.preventDefault(); show('up'); };
 $('toIn').onclick = e => { e.preventDefault(); show('in'); };
 
@@ -318,6 +368,7 @@ if (matchMedia('(prefers-reduced-motion: reduce)').matches) { $('demoQ').textCon
 else demoLoop();
 applyLang();
 if (new URLSearchParams(location.search).get('expired')) setTimeout(() => toast(t('expired')), 300);
+if (new URLSearchParams(location.search).get('reset')) { setTimeout(() => toast(t('reset')), 300); const em = new URLSearchParams(location.search).get('email'); if (em) $('inEmail').value = em; }
 $('inEmail').focus();
 </script>
 </body>

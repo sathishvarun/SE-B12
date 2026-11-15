@@ -98,6 +98,7 @@ function countUp(el, to, { dec = 0, prefix = '', suffix = '', ms = 900 } = {}) {
 }
 
 const ICON = {
+  key: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg>',
   send: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   plus: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   out: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>',
@@ -279,3 +280,49 @@ function networkCanvas(canvas) {
   })();
 }
 function bgFx() { const d = document.createElement('div'); d.className = 'bg-fx'; d.setAttribute('aria-hidden', 'true'); d.innerHTML = '<i></i><i></i><i></i>'; document.body.prepend(d); }
+
+// ---- small dialog used by "Change password" (app + admin) and the admin's reset-link box
+function modal(html) {
+  const root = document.createElement('div');
+  root.innerHTML = `<div class="drawer-bg"></div><div class="modal" role="dialog" aria-modal="true">${html}</div>`;
+  document.body.appendChild(root);
+  const close = () => { root.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  root.querySelector('.drawer-bg').onclick = close;
+  root.querySelectorAll('[data-close]').forEach(b => b.onclick = close);
+  return { el: root.querySelector('.modal'), close };
+}
+
+function passwordDialog() {
+  const pwOk = v => v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v);
+  const m = modal(`
+    <h3>${L('Change password', 'கடவுச்சொல்லை மாற்று')}</h3>
+    <p class="muted" style="margin:0 0 14px;font-size:13.5px">${L('Your other devices will be signed out.', 'உங்கள் மற்ற சாதனங்களிலிருந்து வெளியேற்றப்படும்.')}</p>
+    <form id="pwForm" novalidate>
+      <div class="field"><label for="pwCur">${L('Current password', 'தற்போதைய கடவுச்சொல்')}</label><input class="input" id="pwCur" type="password" autocomplete="current-password"></div>
+      <div class="field"><label for="pwNew">${L('New password', 'புதிய கடவுச்சொல்')}</label><input class="input" id="pwNew" type="password" autocomplete="new-password">
+        <div class="hint">${L('8+ characters, with a letter and a number', '8+ எழுத்துகள், ஒரு எழுத்து மற்றும் ஒரு எண்ணுடன்')}</div></div>
+      <div class="field"><label for="pwNew2">${L('Repeat new password', 'புதிய கடவுச்சொல்லை மீண்டும்')}</label><input class="input" id="pwNew2" type="password" autocomplete="new-password"></div>
+      <div class="form-error hidden" id="pwErr" role="alert"></div>
+      <div class="row"><button type="button" class="btn btn-ghost" data-close>${L('Cancel', 'ரத்து')}</button>
+        <button class="btn btn-primary" id="pwSave" type="submit">${L('Save new password', 'புதிய கடவுச்சொல்லை சேமி')}</button></div>
+    </form>`);
+  const $m = id => m.el.querySelector('#' + id), err = t => { $m('pwErr').textContent = t; $m('pwErr').classList.remove('hidden'); };
+  $m('pwCur').focus();
+  $m('pwForm').onsubmit = async e => {
+    e.preventDefault(); $m('pwErr').classList.add('hidden');
+    const cur = $m('pwCur').value, nw = $m('pwNew').value;
+    if (!cur) return err(L('Enter your current password.', 'தற்போதைய கடவுச்சொல்லை உள்ளிடுங்கள்.'));
+    if (!pwOk(nw)) return err(L('New password needs 8+ characters with a letter and a number.', 'புதிய கடவுச்சொல்லில் 8+ எழுத்துகள், ஒரு எழுத்து, ஒரு எண் வேண்டும்.'));
+    if (nw !== $m('pwNew2').value) return err(L('The two new passwords do not match.', 'இரண்டு புதிய கடவுச்சொற்களும் ஒன்றாக இல்லை.'));
+    $m('pwSave').disabled = true;
+    try {
+      await api('/me/password', { method: 'POST', body: { current: cur, new: nw } });
+      m.close(); toast(L('Password changed.', 'கடவுச்சொல் மாற்றப்பட்டது.'));
+    } catch (ex) {
+      const ta = { 'Your current password is not correct.': 'தற்போதைய கடவுச்சொல் தவறு.', 'Choose a password different from the current one.': 'தற்போதையதிலிருந்து வேறு கடவுச்சொல்லைத் தேர்ந்தெடுங்கள்.' };
+      err(L(ex.message, ta[ex.message] || ex.message)); $m('pwSave').disabled = false;
+    }
+  };
+}

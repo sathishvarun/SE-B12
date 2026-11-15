@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Beldex AI — Set a new password</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth" style="grid-template-columns:1fr">
+  <main class="auth-main">
+    <div class="auth-card stagger">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <a class="brand" href="index.html" style="color:var(--ink)"><img src="img/logo.svg" alt="">Beldex AI</a>
+        <div class="seg" role="group" aria-label="Language">
+          <button type="button" id="lEn" class="on">English</button>
+          <button type="button" id="lTa">தமிழ்</button>
+        </div>
+      </div>
+
+      <section id="vLoading"><div class="skeleton" style="height:180px"></div></section>
+
+      <section id="vBad" class="hidden">
+        <h2 data-t="badT">This link has expired</h2>
+        <p class="muted" data-t="badS">Reset links work only once and only for a limited time. Ask for a new one from the sign-in page.</p>
+        <a class="btn btn-primary" href="index.html" data-t="toIn" style="min-height:50px">Go to sign in</a>
+      </section>
+
+      <section id="vForm" class="hidden">
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
+          <h2 data-t="title">Set a new password</h2>
+          <p class="muted" style="margin:0"><span data-t="for">For</span> <b id="who"></b></p>
+        </div>
+        <form id="form" novalidate>
+          <div class="field">
+            <label for="pw" data-t="pw">New password</label>
+            <div class="input-wrap">
+              <input class="input" id="pw" type="password" autocomplete="new-password" required>
+              <button type="button" class="icon-btn suffix" data-toggle="pw" aria-label="Show password"></button>
+            </div>
+            <div class="meter"><i id="meter"></i></div>
+            <ul class="rules" id="rules">
+              <li data-r="len" data-t="r1">8+ characters</li>
+              <li data-r="let" data-t="r2">One letter</li>
+              <li data-r="num" data-t="r3">One number</li>
+            </ul>
+          </div>
+          <div class="field">
+            <label for="pw2" data-t="pw2">Repeat new password</label>
+            <input class="input" id="pw2" type="password" autocomplete="new-password" required>
+            <div class="hint" id="matchHint" aria-live="polite"></div>
+          </div>
+          <div class="form-error hidden" id="err" role="alert"></div>
+          <button class="btn btn-primary" id="btn" type="submit" style="min-height:50px" disabled data-t="save">Save new password</button>
+        </form>
+      </section>
+
+      <p class="auth-foot" data-t="foot">For your safety you will be signed out on all devices after the change.</p>
+    </div>
+  </main>
+</div>
+
+<script src="js/core.js"></script>
+<script>
+bgFx();
+const $ = id => document.getElementById(id);
+const token = new URLSearchParams(location.search).get('token') || sessionStorage.getItem('bx_reset') || '';
+sessionStorage.setItem('bx_reset', token);       // survives a page refresh
+history.replaceState(null, '', 'reset.html');  // keep the secret out of the address bar after reading it
+let lang = localStorage.getItem('bx_lang') || 'en', email = '';
+const T = {
+  en: { badT: 'This link has expired', badS: 'Reset links work only once and only for a limited time. Ask for a new one from the sign-in page.',
+        toIn: 'Go to sign in', title: 'Set a new password', for: 'For', pw: 'New password', pw2: 'Repeat new password',
+        r1: '8+ characters', r2: 'One letter', r3: 'One number', save: 'Save new password', saving: 'Saving…',
+        match: 'Passwords match', nomatch: 'Passwords do not match yet', foot: 'For your safety you will be signed out on all devices after the change.' },
+  ta: { badT: 'இந்த இணைப்பு காலாவதியாகிவிட்டது', badS: 'மாற்றும் இணைப்பு ஒரு முறை மட்டுமே, குறிப்பிட்ட நேரத்துக்கு மட்டுமே செல்லும். உள்நுழைவு பக்கத்தில் புதிய இணைப்பைக் கேளுங்கள்.',
+        toIn: 'உள்நுழைவுக்குச் செல்', title: 'புதிய கடவுச்சொல்லை அமைக்கவும்', for: 'கணக்கு:', pw: 'புதிய கடவுச்சொல்', pw2: 'புதிய கடவுச்சொல்லை மீண்டும்',
+        r1: '8+ எழுத்துகள்', r2: 'ஒரு எழுத்து (A-Z)', r3: 'ஒரு எண் (0-9)', save: 'புதிய கடவுச்சொல்லை சேமி', saving: 'சேமிக்கிறது…',
+        match: 'இரண்டும் ஒன்றாக உள்ளன', nomatch: 'இரண்டும் இன்னும் ஒன்றாக இல்லை', foot: 'பாதுகாப்புக்காக, மாற்றிய பின் எல்லா சாதனங்களிலிருந்தும் வெளியேற்றப்படுவீர்கள்.' },
+};
+const t = k => T[lang][k];
+function applyLang() {
+  document.documentElement.lang = lang;
+  $('lEn').classList.toggle('on', lang === 'en'); $('lTa').classList.toggle('on', lang === 'ta');
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
+  check();
+}
+$('lEn').onclick = () => { lang = 'en'; localStorage.setItem('bx_lang', lang); applyLang(); };
+$('lTa').onclick = () => { lang = 'ta'; localStorage.setItem('bx_lang', lang); applyLang(); };
+document.querySelectorAll('[data-toggle]').forEach(b => { b.innerHTML = ICON.eye; b.onclick = () => { const i = $(b.dataset.toggle); i.type = i.type === 'password' ? 'text' : 'password'; }; });
+
+const rules = { len: v => v.length >= 8, let: v => /[A-Za-z]/.test(v), num: v => /\d/.test(v) };
+function check() {
+  const v = $('pw').value, v2 = $('pw2').value;
+  document.querySelectorAll('#rules li').forEach(li => li.classList.toggle('met', rules[li.dataset.r](v)));
+  const ok = Object.values(rules).every(f => f(v)), sc = Object.values(rules).filter(f => f(v)).length + (v.length >= 12) + /[^A-Za-z0-9]/.test(v);
+  $('meter').style.width = Math.min(100, sc * 20) + '%';
+  $('meter').style.background = sc <= 2 ? 'var(--bad)' : sc === 3 ? '#C98A00' : 'var(--good)';
+  const h = $('matchHint');
+  if (!v2) { h.className = 'hint'; h.textContent = ''; }
+  else if (v === v2) { h.className = 'hint ok'; h.innerHTML = ICON.check + ' ' + esc(t('match')); }
+  else { h.className = 'hint err'; h.innerHTML = ICON.x + ' ' + esc(t('nomatch')); }
+  $('btn').disabled = !(ok && v === v2);
+}
+['pw', 'pw2'].forEach(id => $(id).addEventListener('input', check));
+
+function showView(v) { ['vLoading', 'vBad', 'vForm'].forEach(x => $(x).classList.toggle('hidden', x !== v)); }
+
+$('form').onsubmit = async e => {
+  e.preventDefault(); $('err').classList.add('hidden');
+  $('btn').disabled = true; $('btn').textContent = t('saving');
+  try {
+    const r = await api('/auth/reset', { method: 'POST', auth: false, body: { token, password: $('pw').value } });
+    Auth.clear(); sessionStorage.removeItem('bx_reset');
+    location.href = 'index.html?reset=1&email=' + encodeURIComponent(r.email);
+  } catch (ex) {
+    const ta = /expired|invalid/i.test(ex.message) ? 'இந்த இணைப்பு செல்லாது அல்லது காலாவதியாகிவிட்டது. புதிய இணைப்பைக் கேளுங்கள்.' : ex.message;
+    $('err').textContent = lang === 'ta' ? ta : ex.message; $('err').classList.remove('hidden');
+    $('btn').textContent = t('save'); check();
+  }
+};
+
+(async () => {
+  applyLang();
+  if (!token) return showView('vBad');
+  try {
+    const r = await api('/auth/reset/check?token=' + encodeURIComponent(token), { auth: false });
+    if (!r.valid) return showView('vBad');
+    if (!localStorage.getItem('bx_lang') && r.lang) { lang = r.lang; applyLang(); }
+    $('who').textContent = r.email; showView('vForm'); $('pw').focus();
+  } catch { showView('vBad'); }
+})();
+</script>
+</body>
+</html>

@@ -34,6 +34,15 @@ class Settings:
     admin_email: str = os.getenv("ADMIN_EMAIL", "admin@example.com").strip().lower()
     admin_password: str = os.getenv("ADMIN_PASSWORD", "")
     allow_signup: bool = _bool("ALLOW_SIGNUP", True)
+    # Public address of the site, used in password-reset links (e.g. https://demo.sathishsakthivel.tech)
+    public_url: str = os.getenv("PUBLIC_URL", "").strip().rstrip("/")
+
+    # --- Email for "Forgot password" (optional). Without it, reset requests go to the admin console. ---
+    smtp_host: str = os.getenv("SMTP_HOST", "").strip()
+    smtp_port: int = int(os.getenv("SMTP_PORT", "465"))
+    smtp_user: str = os.getenv("SMTP_USER", "").strip()
+    smtp_password: str = os.getenv("SMTP_PASSWORD", "")
+    smtp_from: str = os.getenv("SMTP_FROM", "").strip()
 
     # --- Knowledge sources (answers come ONLY from these) ---
     crawl_start_urls: list[str] = field(default_factory=lambda: [

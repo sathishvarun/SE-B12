@@ -131,7 +131,7 @@ $('autoSpeak').onchange = () => { localStorage.setItem('bx_autospeak', $('autoSp
 // ---------- sidebar
 $('newChat').innerHTML = ICON.plus + ' <span data-t="new">' + t('new') + '</span>';
 $('newChat').onclick = () => { Voice.stopSpeaking(); $('stream').innerHTML = ''; renderWelcome(); $('q').focus(); };
-$('me').innerHTML = `${avatar(me.name)}<div style="flex:1;min-width:0"><b style="font-size:13.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(me.name)}</b><small class="muted">${esc(me.email)}</small></div><button class="icon-btn" title="Sign out" aria-label="Sign out" onclick="signOut()">${ICON.out}</button>`;
+$('me').innerHTML = `${avatar(me.name)}<div style="flex:1;min-width:0"><b style="font-size:13.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(me.name)}</b><small class="muted">${esc(me.email)}</small></div><button class="icon-btn" title="${lang === 'ta' ? 'கடவுச்சொல்லை மாற்று' : 'Change password'}" aria-label="Change password" onclick="passwordDialog()">${ICON.key}</button><button class="icon-btn" title="${lang === 'ta' ? 'வெளியேறு' : 'Sign out'}" aria-label="Sign out" onclick="signOut()">${ICON.out}</button>`;
 if (me.role === 'admin') $('toAdmin').classList.remove('hidden');
 
 let hist = [];

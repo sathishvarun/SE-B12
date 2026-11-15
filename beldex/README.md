@@ -20,6 +20,8 @@ People sign in and ask anything about **Beldex (BDX)** and crypto basics — by 
 | Suggested follow-up questions and topic shortcuts (crypto, blockchain, Bitcoin, stablecoin, Nexus safety…) | **Unanswered questions** list — shows what to add to the knowledge base next |
 | **Beldex Academy** — short lessons from "what is crypto" to masternodes | **Knowledge base:** every source, one-click refresh (Playwright crawl + re-index + news digest) |
 | News & updates written by an AI news crew | Feedback (👍/👎) on each answer |
+| **Forgot password?** on the sign-in page, a reset page, and **Change password** inside the app | **Password reset requests** banner + one-time reset link for any user (copy / WhatsApp / email) |
+| English / தமிழ் switch on every page, remembered for the account | Too many wrong passwords → the account waits 15 minutes (brute-force protection) |
 
 ![Answer with sources](screenshots/3_ask_answer.png)
 ![Admin overview](screenshots/5_admin_overview.png)
@@ -87,6 +89,8 @@ beldex/
 │   ├── security.py         # bcrypt + JWT, user/admin guards
 │   ├── metrics.py          # latency, CPU time, memory per question; server snapshot
 │   ├── voice.py            # speech-to-text and text-to-speech (with cache)
+│   ├── mailer.py           # password-reset email (only if SMTP is set in .env)
+│   ├── translate.py        # Tamil titles for sources and news (cached)
 │   ├── config.py           # reads .env
 │   ├── rag/
 │   │   ├── knowledge_pack.json   # curated crypto + Beldex + Nexus knowledge (EN + TA, with sources)
@@ -96,9 +100,9 @@ beldex/
 │   │   ├── crawler.py      # Playwright crawler for beldex.io + blog feed
 │   │   └── llm.py          # LangChain model + embeddings factory
 │   └── agents/news_crew.py # CrewAI researcher + bilingual editor
-├── web/                    # index.html (sign-in/up), app.html (chat), learn.html (Academy), admin.html, css, js, logo
+├── web/                    # index.html (sign-in/up/forgot), reset.html, app.html (chat), learn.html (Academy), admin.html, css, js, logo
 ├── scripts/seed_demo.py    # optional demo users and usage for presentations
-├── tests/test_api.py       # pytest: sign-up, grounding, Tamil, off-topic, roles, voice, suspend, logout
+├── tests/test_api.py       # pytest: sign-up, grounding, Tamil, off-topic, roles, voice, suspend, logout, passwords
 ├── deploy/connect_domain_traefik.sh   # VPS + Traefik + HTTPS in one command
 ├── run_mac.sh              # one command: venv + packages + start (Mac)
 ├── Dockerfile, docker-compose.yml, start.sh
@@ -187,6 +191,30 @@ Open **http://localhost:8501** (API docs: http://localhost:8501/docs). Stop with
 **Update later:** `cd ~/beldex-app/beldex && git pull && bash deploy/connect_domain_traefik.sh demo.sathishsakthivel.tech`. Users and history in `data/` are kept.
 
 **Useful commands on the VPS:** `docker logs -f beldex-ai` (live log) · `docker restart beldex-ai` · `docker ps` (is it running?)
+
+---
+
+## Accounts and passwords
+
+- **Sign up:** first name, last name (optional), email, password (8+ characters with a letter and a number). The email is checked live.
+- **Forgot password?** on the sign-in page. Two ways it can work:
+  1. **Email set up** (`SMTP_*` in `.env`): the person gets a reset link by email, valid 30 minutes.
+  2. **No email set up** (default): the request shows on the admin **Overview** and **Users** pages. Click **Link for <name>** → copy the one-time link or send it by WhatsApp/email. The link works once, for 24 hours.
+- **Reset page** (`reset.html`): new password twice, with the same rules. After the change the person is signed out on every device.
+- **Change password:** key icon next to your name (users and admins). Other devices are signed out.
+- **Admin:** any user's drawer → **Password reset link**. Suspend / reactivate / make admin as before.
+- **Protection:** 5 wrong passwords for one account (or 30 from one network) in 15 minutes → wait 15 minutes. Reset links are random, stored only as a hash, single-use and expire.
+
+**Turn on reset emails (Hostinger email example):** hPanel → Emails → create a mailbox such as `no-reply@yourdomain.com`, then in `.env`:
+```
+PUBLIC_URL=https://demo.sathishsakthivel.tech
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_USER=no-reply@yourdomain.com
+SMTP_PASSWORD=the mailbox password
+SMTP_FROM=Beldex AI <no-reply@yourdomain.com>
+```
+then `docker restart beldex-ai`. The admin **Users** page says whether email sending is on.
 
 ---
 

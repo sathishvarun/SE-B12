@@ -46,6 +46,7 @@ Chart.defaults.plugins.tooltip.padding = 10;
 Chart.defaults.plugins.tooltip.cornerRadius = 8;
 
 $('meBox').innerHTML = `${avatar(me.name, 30)}<div style="flex:1;min-width:0"><b style="color:#fff;font-size:13px;display:block">${esc(me.name)}</b><small>${esc(me.email)}</small></div>
+  <button class="icon-btn" style="color:#CFCCC3" aria-label="Change password" title="Change password" onclick="passwordDialog()">${ICON.key}</button>
   <button class="icon-btn" style="color:#CFCCC3" aria-label="Sign out" title="Sign out" onclick="signOut()">${ICON.out}</button>`;
 
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
@@ -62,7 +63,25 @@ const statusPill = s => `<span class="pill ${s === 'Online' ? 'good' : s === 'Su
 const ACT = { sign_in: ['#11704A', '→', 'signed in'], sign_out: ['#5E5D57', '←', 'signed out'], sign_up: ['#E2531D', '★', 'created an account'],
   view_page: ['#3B5BDB', '◉', 'opened'], sign_in_failed: ['#B3261E', '!', 'failed sign-in'], admin_denied: ['#B3261E', '!', 'tried admin access'],
   voice_in: ['#E2531D', '🎙', 'asked by voice'], voice_out: ['#7C3AED', '♪', 'listened to an answer'],
-  kb_refresh: ['#8A5A00', '↻', 'refreshed the knowledge base'], news_digest: ['#8A5A00', '✎', 'rebuilt the news digest'], admin_update_user: ['#7C3AED', '✓', 'updated a user'] };
+  kb_refresh: ['#8A5A00', '↻', 'refreshed the knowledge base'], news_digest: ['#8A5A00', '✎', 'rebuilt the news digest'], admin_update_user: ['#7C3AED', '✓', 'updated a user'],
+  password_reset_requested: ['#B7791F', '?', 'asked to reset the password'], password_reset: ['#11704A', '🔑', 'set a new password'],
+  password_changed: ['#11704A', '🔑', 'changed the password'], admin_reset_link: ['#7C3AED', '🔗', 'created a reset link for'] };
+
+// One-time password link for a person: copy it, or open WhatsApp / email with it ready to send.
+async function resetLink(uid, name) {
+  let r; try { r = await api('/admin/users/' + uid + '/reset-link', { method: 'POST' }); } catch (e) { return toast(e.message, true); }
+  const msg = `Hi ${name.split(' ')[0]}, here is your Beldex AI password reset link (works once, for ${r.hours} hours): ${r.link}`;
+  const m = modal(`<h3>Password reset link</h3>
+    <p class="muted" style="margin:0 0 12px;font-size:13.5px">For <b>${esc(r.email)}</b>. It works once and expires in ${r.hours} hours. Any older link stops working.</p>
+    <div class="linkbox"><span style="flex:1">${esc(r.link)}</span></div>
+    <div class="row">
+      <a class="btn btn-sm" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">Send by WhatsApp</a>
+      <a class="btn btn-sm" href="mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent('Beldex AI password reset')}&body=${encodeURIComponent(msg)}">Send by email</a>
+      <button class="btn btn-sm btn-primary" id="cpLink">Copy link</button>
+    </div>`);
+  m.el.querySelector('#cpLink').onclick = async () => { try { await navigator.clipboard.writeText(r.link); toast('Link copied'); } catch { toast('Select the link and copy it', true); } };
+  if (current === 'users') { allUsers = await api('/admin/users'); renderUsers(); }
+}
 
 function spark(values, color = '#121318') {
   const max = Math.max(1, ...values), w = 70, h = 22;
@@ -72,6 +91,7 @@ function spark(values, color = '#121318') {
 
 // ======================================================= OVERVIEW
 async function overview() {
+  setTimeout(loadResetRequests, 50);
   view.innerHTML = `
   <div class="hero-band stagger">
     <div class="a-head" style="margin:0;--i:0">
@@ -80,6 +100,7 @@ async function overview() {
     </div>
     <div class="hero-stats" id="heroStats" style="--i:1"></div>
   </div>
+  <div id="resetReq"></div>
   <div class="kpis" id="k1"></div>
   <div class="kpis" id="k2"></div>
   <div class="row r-2-1">
@@ -176,6 +197,7 @@ async function users() {
   view.innerHTML = `
   <div class="a-head"><div><h1>Users & sessions</h1><p>Click anyone to see their sessions, questions and activity.</p></div>
     <button class="btn btn-sm" id="csvU">Export CSV</button></div>
+  <div id="resetReq"></div>
   <div class="kpis" id="uk"></div>
   <div class="card panel">
     <div class="toolbar">
@@ -199,7 +221,19 @@ async function users() {
   document.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => { sortDir = sortKey === th.dataset.k ? -sortDir : -1; sortKey = th.dataset.k; renderUsers(); });
   $('csvU').onclick = () => csv('beldex_ai_users.csv', allUsers, ['name', 'email', 'role', 'status', 'last_login', 'sessions', 'minutes', 'questions', 'tokens', 'cost_usd', 'last_ip']);
   renderUsers();
-  timer = setInterval(async () => { try { allUsers = await api('/admin/users'); renderUsers(); } catch {} }, 30000);
+  loadResetRequests();
+  timer = setInterval(async () => { try { allUsers = await api('/admin/users'); renderUsers(); loadResetRequests(); } catch {} }, 30000);
+}
+
+// People who pressed "Forgot password?" while no email server is set up: send each one a link.
+async function loadResetRequests() {
+  const box = $('resetReq'); if (!box) return;
+  let reqs = [], cfg = {};
+  try { [reqs, cfg] = await Promise.all([api('/admin/reset-requests'), api('/admin/settings')]); } catch { return; }
+  box.innerHTML = reqs.length ? `<div class="notice"><div><b>${reqs.length} password reset request${reqs.length > 1 ? 's' : ''}</b>
+      <div class="muted" style="font-size:13px">${cfg.email_reset ? '' : 'Email sending is not set up, so create a link and send it by WhatsApp or email. '}${reqs.map(r => `${esc(r.name)} (${esc(r.email)}, ${ago(r.at)})`).join(' · ')}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${reqs.map(r => `<button class="btn btn-sm btn-primary" data-rl="${r.user_id}" data-n="${esc(r.name)}">Link for ${esc(r.name.split(' ')[0])}</button>`).join('')}</div></div>` : '';
+  box.querySelectorAll('[data-rl]').forEach(b => b.onclick = async () => { await resetLink(+b.dataset.rl, b.dataset.n); loadResetRequests(); });
 }
 function renderUsers() {
   const q = $('uq').value.toLowerCase();
@@ -236,6 +270,7 @@ async function openUser(id) {
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="btn btn-sm ${u.active ? 'btn-danger' : ''}" id="dAct">${u.active ? 'Suspend account' : 'Reactivate account'}</button>
         <button class="btn btn-sm" id="dRole">${u.role === 'admin' ? 'Remove admin rights' : 'Make admin'}</button>
+        <button class="btn btn-sm" id="dReset" title="Create a one-time link to set a new password">Password reset link</button>
       </div>
     </section>
     <section style="padding-top:0">
@@ -255,6 +290,7 @@ async function openUser(id) {
   const patch = async body => { try { await api('/admin/users/' + id, { method: 'PATCH', body }); toast('Saved'); allUsers = await api('/admin/users'); renderUsers(); openUser(id); } catch (e) { toast(e.message, true); } };
   $('dAct').onclick = () => patch({ active: !u.active });
   $('dRole').onclick = () => patch({ role: u.role === 'admin' ? 'user' : 'admin' });
+  $('dReset').onclick = () => resetLink(u.id, u.name);
 }
 
 // ======================================================= QUESTIONS LOG
