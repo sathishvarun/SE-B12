@@ -1,5 +1,15 @@
 # Changelog
 
+## 18 Nov 2026 (Customer emails, Google sign-in, launch)
+
+- Customer emails are now a branded Virundhu card (green header, turmeric button for links, help footer) and show
+  "Virundhu" as the sender. Emails to the platform admin stay plain.
+- Password reset: the link goes to the address the customer signed up with, works once, expires in 30 minutes.
+  A "Your Virundhu password was changed" email follows every reset or change (time and device included).
+- "Continue with Google" through Google Identity Services: needs only the public client ID.
+- Home page no longer moves by itself on phones (live review board has a fixed size).
+- Live at https://virundhu.sathishsakthivel.tech (Docker + Traefik HTTPS). 74 tests.
+
 ## 17 Nov 2026 (Banana-leaf feast design)
 
 - New look built around a meal served on a banana leaf: deep banana-leaf green, coconut cream, turmeric,

@@ -300,7 +300,7 @@ export function ForgotPasswordPage() {
   return (
     <AuthShell title="Forgot your password?" intro="Enter your email and we'll send you a link to choose a new one."
       footer={<>Remembered it? <Link to="/login" className="font-semibold text-night underline decoration-turmeric decoration-2 underline-offset-4">Sign in</Link></>}>
-      {done ? <p className="rounded-[12px] bg-leaf-soft px-4 py-3 font-medium text-[#16784a]">{done} Check your inbox (and spam). The link works for 1 hour.</p> : (
+      {done ? <p className="rounded-[12px] bg-leaf-soft px-4 py-3 font-medium text-[#16784a]">{done} Check your inbox (and spam). The link works for 30 minutes.</p> : (
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <Field id="f_email" label="Email" type="email" autoComplete="email" icon={<Mail className="h-[18px] w-[18px]" />} value={email} onChange={(e) => setEmail(e.target.value)} />
           <ErrorBox message={error} />

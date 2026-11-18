@@ -11,6 +11,7 @@ import csv
 import io
 import logging
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
@@ -31,7 +32,7 @@ from app.services.emailer import send_email
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["account"])
-RESET_MINUTES = 60
+RESET_MINUTES = 30
 
 
 def _org_of(db: Session, user: User) -> dict:
@@ -71,9 +72,10 @@ def forgot_password(request: Request, body: ForgotIn, db: Session = Depends(get_
         send_email(
             [user.email],
             "Reset your Virundhu password",
-            f"Hi {user.full_name},\n\nSomeone (hopefully you) asked to reset your Virundhu password. "
-            f"Open this link within {RESET_MINUTES} minutes to choose a new one:\n\n{link}\n\n"
-            "If it wasn't you, ignore this email. Your password stays the same.\n",
+            f"Hi {user.full_name.split(' ')[0]},\n\nSomeone asked to reset the password for your Virundhu account "
+            f"({user.email}). If that was you, choose a new password below. This link works once and expires in "
+            f"{RESET_MINUTES} minutes.\n\n{link}\n\n"
+            "Didn't ask for this? Ignore this email and your password stays the same.\n",
         )
     return {"ok": True, "message": "If that email has an account, a reset link is on its way."}
 
@@ -105,6 +107,7 @@ def reset_password(request: Request, body: ResetIn, db: Session = Depends(get_db
         db, "password_reset", email=user.email, detail="Used an emailed reset link", **_org_of(db, user), commit=False
     )
     db.commit()
+    _password_changed_email(user, request)
     return {"ok": True}
 
 
@@ -131,7 +134,22 @@ def change_password(
         db, "password_changed", email=user.email, detail="Changed in Settings", **_org_of(db, user), commit=False
     )
     db.commit()
+    _password_changed_email(user, request)
     return {"ok": True, "message": "Password changed. Other devices have been signed out."}
+
+
+def _password_changed_email(user: User, request: Request) -> None:
+    """Tell the owner their password changed, so they notice if it wasn't them."""
+    when = datetime.now(UTC).astimezone(ZoneInfo(settings.TIMEZONE)).strftime("%d %b %Y, %I:%M %p")
+    device = (request.headers.get("user-agent") or "unknown device")[:120]
+    send_email(
+        [user.email],
+        "Your Virundhu password was changed",
+        f"Hi {user.full_name.split(' ')[0]},\n\nThe password for your Virundhu account ({user.email}) was changed on "
+        f"{when}. Other devices were signed out to keep your account safe.\n\nDevice: {device}\n\n"
+        "If this was you, there's nothing else to do. If it wasn't, reset your password straight away and tell us "
+        f"by replying to this email.\n\n{settings.APP_URL}/forgot-password\n",
+    )
 
 
 # ---------------- Export ----------------

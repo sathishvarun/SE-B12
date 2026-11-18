@@ -834,3 +834,24 @@ def test_google_identity_button_signs_in_with_client_id_only(client, monkeypatch
     with SessionLocal() as db:
         user = db.query(User).filter_by(email=email).one()
         assert user.oauth_provider == "google"
+
+
+def test_reset_email_goes_to_signup_address_and_confirms_change(client):
+    """The link goes to the address the customer signed up with; after the change a confirmation email follows."""
+    from app.services.emailer import branded_html
+
+    email, _ = _register(client)
+    mails = []
+    with patch("app.routers.account.send_email", side_effect=lambda to, s, text: mails.append((to, s, text)) or True):
+        client.post("/api/v1/auth/forgot-password", json={"email": email.upper()})
+        to, subject, text = mails[-1]
+        assert to == [email] and subject == "Reset your Virundhu password" and "30 minutes" in text
+        token = text.split("token=")[1].split()[0]
+        assert (
+            client.post("/api/v1/auth/reset-password", json={"token": token, "password": "New#Pass123"}).status_code
+            == 200
+        )
+    to, subject, text = mails[-1]
+    assert to == [email] and subject == "Your Virundhu password was changed" and "/forgot-password" in text
+    page = branded_html("Reset your Virundhu password", f"Hi,\n\nhttps://x.test/reset-password?token={token}\n")
+    assert "Choose a new password" in page and "Every guest, heard" in page

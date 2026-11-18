@@ -126,7 +126,7 @@ type Category =
 
 ### Privacy and accounts
 - Sign-up requires `accept_terms`; `users.terms_accepted_at` is stored. Don't remove the consent checkbox.
-- Forgot/reset password never reveals whether an email exists; reset tokens are hashed, single-use, 1 hour.
+- Forgot/reset password never reveals whether an email exists; reset tokens are hashed, single-use, 30 minutes. Customer emails are branded HTML automatically (services/emailer.branded_html); emails to SUPERADMIN_EMAIL stay plain. A "password was changed" email follows every reset or change.
 - Owners can export (`/account/export`) and delete everything (`/account/delete`); keep both working when adding tables
   (new restaurant tables need `organization_id` with ON DELETE CASCADE).
 - Legal pages read company details from `/public/config`; never hard-code a name, email or phone.
