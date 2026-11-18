@@ -8,12 +8,12 @@ virundhu.example {
 		# Only HTTPS, for a year, on every subdomain
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		# Only our own files may run; no other site can load scripts into our pages or frame them
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; media-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; object-src 'none'; upgrade-insecure-requests"
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; media-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; object-src 'none'; upgrade-insecure-requests"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
-		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Opener-Policy "same-origin-allow-popups"
 		-Server
 	}
 

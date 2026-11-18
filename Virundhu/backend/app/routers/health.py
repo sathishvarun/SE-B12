@@ -42,6 +42,8 @@ def public_config() -> dict[str, object]:
     return {
         "app_name": settings.APP_NAME,
         "google_enabled": settings.google_enabled,
+        # "Sign in with Google" needs only the public client ID (Google Identity Services, no secret).
+        "google_client_id": settings.GOOGLE_CLIENT_ID or None,
         "payments_enabled": settings.payments_enabled,
         "razorpay_key_id": settings.RAZORPAY_KEY_ID or None,
         "ai_ready": settings.llm_configured,

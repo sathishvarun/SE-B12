@@ -806,3 +806,31 @@ def test_quick_help_answers_hands_over_and_drafts(client, monkeypatch):
         },
     )
     assert w.status_code == 201
+
+
+def test_google_identity_button_signs_in_with_client_id_only(client, monkeypatch):
+    """'Sign in with Google' needs only the client ID; a verified Google ID token signs the person in or up."""
+    from types import SimpleNamespace
+
+    from app.routers import google_auth
+
+    monkeypatch.setattr(settings, "GOOGLE_CLIENT_ID", "test-client.apps.googleusercontent.com")
+    monkeypatch.setattr(settings, "GOOGLE_CLIENT_SECRET", "")
+    cfg = client.get("/api/v1/public/config").json()
+    assert cfg["google_client_id"] == "test-client.apps.googleusercontent.com" and cfg["google_enabled"] is False
+
+    bad = client.post("/api/v1/auth/google/id-token", json={"credential": "x" * 40})
+    assert bad.status_code == 401
+
+    email = f"gis.{uuid.uuid4().hex[:6]}@gmail.com"
+    monkeypatch.setattr(google_auth._jwks, "get_signing_key_from_jwt", lambda _t: SimpleNamespace(key="k"))
+    monkeypatch.setattr(
+        google_auth.jwt,
+        "decode",
+        lambda *a, **k: {"email": email, "email_verified": True, "name": "Meena Kumar", "aud": k["audience"]},
+    )
+    ok = client.post("/api/v1/auth/google/id-token", json={"credential": "y" * 40})
+    assert ok.status_code == 200 and ok.json()["access_token"]
+    with SessionLocal() as db:
+        user = db.query(User).filter_by(email=email).one()
+        assert user.oauth_provider == "google"

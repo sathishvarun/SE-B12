@@ -13,6 +13,7 @@ export interface PublicConfig {
   company?: { name: string; email: string | null; phone: string | null; address: string | null; grievance_officer: string };
   app_name: string;
   google_enabled: boolean;
+  google_client_id?: string | null;
   payments_enabled: boolean;
   razorpay_key_id: string | null;
   ai_ready: boolean;

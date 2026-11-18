@@ -2,7 +2,7 @@ import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "
 import { Kolam } from "@/components/motion/Kolam";
 import { RiseWords } from "@/components/motion/Reveal";
 import { Building2, Lock, Mail, MapPin, User, Phone } from "lucide-react";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { LiveBoard } from "@/components/landing/LiveBoard";
 import { Logo } from "@/components/layout/Logo";
@@ -12,7 +12,7 @@ import { Spinner } from "@/components/ui/misc";
 import { useAuth } from "@/context/AuthContext";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { cn } from "@/lib/utils";
-import { API_URL, authApi, errorMessage } from "@/services/api";
+import { API_URL, api, authApi, errorMessage } from "@/services/api";
 
 /** Split screen: form on the left, the live board on the right (desktop). */
 const PANEL_LINES = [
@@ -75,14 +75,65 @@ function AuthShell({ title, intro, children, footer }: { title: string; intro: s
   );
 }
 
+interface GoogleId {
+  initialize: (o: { client_id: string; callback: (r: { credential: string }) => void; ux_mode?: string; context?: string }) => void;
+  renderButton: (el: HTMLElement, o: Record<string, string | number>) => void;
+}
+type GoogleWindow = Window & { google?: { accounts?: { id?: GoogleId } } };
+const GIS_SRC = "https://accounts.google.com/gsi/client";
+
+/** "Continue with Google": Google Identity Services button (needs only the public client ID). */
 function GoogleButton() {
   const { data } = usePublicConfig();
-  if (!data?.google_enabled) return null; // hidden until Google keys are added in .env
+  const navigate = useNavigate();
+  const box = useRef<HTMLDivElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const clientId = data?.google_client_id ?? null;
+
+  useEffect(() => {
+    const el = box.current;
+    if (!clientId || !el) return;
+    const render = () => {
+      const gid = (window as GoogleWindow).google?.accounts?.id;
+      if (!gid) return;
+      gid.initialize({
+        client_id: clientId,
+        ux_mode: "popup",
+        callback: ({ credential }) => {
+          setError(null);
+          api
+            .post<{ access_token: string }>("/api/v1/auth/google/id-token", { credential })
+            .then((r) => navigate(`/auth/callback#access=${encodeURIComponent(r.data.access_token)}`, { replace: true }))
+            .catch((e: unknown) => setError(errorMessage(e)));
+        },
+      });
+      el.innerHTML = "";
+      gid.renderButton(el, { theme: "outline", size: "large", text: "continue_with", shape: "rectangular", logo_alignment: "center", width: Math.min(el.offsetWidth || 360, 400) });
+    };
+    if ((window as GoogleWindow).google?.accounts?.id) { render(); return; }
+    let script = document.querySelector<HTMLScriptElement>(`script[src="${GIS_SRC}"]`);
+    if (!script) {
+      script = document.createElement("script");
+      script.src = GIS_SRC; script.async = true; script.defer = true;
+      document.head.appendChild(script);
+    }
+    script.addEventListener("load", render);
+    return () => script?.removeEventListener("load", render);
+  }, [clientId, navigate]);
+
+  if (!clientId) {
+    if (!data?.google_enabled) return null; // hidden until a Google client ID is in .env
+    return (
+      <>
+        <a href={`${API_URL}/api/v1/auth/google`} className="flex h-12 w-full items-center justify-center gap-2 rounded-[12px] border-2 border-line bg-white font-semibold hover:border-night">Continue with Google</a>
+        <Divider label="or with email" />
+      </>
+    );
+  }
   return (
     <>
-      <a href={`${API_URL}/api/v1/auth/google`} className="flex h-12 w-full items-center justify-center gap-2 rounded-[12px] border-2 border-line bg-white font-semibold hover:border-night">
-        Continue with Google
-      </a>
+      <div ref={box} className="flex min-h-11 w-full justify-center" aria-label="Continue with Google" />
+      {error ? <p role="alert" className="mt-2 text-center text-sm font-medium text-[#b32f12]">{error}</p> : null}
       <p className="mt-2 text-center text-xs text-ink-soft">By continuing with Google you agree to our <Link to="/terms" className="underline">Terms</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>
       <Divider label="or with email" />
     </>
