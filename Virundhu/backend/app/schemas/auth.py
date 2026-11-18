@@ -42,6 +42,7 @@ class OrgOut(BaseModel):
     city: str | None
     trial_ends_at: datetime | None = None
     is_suspended: bool = False
+    locked_since: datetime | None = None  # set while unpaid: the app shows only Plan and billing
 
 
 class MeOut(BaseModel):

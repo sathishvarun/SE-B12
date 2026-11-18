@@ -59,8 +59,10 @@ def test_trial_end_makes_account_read_only(client):
         db.commit()
     h = {"Authorization": f"Bearer {data['access_token']}"}
     res = client.post("/api/v1/reviews", headers=h, json={"text": "ok", "rating": 4, "platform": "google"})
-    assert res.status_code == 402 and "trial has ended" in res.json()["detail"]
-    assert client.get("/api/v1/reviews", headers=h).status_code == 200  # can still look
+    assert res.status_code == 402
+    # Unpaid accounts are locked: they can sign in and pay, but every other page waits for the payment.
+    assert client.get("/api/v1/reviews", headers=h).status_code == 402
+    assert client.get("/api/v1/billing", headers=h).status_code == 200
 
 
 class FakeResp:

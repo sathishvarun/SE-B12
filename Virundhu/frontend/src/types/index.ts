@@ -20,7 +20,7 @@ export interface PublicConfig {
   llm_provider: "anthropic" | "openai";
 }
 
-export interface Organization { id: number; name: string; slug: string; plan: string; is_demo: boolean; city: string | null; trial_ends_at?: string | null; is_suspended?: boolean }
+export interface Organization { id: number; name: string; slug: string; plan: string; is_demo: boolean; city: string | null; trial_ends_at?: string | null; is_suspended?: boolean; locked_since?: string | null }
 
 export interface CurrentUser {
   id: number;

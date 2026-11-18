@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-18: Suspended accounts are locked until they pay
+
+- When a trial or paid plan ends unpaid, the owner can still sign in, but every menu is greyed out with a lock and
+  opens Plan and billing; only Plan and billing, Help and support, Quick help and the bell stay open.
+- The server enforces it too: every other API answers 402 until the payment lands, then everything unlocks at once.
+- A red "Your account is suspended since <date>" banner with a Pay and unlock button.
+
 ## 2026-11-18: Company mailbox and the full customer email journey
 
 - **Admin → Company mailbox**: demo requests, info/support and sent-to-customer counts (total, this week, new or open),

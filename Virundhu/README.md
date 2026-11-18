@@ -174,7 +174,7 @@ Set them in `.env` as `EMAIL_FROM`, `CONTACT_EMAIL`, `NOTIFY_EMAIL`, `DEMO_REQUE
 | Password changed | "Your password is updated, please sign in" with a Sign in button | - |
 | Trial or plan ends in 5, 4, 3, 2, 1 days | One reminder each day, 9 am to 9 pm, with a Renew button | - |
 | Pays at any point | Payment confirmation: invoice number, months added, outlets, plan dates, amount, payment ID. **No more reminders** | Payment received |
-| Ends without paying | "Your account is suspended": data safe, reviews/alerts/AI replies switched off | Account suspended |
+| Ends without paying | "Your account is suspended": they can still sign in, but every menu is locked (greyed, with a lock) except Plan and billing and Help; data stays safe | Account suspended |
 | Pays after suspension | Payment confirmation; **everything switches back on by itself** | Account reactivated |
 
 Check the whole journey on the live server with one test restaurant (it never touches real customers):

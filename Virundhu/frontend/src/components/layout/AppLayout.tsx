@@ -3,10 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bell, CreditCard, Inbox, MessageCircleQuestion,
   UtensilsCrossed,
   LifeBuoy, Workflow, LogOut, MapPin, Menu, Plug, Settings, ShieldCheck, Upload,
-  LayoutDashboard, MailOpen, Building2, Users, ScrollText, Mail, LogIn, Quote, Database } from "lucide-react";
-import { useState } from "react";
+  LayoutDashboard, MailOpen, Lock, Building2, Users, ScrollText, Mail, LogIn, Quote, Database } from "lucide-react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, LazyMotion, domMax, m, useReducedMotion } from "motion/react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AdminBell } from "@/components/layout/AdminBell";
 import { Logo, LogoMark } from "@/components/layout/Logo";
 import { NotificationBell } from "@/components/layout/NotificationBell";
@@ -33,14 +33,14 @@ function TrialBanner({ endsAt }: { endsAt: string }) {
 
 /** Signed-in shell. The menu depends on who you are (see lib/workspace.ts). */
 export function AppLayout() {
-  const { logout } = useAuth();
+  const { logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [moreOpen, setMoreOpen] = useState(false);
   const { pathname } = useLocation();
   const reduce = useReducedMotion();
   const { user, viewing, adminHome, org, outletNames, isOwner } = useWorkspace();
-  const { data } = useOverview(undefined, !adminHome);
+  const { data } = useOverview(undefined, !adminHome && !user?.organization?.locked_since);
   const urgent = data?.kpis.urgent_pending ?? 0;
 
   function stopViewing() {
@@ -101,6 +101,17 @@ export function AppLayout() {
   const mobileMain = adminHome ? [0, 1, 2, 5].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
   const bell = adminHome ? <AdminBell align="left" /> : <NotificationBell onDark align="left" />;
   const trialEnds = !viewing && user?.organization?.plan === "trial" && !user.organization.is_demo ? user.organization.trial_ends_at : null;
+  // Unpaid: the account stays signed in, but only Plan and billing (and Help) open until the payment lands.
+  const lockedSince = !viewing && !adminHome ? (user?.organization?.locked_since ?? null) : null;
+  const payPage = isOwner ? "/app/billing" : "/app/support";
+  const isLocked = (to: string) => Boolean(lockedSince) && !["/app/billing", "/app/support"].some((o) => to.startsWith(o));
+  const goPay = () => { setMoreOpen(false); navigate(payPage); };
+  // The plan can run out while the app is open: the first refused call (402) refreshes the account and locks the menus.
+  useEffect(() => {
+    const onLocked = () => { void refreshUser(); };
+    window.addEventListener("virundhu:locked", onLocked);
+    return () => window.removeEventListener("virundhu:locked", onLocked);
+  }, [refreshUser]);
 
   return (
     <LazyMotion features={domMax}>
@@ -116,7 +127,14 @@ export function AppLayout() {
             <div key={g.title} className="mb-3">
               {g.title ? <p className="mb-1 px-3 text-[0.72rem] font-semibold text-mist/70">{g.title}</p> : null}
               <div className="flex flex-col gap-0.5">
-                {g.items.map(({ to, label, icon: Icon, badge, end, hint }) => (
+                {g.items.map(({ to, label, icon: Icon, badge, end, hint }) => isLocked(to) ? (
+                  <button key={to} onClick={goPay} title="Locked until the plan is paid" aria-disabled="true"
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-[12px] px-3 py-2 text-left font-medium text-mist/45 hover:bg-white/[0.04]">
+                    <Icon className="h-[19px] w-[19px]" strokeWidth={1.9} />
+                    <span className="flex-1">{label}</span>
+                    <Lock className="h-3.5 w-3.5" aria-label="Locked" />
+                  </button>
+                ) : (
                   <NavLink key={to} to={to} end={end} title={hint}
                     className={({ isActive }) => cn("group relative flex items-center gap-3 rounded-[12px] px-3 py-2 font-medium text-mist transition-colors hover:bg-white/[0.07] hover:text-white", isActive && "text-white")}>
                     {({ isActive }) => (
@@ -178,7 +196,8 @@ export function AppLayout() {
           </p>
         ) : null}
         {org?.is_demo ? <p className="mb-5 rounded-[12px] bg-turmeric/25 px-4 py-2.5 text-sm font-medium lg:hidden">Demo restaurant: everything here is sample data.</p> : null}
-        {trialEnds ? <TrialBanner endsAt={trialEnds} /> : null}
+        {lockedSince ? <SuspendedBanner since={lockedSince} isOwner={isOwner} /> : trialEnds ? <TrialBanner endsAt={trialEnds} /> : null}
+        {lockedSince && isLocked(pathname) ? <Navigate to={payPage} replace /> : null}
         <AnimatePresence mode="wait" initial={false}>
           <m.div key={pathname} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}>
@@ -196,7 +215,11 @@ export function AppLayout() {
               return rest.length ? (
                 <div key={g.title} className="mb-1">
                   <p className="px-4 pb-1 pt-2 text-[0.72rem] font-semibold text-mist/70">{g.title}</p>
-                  {rest.map(({ to, label, icon: Icon, hint }) => (
+                  {rest.map(({ to, label, icon: Icon, hint }) => isLocked(to) ? (
+                    <button key={to} onClick={goPay} aria-disabled="true" className="flex w-full cursor-pointer items-center gap-3 rounded-[12px] px-4 py-2.5 text-left font-medium text-mist/45">
+                      <Icon className="h-5 w-5 shrink-0" /><span className="flex-1">{label}</span><Lock className="h-4 w-4" aria-label="Locked" />
+                    </button>
+                  ) : (
                     <NavLink key={to} to={to} onClick={() => setMoreOpen(false)} className="flex items-center gap-3 rounded-[12px] px-4 py-2.5 font-medium hover:bg-white/10">
                       <Icon className="h-5 w-5 shrink-0 text-turmeric" /><span>{label}{hint ? <span className="block text-xs font-normal text-mist">{hint}</span> : null}</span>
                     </NavLink>
@@ -210,7 +233,12 @@ export function AppLayout() {
         </div>
       ) : null}
       <nav className={cn("fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-night/95 text-jasmine backdrop-blur lg:hidden", "grid-cols-5")} aria-label="Main">
-        {mobileMain.map(({ to, label, short, icon: Icon, badge, end }) => (
+        {mobileMain.map(({ to, label, short, icon: Icon, badge, end }) => isLocked(to) ? (
+          <button key={to} onClick={goPay} aria-disabled="true" className="relative flex cursor-pointer flex-col items-center gap-1 py-2.5 text-[0.72rem] text-mist/40">
+            <Icon className="h-5 w-5" strokeWidth={1.9} />{short ?? label}
+            <Lock className="absolute right-[26%] top-1.5 h-3 w-3" aria-label="Locked" />
+          </button>
+        ) : (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => cn("relative flex flex-col items-center gap-1 py-2.5 text-[0.72rem] text-mist", isActive && "font-semibold text-turmeric")}>
             <Icon className="h-5 w-5" strokeWidth={1.9} />{short ?? label}
             {badge ? <span className="absolute right-[24%] top-1.5 min-w-4 rounded-full bg-chilli px-1 text-[0.65rem] font-bold leading-4 text-white">{badge}</span> : null}
@@ -220,5 +248,23 @@ export function AppLayout() {
       </nav>
     </div>
     </LazyMotion>
+  );
+}
+
+function SuspendedBanner({ since, isOwner }: { since: string; isOwner: boolean }) {
+  const day = new Date(since).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return (
+    <div role="alert" className="mb-5 flex flex-col gap-3 rounded-[18px] border-2 border-chilli bg-chilli/10 p-4 sm:flex-row sm:items-center">
+      <Lock className="h-6 w-6 shrink-0 text-chilli" />
+      <div className="flex-1">
+        <p className="font-display text-lg font-bold text-chilli">Your account is suspended since {day}</p>
+        <p className="text-sm text-ink-soft">
+          {isOwner
+            ? "Your reviews and settings are safe. Pay for a plan below and every menu unlocks straight away."
+            : "Your reviews and settings are safe. Ask the restaurant owner to pay for a plan; everything unlocks straight away."}
+        </p>
+      </div>
+      {isOwner ? <Link to="/app/billing" className="rounded-[12px] bg-chilli px-4 py-2.5 text-center font-bold text-white hover:opacity-90">Pay and unlock</Link> : null}
+    </div>
   );
 }

@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth import lockout
+from app.auth.deps import plan_lock
 from app.auth.passwords import weak_reason
 from app.auth.security import create_access_token, hash_password, hash_token, new_opaque_token, verify_password
 from app.config import settings
@@ -50,6 +51,7 @@ def build_me(db: Session, user: User) -> MeOut:
             city=org.city,
             trial_ends_at=org.trial_ends_at,
             is_suspended=org.is_suspended,
+            locked_since=plan_lock(db, org),
         )
         if org
         else None,

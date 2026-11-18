@@ -124,7 +124,7 @@ export default function Billing() {
         <p className="mt-1 text-ink-soft">
           {data.ends_at
             ? data.expired
-              ? `${onTrial ? "Your trial" : "Your plan"} ended on ${longDate(data.ends_at)}. Adding and replying to reviews is paused until you pay.`
+              ? `${onTrial ? "Your trial" : "Your plan"} ended on ${longDate(data.ends_at)}. Every menu is locked until you pay; your reviews and settings are kept safe.`
               : `${onTrial ? "Trial ends" : "Paid until"} ${longDate(data.ends_at)}.`
             : null}
           {" "}{data.paid_outlets ? `Paid for ${data.paid_outlets} outlet${data.paid_outlets === 1 ? "" : "s"}: ` : ""}{data.limits.outlets} outlet{data.limits.outlets === 1 ? "" : "s"}, {data.limits.reviews_per_month.toLocaleString("en-IN")} reviews a month.

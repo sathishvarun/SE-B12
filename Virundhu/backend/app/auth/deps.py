@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import jwt
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session, object_session
@@ -45,8 +45,34 @@ class OrgContext:
         return self.outlet_ids is None or (outlet_id is not None and outlet_id in self.outlet_ids)
 
 
+# While a restaurant's trial or plan has run out, only these stay open: paying, help, support, the bell and
+# account basics (password, export, delete). Everything else answers 402 until the payment lands.
+LOCKED_OPEN = (
+    "/api/v1/billing",
+    "/api/v1/help/",
+    "/api/v1/support/",
+    "/api/v1/notifications",
+    "/api/v1/account/",
+    "/api/v1/auth/",
+)
+
+
+def plan_lock(db: Session, org: Organization) -> datetime | None:
+    """When the restaurant's access is locked for non-payment: the moment its trial or plan ended, else None."""
+    if org.is_demo or org.is_suspended:
+        return None
+    now = datetime.now(UTC)
+    if org.plan == "trial":
+        return org.trial_ends_at if org.trial_ends_at and org.trial_ends_at < now else None
+    sub = db.scalar(select(Subscription).where(Subscription.organization_id == org.id))
+    return sub.current_period_end if sub and sub.current_period_end and sub.current_period_end < now else None
+
+
 def get_org_context(
-    user: User = Depends(get_current_user), db: Session = Depends(get_db), x_org_id: int | None = Header(default=None)
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    x_org_id: int | None = Header(default=None),
 ) -> OrgContext:
     """The restaurant the user works in. Super admins may open any restaurant with the X-Org-Id header."""
     if x_org_id and user.is_superadmin:
@@ -64,6 +90,12 @@ def get_org_context(
     org = db.get(Organization, membership.organization_id)
     if org is None or org.is_suspended:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This restaurant account is suspended.")
+    if plan_lock(db, org) and not request.url.path.startswith(LOCKED_OPEN):
+        raise HTTPException(
+            status.HTTP_402_PAYMENT_REQUIRED,
+            "Your account is suspended because the plan has ended. "
+            "Pay on the Plan and billing page to unlock everything.",
+        )
     scope = None if membership.role == "owner" else (membership.outlet_ids or None)
     return OrgContext(user=user, org=org, role=membership.role, outlet_ids=scope)
 

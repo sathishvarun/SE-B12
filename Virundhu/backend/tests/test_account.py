@@ -188,7 +188,7 @@ def test_trial_reminders_go_once_at_5_4_3_2_1_days_and_when_ended(client):
         for days in (5, 4, 3, 2, 1):
             assert send_due(db, noon - timedelta(days=days)) >= 1
             assert send_due(db, noon - timedelta(days=days)) == 0  # same reminder never twice
-        assert send_due(db, end + timedelta(hours=3)) >= 1
+        assert send_due(db, (end + timedelta(days=1)).replace(hour=6, minute=30)) >= 1  # next day, in sending hours
         from app.models import ActivityLog
 
         assert db.query(ActivityLog).filter_by(organization_id=org.id, kind="account_suspended").count() == 1
@@ -961,5 +961,60 @@ def test_paying_mid_countdown_stops_the_remaining_reminders(client):
         assert db.query(ActivityLog).filter_by(organization_id=org.id, kind="payment").count() == 1
         uids = [m.user_id for m in db.query(Membership).filter_by(organization_id=org.id)]
         db.query(Organization).filter_by(id=org.id).delete()
+        db.query(User).filter(User.id.in_(uids)).delete()
+        db.commit()
+
+
+def test_unpaid_account_is_locked_except_billing_and_unlocks_after_payment(client):
+    """Trial over and unpaid: they can sign in, but only billing/help/support open. Paying unlocks everything."""
+    import uuid
+    from datetime import UTC, datetime, timedelta
+    from unittest.mock import patch
+
+    from app.database import SessionLocal
+    from app.models import Membership, Organization, User
+    from app.services import billing, pricing
+
+    email = f"locked.{uuid.uuid4().hex[:6]}@gmail.com"
+    r = client.post(
+        "/api/v1/auth/register",
+        json={
+            "full_name": "Lock Owner",
+            "organization_name": f"Lock Mess {email[7:13]}",
+            "email": email,
+            "password": "Tiffin#Hall2026",
+            "city": "Salem",
+            "accept_terms": True,
+        },
+    )
+    assert r.status_code in (200, 201), r.text
+    h = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    assert client.get("/api/v1/dashboard/overview", headers=h).status_code == 200
+    assert client.get("/api/v1/auth/me", headers=h).json()["organization"]["locked_since"] is None
+
+    with SessionLocal() as db:
+        org = db.query(Organization).filter_by(name=f"Lock Mess {email[7:13]}").one()
+        org.trial_ends_at = datetime.now(UTC) - timedelta(hours=2)
+        db.commit()
+        org_id = org.id
+
+    me = client.get("/api/v1/auth/me", headers=h)
+    assert me.status_code == 200 and me.json()["organization"]["locked_since"]  # still signs in, flagged locked
+    for path in ("/api/v1/dashboard/overview", "/api/v1/reviews"):
+        blocked = client.get(path, headers=h)
+        assert blocked.status_code == 402 and "suspended" in blocked.json()["detail"]
+    assert client.get("/api/v1/billing", headers=h).status_code == 200
+    assert client.get("/api/v1/support/tickets", headers=h).status_code == 200
+    assert client.get("/api/v1/notifications", headers=h).status_code == 200
+
+    with SessionLocal() as db, patch("app.services.receipts.send_email"):
+        q = pricing.quote(1, 1)
+        assert billing.activate(db, org_id, 1, 1, f"pay_unlock_{org_id}", q.total * 100)
+    assert client.get("/api/v1/auth/me", headers=h).json()["organization"]["locked_since"] is None
+    assert client.get("/api/v1/dashboard/overview", headers=h).status_code == 200
+
+    with SessionLocal() as db:
+        uids = [m.user_id for m in db.query(Membership).filter_by(organization_id=org_id)]
+        db.query(Organization).filter_by(id=org_id).delete()
         db.query(User).filter(User.id.in_(uids)).delete()
         db.commit()

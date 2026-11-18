@@ -81,6 +81,7 @@ async function doRefresh(): Promise<string | null> {
 
 // On 401, try one silent refresh, then repeat the original request.
 api.interceptors.response.use(undefined, async (error: AxiosError) => {
+  if (error.response?.status === 402) window.dispatchEvent(new Event("virundhu:locked"));
   const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;
   const isAuthCall = original?.url?.includes("/auth/");
   if (error.response?.status === 401 && original && !original._retried && !isAuthCall) {
@@ -97,7 +98,7 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
 /** One clear sentence for any API error. */
 export function errorMessage(err: unknown): string {
   if (err instanceof AxiosError) {
-    if (!err.response) return "Can't reach the Virundhu server. Check that it's running (./start.sh).";
+    if (!err.response) return "Can't reach Virundhu right now. Check your internet and try again.";
     const detail = (err.response.data as { detail?: unknown } | undefined)?.detail;
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail)) return "Please check the highlighted fields.";
