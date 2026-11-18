@@ -144,11 +144,13 @@ end = org.trial_ends_at
 noon = end.replace(hour=6, minute=30)
 for d in (5, 4, 2, 1):
     i = len(SENT)
-    plan_reminders.send_due(db, noon - timedelta(days=d), force_hours=True)
+    plan_reminders.send_due(db, noon - timedelta(days=d), force_hours=True, only_org_id=org.id)
     m = find(i, f"ends in {d} day")
-    check(f"6. Reminder {d} day(s) before trial ends", headers_ok(m, owner), str(m["Subject"]) if m else "missing")
+    others = [x for x in SENT[i:] if owner not in str(x["To"]) and settings.notify_email not in str(x["To"])]
+    name = f"6. Reminder {d} day(s) before trial ends (only to the test owner)"
+    check(name, headers_ok(m, owner) and not others, str(m["Subject"]) if m else "missing")
 i = len(SENT)
-plan_reminders.send_due(db, end + timedelta(hours=3), force_hours=True)
+plan_reminders.send_due(db, end + timedelta(hours=3), force_hours=True, only_org_id=org.id)
 m = find(i, "is suspended")
 check("7. 'Account suspended' email to the owner", headers_ok(m, owner))
 adm = next((x for x in SENT[i:] if settings.notify_email in str(x["To"]) and "suspended" in str(x["Subject"])), None)

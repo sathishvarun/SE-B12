@@ -192,6 +192,7 @@ def test_trial_reminders_go_once_at_5_4_2_1_days_and_when_ended(client):
         from app.models import ActivityLog
 
         assert db.query(ActivityLog).filter_by(organization_id=org.id, kind="account_suspended").count() == 1
+        assert send_due(db, end + timedelta(hours=3), only_org_id=-1) == 0  # scoped run touches nothing else
         kinds = sorted(x.days_left for x in db.query(PlanReminder).filter_by(organization_id=org.id))
         assert kinds == [0, 1, 2, 4, 5]
         bell = db.query(Notification).filter_by(organization_id=org.id).all()

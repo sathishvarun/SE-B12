@@ -89,7 +89,9 @@ def details(db: Session, org: Organization, kind: str, days_left: int, end_local
     return rows
 
 
-def send_due(db: Session, now: datetime | None = None, force_hours: bool = False) -> int:
+def send_due(
+    db: Session, now: datetime | None = None, force_hours: bool = False, only_org_id: int | None = None
+) -> int:
     """Send every reminder that is due. Returns how many organisations were reminded."""
     now = now or datetime.now(UTC)
     tz = ZoneInfo(settings.TIMEZONE)
@@ -97,7 +99,10 @@ def send_due(db: Session, now: datetime | None = None, force_hours: bool = False
     if not force_hours and not (SEND_FROM_HOUR <= local_hour < SEND_UNTIL_HOUR):
         return 0
     sent = 0
-    for org in db.scalars(select(Organization).where(Organization.is_suspended.is_(False))):
+    query = select(Organization).where(Organization.is_suspended.is_(False))
+    if only_org_id is not None:  # a check run on one restaurant must never touch the others
+        query = query.where(Organization.id == only_org_id)
+    for org in db.scalars(query):
         found = _period_end(db, org)
         if not found:
             continue
