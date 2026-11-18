@@ -252,6 +252,12 @@ export function AppLayout() {
 }
 
 function SuspendedBanner({ since, isOwner }: { since: string; isOwner: boolean }) {
+  const navigate = useNavigate();
+  const toPlans = () => {
+    const el = document.getElementById("choose-plan");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    else navigate("/app/billing");
+  };
   const day = new Date(since).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
   return (
     <div role="alert" className="mb-5 flex flex-col gap-3 rounded-[18px] border-2 border-chilli bg-chilli/10 p-4 sm:flex-row sm:items-center">
@@ -264,7 +270,7 @@ function SuspendedBanner({ since, isOwner }: { since: string; isOwner: boolean }
             : "Your reviews and settings are safe. Ask the restaurant owner to pay for a plan; everything unlocks straight away."}
         </p>
       </div>
-      {isOwner ? <Link to="/app/billing" className="rounded-[12px] bg-chilli px-4 py-2.5 text-center font-bold text-white hover:opacity-90">Pay and unlock</Link> : null}
+      {isOwner ? <button type="button" onClick={toPlans} className="cursor-pointer rounded-[12px] bg-chilli px-4 py-2.5 text-center font-bold text-white hover:opacity-90">Pay and unlock</button> : null}
     </div>
   );
 }

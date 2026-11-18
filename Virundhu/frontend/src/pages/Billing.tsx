@@ -151,7 +151,8 @@ export default function Billing() {
       </p>
       <BillingForm initial={data.billing} value={details} onChange={setDetails} />
       <div className="mt-4">
-        <PriceCalculator tone="light" initialOutlets={data.paid_outlets ?? data.outlets_now} onPay={pay} paying={paying} payDisabled={!data.payments_enabled} />
+        <div id="choose-plan" className="scroll-mt-6"><PriceCalculator tone="light" initialOutlets={data.paid_outlets ?? data.outlets_now} initialMonths={null} onPay={pay} paying={paying} payDisabled={!data.payments_enabled}
+          payDisabledReason="Online payment is being switched on. To pay today, use Help and support and we'll send you a payment link." /></div>
       </div>
       <p className="mt-3 flex items-center gap-2 text-sm text-ink-soft"><Lock className="h-4 w-4" /> {data.provider === "dodo" ? "Paid securely through Dodo Payments: UPI and cards, with a GST invoice. Virundhu never sees your card details." : "Paid securely through Razorpay: UPI, cards, net banking and wallets. Virundhu never sees your card details."}</p>
 

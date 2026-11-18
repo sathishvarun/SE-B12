@@ -53,14 +53,17 @@ interface Props {
   onPay?: (outlets: number, months: number) => void;
   paying?: boolean;
   payDisabled?: boolean;
+  payDisabledReason?: string;
+  /** null = nothing picked yet: the customer must choose the months themselves (billing page). */
+  initialMonths?: number | null;
 }
 
-export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, paying, payDisabled }: Props) {
+export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, paying, payDisabled, payDisabledReason, initialMonths = 12 }: Props) {
   const { data } = useQuery({ queryKey: ["pricing-table"], queryFn: billingApi.pricing, staleTime: 3_600_000 });
   const table = data ?? FALLBACK;
   const [outlets, setOutlets] = useState(Math.max(1, initialOutlets));
-  const [months, setMonths] = useState(12);
-  const q = useMemo(() => quoteFrom(table, outlets, months), [table, outlets, months]);
+  const [months, setMonths] = useState<number | null>(initialMonths);
+  const q = useMemo(() => quoteFrom(table, outlets, months ?? 1), [table, outlets, months]);
   const dark = tone === "dark";
   const soft = dark ? "text-mist" : "text-ink-soft";
   const clamp = (n: number) => Math.min(table.max_outlets, Math.max(1, Math.round(n) || 1));
@@ -98,7 +101,7 @@ export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, payi
           })}
         </ul>
 
-        <p className="mt-6 font-display text-xl font-bold">For how long?</p>
+        <p className="mt-6 font-display text-xl font-bold">For how long?{months === null ? <span className="ml-2 text-sm font-semibold text-chilli">Choose one</span> : null}</p>
         <div className="mt-3 grid grid-cols-5 gap-2" role="radiogroup" aria-label="Months">
           {table.durations.map((d) => (
             <button key={d.months} type="button" role="radio" aria-checked={months === d.months} onClick={() => setMonths(d.months)}
@@ -113,6 +116,12 @@ export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, payi
       </div>
 
       <div className={cn("flex flex-col rounded-[20px] p-5", dark ? "bg-jasmine text-ink" : "bg-night text-jasmine")}>
+        {months === null ? (
+          <div className="flex flex-1 flex-col justify-center">
+            <p className="font-display text-2xl font-bold">Choose how many months</p>
+            <p className={cn("mt-2", dark ? "text-ink-soft" : "text-mist")}>Pick 1, 3, 6, 9 or 12 months on the left. Your price for {outlets} outlet{outlets === 1 ? "" : "s"} appears here.</p>
+          </div>
+        ) : (<>
         <p className={dark ? "text-ink-soft" : "text-mist"}>{q.tier.name} · {outlets} outlet{outlets === 1 ? "" : "s"} · {months} month{months === 1 ? "" : "s"}</p>
         <p className="tabular mt-1 font-display text-[2.8rem] font-bold leading-none">{inr(q.total)}</p>
         <p className={cn("mt-1", dark ? "text-ink-soft" : "text-mist")}>one payment, GST included</p>
@@ -127,11 +136,15 @@ export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, payi
           <li className="flex gap-2"><Check className="mt-1 h-4 w-4 shrink-0 text-leaf" />{(outlets * table.reviews_per_outlet).toLocaleString("en-IN")} reviews read a month</li>
           <li className="flex gap-2"><Check className="mt-1 h-4 w-4 shrink-0 text-leaf" />Everything included: alerts, reply drafts, QR feedback, Google auto-pilot</li>
         </ul>
+        </>)}
         <div className="mt-auto pt-6">
           {onPay ? (
-            <Button className="w-full" size="lg" variant={dark ? "dark" : "primary"} onClick={() => onPay(outlets, months)} disabled={payDisabled || paying}>
-              {paying ? <><Spinner /> Opening payment page...</> : <><CreditCard className="h-4 w-4" /> Pay {inr(q.total)}</>}
+            <>
+            <Button className="w-full" size="lg" variant={dark ? "dark" : "primary"} onClick={() => months !== null && onPay(outlets, months)} disabled={payDisabled || paying || months === null}>
+              {paying ? <><Spinner /> Opening payment page...</> : months === null ? "Choose the months first" : <><CreditCard className="h-4 w-4" /> Pay {inr(q.total)}</>}
             </Button>
+            {payDisabled && payDisabledReason ? <p className={cn("mt-2 text-sm", dark ? "text-ink-soft" : "text-mist")}>{payDisabledReason}</p> : null}
+            </>
           ) : (
             <Link to="/register" className={cn(buttonVariants({ variant: "dark", size: "lg" }), "w-full")}>Start 14-day free trial</Link>
           )}
