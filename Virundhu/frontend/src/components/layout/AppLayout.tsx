@@ -98,7 +98,7 @@ export function AppLayout() {
         ] },
       ];
   const items = groups.flatMap((g) => g.items);
-  const mobileMain = adminHome ? [items[0], items[1], items[2], items[5]] : items.slice(0, 4);
+  const mobileMain = adminHome ? [0, 1, 2, 5].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
   const bell = adminHome ? <AdminBell align="left" /> : <NotificationBell onDark align="left" />;
   const trialEnds = !viewing && user?.organization?.plan === "trial" && !user.organization.is_demo ? user.organization.trial_ends_at : null;
 

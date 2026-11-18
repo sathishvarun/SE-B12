@@ -596,11 +596,9 @@ function AdminPanel() {
   const orgs = useQuery({ queryKey: ["admin-orgs"], queryFn: adminApi.orgs, refetchInterval: 30_000 });
   const users = useQuery({ queryKey: ["admin-users"], queryFn: adminApi.users, enabled: tab === "users" });
   const leads = useQuery({ queryKey: ["admin-leads"], queryFn: adminApi.leads, refetchInterval: 60_000 });
-  const activity = useQuery({ queryKey: ["admin-activity"], queryFn: adminApi.activity, refetchInterval: 60_000 });
   const events = useQuery({ queryKey: ["admin-events"], queryFn: adminApi.events, refetchInterval: 60_000 });
   const s = stats.data;
 
-  const weekImportant = (activity.data ?? []).filter((a) => a.kind !== "signup" && activity.dataUpdatedAt - new Date(a.created_at).getTime() < 7 * 86_400_000).length;
 
   async function act(fn: () => Promise<unknown>, ok: string) {
     try { await fn(); toast.success(ok); void qc.invalidateQueries({ queryKey: ["admin-orgs"] }); void qc.invalidateQueries({ queryKey: ["admin-users"] }); }
