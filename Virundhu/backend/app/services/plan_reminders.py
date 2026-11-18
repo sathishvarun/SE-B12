@@ -1,4 +1,4 @@
-"""Remind owners before their free trial or paid plan ends: 5, 4, 2 and 1 days before, and once when it
+"""Remind owners before their free trial or paid plan ends: 5, 4, 3, 2 and 1 days before, and once when it
 has ended (the account is then suspended until a plan is chosen).
 
 Each reminder goes out once: by email to every owner's sign-in email, by WhatsApp to the owner's number (when
@@ -21,7 +21,7 @@ from app.services.review_requests import normalise_phone
 
 logger = logging.getLogger(__name__)
 
-DAYS_BEFORE = (5, 4, 2, 1)
+DAYS_BEFORE = (5, 4, 3, 2, 1)
 ENDED = 0
 SEND_FROM_HOUR, SEND_UNTIL_HOUR = 9, 21  # local time
 

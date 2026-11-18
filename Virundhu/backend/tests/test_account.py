@@ -153,8 +153,8 @@ def test_retention_deletes_only_old_data(client):
         db.commit()
 
 
-def test_trial_reminders_go_once_at_5_4_2_1_days_and_when_ended(client):
-    """A new trial gets reminders 5, 4, 2 and 1 days before the end and once after; never twice; never at night."""
+def test_trial_reminders_go_once_at_5_4_3_2_1_days_and_when_ended(client):
+    """A new trial gets reminders 5, 4, 3, 2 and 1 days before the end and once after; never twice; never at night."""
     from datetime import timedelta
 
     from app.database import SessionLocal
@@ -177,15 +177,15 @@ def test_trial_reminders_go_once_at_5_4_2_1_days_and_when_ended(client):
         org = db.query(Organization).filter_by(name="Reminder Mess").one()
         end = org.trial_ends_at
         noon = end.replace(hour=6, minute=30)  # 12:00 India time on the end date
-        assert due(end, noon - timedelta(days=3)) is None  # 3 days left: no reminder that day
+        assert due(end, noon - timedelta(days=6)) is None  # 6 days left: nothing yet
         assert due(end, noon - timedelta(days=10)) is None  # day 4 of the trial: nothing yet
         assert due(end, noon - timedelta(days=4)) == 4
         assert due(end, noon - timedelta(days=1)) == 1
         assert due(end, end + timedelta(hours=2)) == 0  # ended
         assert due(end, end + timedelta(days=5)) is None  # long ended: stop
-        night = (noon - timedelta(days=4)).replace(hour=18)  # 11:30 pm India time
+        night = (noon - timedelta(days=3)).replace(hour=18)  # 11:30 pm India time
         assert send_due(db, night) == 0
-        for days in (5, 4, 2, 1):
+        for days in (5, 4, 3, 2, 1):
             assert send_due(db, noon - timedelta(days=days)) >= 1
             assert send_due(db, noon - timedelta(days=days)) == 0  # same reminder never twice
         assert send_due(db, end + timedelta(hours=3)) >= 1
@@ -194,7 +194,7 @@ def test_trial_reminders_go_once_at_5_4_2_1_days_and_when_ended(client):
         assert db.query(ActivityLog).filter_by(organization_id=org.id, kind="account_suspended").count() == 1
         assert send_due(db, end + timedelta(hours=3), only_org_id=-1) == 0  # scoped run touches nothing else
         kinds = sorted(x.days_left for x in db.query(PlanReminder).filter_by(organization_id=org.id))
-        assert kinds == [0, 1, 2, 4, 5]
+        assert kinds == [0, 1, 2, 3, 4, 5]
         bell = db.query(Notification).filter_by(organization_id=org.id).all()
         assert any("ends in 5 days" in n.title for n in bell) and any("suspended" in n.title for n in bell)
         from app.models import Membership, User
@@ -918,3 +918,48 @@ def test_notifications_go_to_company_inboxes(client, monkeypatch):
             activity.record(db, "demo_request", restaurant="Test Mess", email="lead@example.com")
             activity.record(db, "payment", restaurant="Test Mess", email="owner@example.com")
     assert sent == [["virundhu.demo@skminimart.com"], ["virundhu.info@skminimart.com"]]
+
+
+def test_paying_mid_countdown_stops_the_remaining_reminders(client):
+    """Reminder at 5 days goes out; the owner pays; the 4/3/2/1-day reminders and the suspension never go out."""
+    from datetime import timedelta
+    from unittest.mock import patch
+
+    from app.database import SessionLocal
+    from app.models import ActivityLog, Membership, Organization, PlanReminder, User
+    from app.services import billing, plan_reminders, pricing
+    from app.services.autopilot import plan_active
+
+    email = f"paid.midway.{__import__('uuid').uuid4().hex[:6]}@gmail.com"
+    r = client.post(
+        "/api/v1/auth/register",
+        json={
+            "full_name": "Paid Owner",
+            "organization_name": "Midway Mess",
+            "email": email,
+            "password": "Tiffin#Hall2026",
+            "city": "Madurai",
+            "accept_terms": True,
+        },
+    )
+    assert r.status_code in (200, 201), r.text
+    with SessionLocal() as db, patch("app.services.receipts.send_email"):
+        org = db.query(Organization).filter_by(name="Midway Mess").one()
+        end = org.trial_ends_at
+        noon = end.replace(hour=6, minute=30)
+        assert plan_reminders.send_due(db, noon - timedelta(days=5), only_org_id=org.id) == 1
+        q = pricing.quote(1, 1)
+        assert billing.activate(db, org.id, 1, 1, f"pay_mid_{org.id}", q.total * 100)
+        db.refresh(org)
+        assert org.plan != "trial" and plan_active(db, org)
+        for days in (4, 3, 2, 1):
+            assert plan_reminders.send_due(db, noon - timedelta(days=days), only_org_id=org.id) == 0
+        assert plan_reminders.send_due(db, end + timedelta(hours=3), only_org_id=org.id) == 0
+        sent = sorted(x.days_left for x in db.query(PlanReminder).filter_by(organization_id=org.id))
+        assert sent == [5]
+        assert not db.query(ActivityLog).filter_by(organization_id=org.id, kind="account_suspended").count()
+        assert db.query(ActivityLog).filter_by(organization_id=org.id, kind="payment").count() == 1
+        uids = [m.user_id for m in db.query(Membership).filter_by(organization_id=org.id)]
+        db.query(Organization).filter_by(id=org.id).delete()
+        db.query(User).filter(User.id.in_(uids)).delete()
+        db.commit()

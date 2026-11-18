@@ -80,7 +80,7 @@ Use it to find what the kitchen should fix first and whom to reward or train.
 - Refunds: full refund within 7 days of the first paid plan if Virundhu wasn't useful; see /refunds.
 
 ## Free trial and what happens when it ends
-- 14 days, all features. Reminders 5, 4, 2 and 1 days before the end by email, WhatsApp and the bell, with a payment
+- 14 days, all features. Reminders 5, 4, 3, 2 and 1 days before the end by email, WhatsApp and the bell, with a payment
   link.
 - If not paid, the account pauses: you can sign in and see everything, but new reviews, alerts and replies stop. Pay
   and it reopens instantly; reviews that came in meanwhile are read automatically.

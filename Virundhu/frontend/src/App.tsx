@@ -81,6 +81,7 @@ export default function App() {
             <Route path="support" element={<Support />} />
             <Route path="automation" element={<Automation />} />
             <Route path="admin" element={<Admin />} />
+            <Route path="admin/:section" element={<Admin />} />
           </Route>
         </Route>
         <Route path="*" element={<NotFound />} />

@@ -109,9 +109,11 @@ Say this upfront when you pitch. Restaurant owners know these apps well, and bei
 
 **You (admin)**
 1. Run `bash start.sh` (on the VPS later, it's your website address).
-2. Sign in with the admin email and password from your `.env`. You see every restaurant, their plan, trial days, review
-   counts per platform and money collected.
-3. Click **Open** on a restaurant to see exactly what the owner sees.
+2. Sign in with the admin email and password from your `.env` (never written in this repository).
+3. The left menu, in order: **Overview** (Today and money, Company mailbox) · **Customers** (Restaurants, Users,
+   Demo requests) · **Logs** (All activity, Emails sent, Sign-ins) · **Help desk** (Support tickets, Testimonials) ·
+   **System** (Data and backups).
+4. Click **Open** on a restaurant to see exactly what the owner sees, or **Logs** for its full history.
 
 **A restaurant owner**
 1. Opens your link → **Start free trial** → name, restaurant name, city, email, password (or Continue with Google).
@@ -148,6 +150,32 @@ Say this upfront when you pitch. Restaurant owners know these apps well, and bei
 Stack: FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, Redis + ARQ, LangChain (OpenAI or Claude, one at a time),
 React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, Playwright.
 
+## Emails (all on the company domain)
+
+| Address | Used for |
+|---|---|
+| `virundhu@skminimart.com` | **From** on every email Virundhu sends (Google Workspace SMTP relay, server IP allow-listed) |
+| `virundhu.info@skminimart.com` | **Reply-To** on every customer email; questions, support tickets and admin alerts arrive here |
+| `virundhu.demo@skminimart.com` | Demo requests from the Contact page |
+
+All three are aliases of one Workspace mailbox (`MAILBOX_ACCOUNT`), so the admin reads everything in one Gmail inbox.
+Set them in `.env` as `EMAIL_FROM`, `CONTACT_EMAIL`, `NOTIFY_EMAIL`, `DEMO_REQUESTS_EMAIL` and `MAILBOX_ACCOUNT`.
+
+**The customer's email journey**
+
+| When | Email to the owner | Admin alert |
+|---|---|---|
+| Registers | Welcome, with the details they gave, confirm-email and plan buttons | - |
+| Forgot password | Reset link (works once, 30 minutes) | - |
+| Password changed | "Your password is updated, please sign in" with a Sign in button | - |
+| Trial or plan ends in 5, 4, 3, 2, 1 days | One reminder each day, 9 am to 9 pm, with a Renew button | - |
+| Pays at any point | Payment confirmation: invoice number, months added, outlets, plan dates, amount, payment ID. **No more reminders** | Payment received |
+| Ends without paying | "Your account is suspended": data safe, reviews/alerts/AI replies switched off | Account suspended |
+| Pays after suspension | Payment confirmation; **everything switches back on by itself** | Account reactivated |
+
+Check the whole journey on the live server with one test restaurant (it never touches real customers):
+`docker exec virundhu-api-1 python scripts/e2e_mail_journey.py`
+
 ## Status (18 Nov 2026)
 
 | Area | State |
@@ -166,7 +194,8 @@ React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, Playwright.
 | Google auto-pilot | Done: happy Google reviews (4-5★ or 5★ only) get the reply posted by itself |
 | Own QR feedback link | Done: guests rate the food from a QR on the bill or packet; lands in Virundhu automatically, then every guest is invited to Google |
 | WhatsApp alerts | Built, switched off until a WhatsApp Business (Meta Cloud API) account is added |
-| Admin console | All restaurants, plans, trials, review counts per platform, money collected, AI cost, demo requests from the Contact page |
+| Admin console | Grouped left menu: today and money, company mailbox (demo/info counts + Open in Gmail), restaurants, users, demo requests, activity/email/sign-in logs, per-restaurant log, support tickets, testimonials, backups |
+| Customer emails | Welcome, reset, password changed, 5/4/3/2/1-day reminders, suspension, payment confirmation; admin alerts for suspension and reactivation |
 | Quick help chat (answers from the guide, hands over to a person) | Done |
 | GitHub | Done |
 | Deploy to VPS | Done: https://virundhu.sathishsakthivel.tech (Docker + Traefik HTTPS) |

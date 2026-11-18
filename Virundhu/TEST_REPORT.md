@@ -157,7 +157,7 @@ and warnings, failed network requests, HTTP errors, sideways scrolling and text 
 | Retention clean-up test | Pass |
 
 | Password not visible in the page's HTML (all password boxes) | Pass |
-| Trial reminders at 5/4/2/1 days and a suspension email when ended, once each, not at night | Pass (test) |
+| Trial reminders at 5/4/3/2/1 days and a suspension email when ended, once each, not at night | Pass (test) |
 | Admin Excel download, test-account clean-up (real accounts protected) | Pass (test + browser) |
 | Test runs leave no data behind | Pass |
 | Session token in an HttpOnly cookie; nothing secret in browser storage; session survives reload; sign-out clears it | Pass (browser) |

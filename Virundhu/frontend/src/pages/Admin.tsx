@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 import { SecretInput } from "@/components/ui/input";
@@ -588,7 +588,9 @@ function RestaurantLog({ org, onClose }: { org: { id: number; name: string }; on
 function AdminPanel() {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Section>("overview");
+  const { section } = useParams();
+  const tab = (SECTIONS.some((g) => g.items.some(([k]) => k === section)) ? section : "overview") as Section;
+  const title = SECTIONS.flatMap((g) => g.items).find(([k]) => k === tab)?.[1] ?? "Admin console";
   const [logOrg, setLogOrg] = useState<{ id: number; name: string } | null>(null);
   const stats = useQuery({ queryKey: ["admin-stats"], queryFn: adminApi.stats, refetchInterval: 30_000 });
   const orgs = useQuery({ queryKey: ["admin-orgs"], queryFn: adminApi.orgs, refetchInterval: 30_000 });
@@ -616,29 +618,12 @@ function AdminPanel() {
   return (
     <div className="mx-auto max-w-[1280px]">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="text-[2.3rem] font-bold">Admin console</h1>
+        <h1 className="text-[2.3rem] font-bold">{title}</h1>
         <AdminPassword />
       </div>
-      <p className="mt-1 max-w-3xl text-ink-soft">You run Virundhu. Here you see every customer restaurant, their subscription, their users and how many reviews come in.
-        Customers never see this page; they only see their own restaurant. Click <b>Open</b> to see a restaurant exactly as its owner does.</p>
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[230px_minmax(0,1fr)]">
-      <nav aria-label="Admin sections" className="lg:sticky lg:top-6 lg:self-start">
-        <div className="flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-4 lg:overflow-visible">
-          {SECTIONS.map((g) => (
-            <div key={g.group} className="flex shrink-0 gap-1.5 lg:block">
-              <p className="hidden px-3 pb-1 text-xs font-semibold text-ink-soft lg:block">{g.group}</p>
-              {g.items.map(([key, label, Icon]) => (
-                <button key={key} onClick={() => setTab(key)} aria-current={tab === key ? "page" : undefined}
-                  className={cn("flex shrink-0 items-center gap-2.5 rounded-[12px] px-3 py-2 text-sm font-semibold cursor-pointer lg:w-full", tab === key ? "bg-night text-jasmine" : "text-ink-soft hover:bg-jasmine-2")}>
-                  <Icon className="h-4 w-4" />{label}
-                  {key === "activity" && weekImportant ? <span className="ml-auto rounded-full bg-turmeric px-1.5 text-xs text-night">{weekImportant}</span> : null}
-                  {key === "leads" && leads.data?.some((l) => l.status === "new") ? <span className="ml-auto rounded-full bg-chilli px-1.5 text-xs text-white">{leads.data.filter((l) => l.status === "new").length}</span> : null}
-                </button>
-              ))}
-            </div>
-          ))}
-        </div>
-      </nav>
+      {tab === "overview" ? <p className="mt-1 max-w-3xl text-ink-soft">You run Virundhu. Every customer restaurant, subscription, user and review count is here; pick a section on the left.
+        Customers never see these pages. Click <b>Open</b> on a restaurant to see it exactly as its owner does.</p> : null}
+      <div className="mt-6">
       <div className="min-w-0">
       {tab === "overview" ? (<>
       <LaunchChecklist />

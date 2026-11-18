@@ -7,7 +7,7 @@
 | Step | What happens | Status |
 |---|---|---|
 | Sign up | 14-day free trial, all features, no card | ✅ |
-| Trial ending | Email + WhatsApp + bell at 5, 4, 2, 1 days, and when it ends (9 am to 9 pm only) | ✅ (email ⏳ SMTP, WhatsApp ⏳ Meta) |
+| Trial ending | Email + WhatsApp + bell at 5, 4, 3, 2, 1 days, and when it ends (9 am to 9 pm only) | ✅ (email ⏳ SMTP, WhatsApp ⏳ Meta) |
 | Trial ends, no payment | Account pauses by itself: can sign in and view, but no new reviews, replies, alerts or automation; Google stops syncing; no AI is spent | ✅ |
 | Owner pays | Dodo confirms the payment to the server, the account reopens at once, and waiting reviews (up to 60 days) are read | ✅ |
 | Paid plan ending | Same reminders as the trial | ✅ |

@@ -1,7 +1,7 @@
 """Live end-to-end check of the customer email journey. Run inside the api container: python scripts/e2e_mail_journey.py
 
 Creates one clearly marked TEST restaurant whose owner email is a +tag on the company inbox, walks it through
-register -> welcome -> reset -> password changed -> sign in -> payment link -> 5/4/2/1-day reminders -> suspension
+register -> welcome -> reset -> password changed -> sign in -> payment link -> 5/4/3/2/1-day reminders -> suspension
 (features off) -> payment (features back on) -> demo request -> support hand-over, and checks every email it sends.
 Every sent email is saved to /backups/e2e/ as .eml + .html so it can be inspected.
 """
@@ -132,7 +132,7 @@ r = c.post("/api/v1/billing/checkout", json={"outlets": 2, "months": 1}, headers
 url = r.json().get("checkout_url", "") if r.status_code == 200 else ""
 check("5. Payment link opens Dodo checkout", r.status_code == 200 and url.startswith("https://"), url or r.text[:120])
 
-# 6 Reminders 5/4/2/1 and suspension
+# 6 Reminders 5/4/3/2/1 and suspension
 from app.database import SessionLocal  # noqa: E402
 from app.models import ActivityLog, Organization  # noqa: E402
 from app.services import billing, plan_reminders, pricing  # noqa: E402
@@ -142,7 +142,7 @@ db = SessionLocal()
 org = db.query(Organization).filter_by(name=f"TEST Kaveri Mess {tag}").one()
 end = org.trial_ends_at
 noon = end.replace(hour=6, minute=30)
-for d in (5, 4, 2, 1):
+for d in (5, 4, 3, 2, 1):
     i = len(SENT)
     plan_reminders.send_due(db, noon - timedelta(days=d), force_hours=True, only_org_id=org.id)
     m = find(i, f"ends in {d} day")

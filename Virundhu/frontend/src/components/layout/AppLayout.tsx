@@ -2,7 +2,8 @@ import { QuickHelp } from "@/components/help/QuickHelp";
 import { useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bell, CreditCard, Inbox, MessageCircleQuestion,
   UtensilsCrossed,
-  LifeBuoy, Workflow, LogOut, MapPin, Menu, Plug, Settings, ShieldCheck, Upload } from "lucide-react";
+  LifeBuoy, Workflow, LogOut, MapPin, Menu, Plug, Settings, ShieldCheck, Upload,
+  LayoutDashboard, MailOpen, Building2, Users, ScrollText, Mail, LogIn, Quote, Database } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -54,7 +55,27 @@ export function AppLayout() {
 
   // Grouped by how often owners use them: daily work first, then insights, then setup, then account.
   const groups: NavGroup[] = adminHome
-    ? [{ title: "", items: [{ to: "/app/admin", label: "Admin console", icon: ShieldCheck }] }]
+    ? [
+        { title: "Overview", items: [
+          { to: "/app/admin", label: "Today and money", icon: LayoutDashboard, end: true, short: "Today" },
+          { to: "/app/admin/mailbox", label: "Company mailbox", icon: MailOpen, short: "Mailbox" },
+        ] },
+        { title: "Customers", items: [
+          { to: "/app/admin/restaurants", label: "Restaurants", icon: Building2 },
+          { to: "/app/admin/users", label: "Users", icon: Users },
+          { to: "/app/admin/leads", label: "Demo requests", icon: Inbox, short: "Demos" },
+        ] },
+        { title: "Logs", items: [
+          { to: "/app/admin/activity", label: "All activity", icon: ScrollText },
+          { to: "/app/admin/emails", label: "Emails sent", icon: Mail },
+          { to: "/app/admin/signins", label: "Sign-ins", icon: LogIn },
+        ] },
+        { title: "Help desk", items: [
+          { to: "/app/admin/support", label: "Support tickets", icon: LifeBuoy },
+          { to: "/app/admin/testimonials", label: "Testimonials", icon: Quote },
+        ] },
+        { title: "System", items: [{ to: "/app/admin/data", label: "Data and backups", icon: Database }] },
+      ]
     : [
         { title: "Every day", items: [
           { to: "/app", label: "Dashboard", icon: BarChart3, end: true, hint: "Today at a glance", short: "Home" },
@@ -77,7 +98,7 @@ export function AppLayout() {
         ] },
       ];
   const items = groups.flatMap((g) => g.items);
-  const mobileMain = adminHome ? items : items.slice(0, 4);
+  const mobileMain = adminHome ? [items[0], items[1], items[2], items[5]] : items.slice(0, 4);
   const bell = adminHome ? <AdminBell align="left" /> : <NotificationBell onDark align="left" />;
   const trialEnds = !viewing && user?.organization?.plan === "trial" && !user.organization.is_demo ? user.organization.trial_ends_at : null;
 
@@ -188,7 +209,7 @@ export function AppLayout() {
           </div>
         </div>
       ) : null}
-      <nav className={cn("fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-night/95 text-jasmine backdrop-blur lg:hidden", adminHome ? "grid-cols-2" : "grid-cols-5")} aria-label="Main">
+      <nav className={cn("fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-night/95 text-jasmine backdrop-blur lg:hidden", "grid-cols-5")} aria-label="Main">
         {mobileMain.map(({ to, label, short, icon: Icon, badge, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => cn("relative flex flex-col items-center gap-1 py-2.5 text-[0.72rem] text-mist", isActive && "font-semibold text-turmeric")}>
             <Icon className="h-5 w-5" strokeWidth={1.9} />{short ?? label}

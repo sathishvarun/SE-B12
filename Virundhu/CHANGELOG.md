@@ -4,7 +4,7 @@
 
 - **Admin → Company mailbox**: demo requests, info/support and sent-to-customer counts (total, this week, new or open),
   the latest messages, and an **Open in Gmail** button per company address (MAILBOX_ACCOUNT).
-- **Trial reminders** now go 5, 4, 2 and 1 days before the end, each with the owner's first name and a details table.
+- **Trial reminders** now go 5, 4, 3, 2 and 1 days before the end, each with the owner's first name and a details table.
 - **Suspension email** when a trial or plan ends without renewal: data stays safe, features switch off until renewed.
 - **Payment confirmation** shows invoice number, months added, outlets covered, plan dates, amount, GST note, payment ID.
 
