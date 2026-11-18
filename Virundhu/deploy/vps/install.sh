@@ -7,7 +7,7 @@ set -euo pipefail
 command -v rsync >/dev/null && command -v git >/dev/null || { apt-get update -qq && apt-get install -y -qq rsync git >/dev/null; }
 DOMAIN="${DOMAIN:-virundhu.sathishsakthivel.tech}"
 SRC=/opt/virundhu-src; APP=/opt/virundhu
-if [ -d "$SRC/.git" ]; then git -C "$SRC" pull -q --depth 1; else
+if [ -d "$SRC/.git" ]; then git -C "$SRC" fetch -q --depth 1 origin main && git -C "$SRC" reset -q --hard origin/main; else
   git clone -q --depth 1 --filter=blob:none --sparse https://github.com/sathishvarun/SE-B12 "$SRC"
   git -C "$SRC" sparse-checkout set Virundhu
 fi
