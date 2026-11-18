@@ -72,7 +72,7 @@ export function LiveBoard({ compact = false }: { compact?: boolean }) {
 
           {/* Incoming review */}
           {!reduce ? (
-            <div className="mt-3 min-h-[148px]">
+            <div className={cn("relative mt-3 overflow-hidden", compact ? "h-[172px]" : "h-[236px] sm:h-[212px]")}>
               <AnimatePresence mode="popLayout">
                 <m.article key={currentKey} layoutId={currentKey} layout
                   initial={{ opacity: 0, y: -24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -117,7 +117,7 @@ export function LiveBoard({ compact = false }: { compact?: boolean }) {
                   <m.span key={counts[lane.key]} initial={{ scale: 1.5, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }}
                     className="tabular font-display text-lg font-bold text-white">{counts[lane.key]}</m.span>
                 </div>
-                <div className={cn("flex flex-col gap-1.5", compact ? "min-h-[84px]" : "min-h-[132px]")}>
+                <div className={cn("flex flex-col gap-1.5 overflow-hidden", compact ? "h-[96px]" : "h-[150px]")}>
                   <AnimatePresence initial={false}>
                     {lanes[lane.key].map((r) => (
                       <m.div key={r.key} layoutId={r.key} layout exit={{ opacity: 0, scale: 0.9 }}
