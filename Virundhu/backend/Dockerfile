@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-RUN chmod +x docker-entrypoint.sh && useradd --create-home appuser && chown -R appuser /app
+RUN mkdir -p logs && chmod +x docker-entrypoint.sh && useradd --create-home appuser && chown -R appuser /app
 USER appuser
 
 EXPOSE 8000

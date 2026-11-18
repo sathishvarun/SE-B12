@@ -1,0 +1,66 @@
+# Virundhu on the VPS. Traefik (already running on the server) gives it HTTPS automatically.
+# Run from /opt/virundhu/deploy/vps:  docker compose up -d --build
+name: virundhu
+
+x-backend: &backend
+  build: ../../backend
+  env_file: ../../.env
+  environment:
+    FORWARDED_ALLOW_IPS: "*"
+  restart: unless-stopped
+  depends_on:
+    db: { condition: service_healthy }
+    redis: { condition: service_started }
+  volumes:
+    - logs:/app/logs
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: virundhu
+      POSTGRES_USER: virundhu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in /opt/virundhu/deploy/vps/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U virundhu -d virundhu"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  api:
+    <<: *backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+
+  worker:
+    <<: *backend
+    environment:
+      RUN_MIGRATIONS: "0"
+    command: ["arq", "app.worker.settings.WorkerSettings"]
+    healthcheck: { disable: true }
+    depends_on:
+      api: { condition: service_healthy }
+
+  web:
+    build:
+      context: ../../frontend
+      args:
+        VITE_API_URL: ""
+    restart: unless-stopped
+    depends_on: [api]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.virundhu.rule=Host(`${DOMAIN:?set in .env}`)
+      - traefik.http.routers.virundhu.entrypoints=websecure
+      - traefik.http.routers.virundhu.tls.certresolver=letsencrypt
+      - traefik.http.services.virundhu.loadbalancer.server.port=80
+
+volumes:
+  pgdata:
+  logs:
