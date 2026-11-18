@@ -95,6 +95,7 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     EMAIL_FROM: str = "Virundhu <hello@example.com>"
+    SMTP_HELO: str = ""  # name the server gives when sending (Google SMTP relay wants a real domain)
 
     @property
     def google_enabled(self) -> bool:

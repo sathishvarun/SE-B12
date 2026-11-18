@@ -266,7 +266,8 @@ def send_email(
         main, _, sub = mime.partition("/")
         msg.add_attachment(data, maintype=main, subtype=sub, filename=filename)
     try:
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=20) as smtp:
+        helo = settings.SMTP_HELO or settings.APP_URL.split("//")[-1].split("/")[0].split(":")[0] or None
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=20, local_hostname=helo) as smtp:
             smtp.starttls(context=ssl.create_default_context())
             if settings.SMTP_USER:
                 smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
