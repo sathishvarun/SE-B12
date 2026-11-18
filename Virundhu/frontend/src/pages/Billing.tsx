@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lock } from "lucide-react";
+import { ArrowLeft, CreditCard, Lock } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { PriceCalculator } from "@/components/site/PriceCalculator";
+import { PriceCalculator, quoteFrom } from "@/components/site/PriceCalculator";
 import { Skeleton } from "@/components/ui/misc";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -114,6 +114,14 @@ export default function Billing() {
   if (isLoading || !data) return <div className="mx-auto max-w-5xl"><Skeleton className="h-[420px]" /></div>;
 
   const onTrial = data.plan === "trial";
+  const step = params.get("step");
+  if (step === "checkout") {
+    const outlets = Math.max(1, Number(params.get("outlets")) || 1);
+    const months = Number(params.get("months")) || 1;
+    const bill = details ?? { company_name: data.billing?.company_name ?? "", gstin: data.billing?.gstin ?? "", address: data.billing?.address ?? "" };
+    return <Checkout data={data} outlets={outlets} months={months} bill={bill} paying={paying}
+      onBack={() => setParams({}, { replace: false })} onPay={() => pay(outlets, months)} />;
+  }
   return (
     <div className="mx-auto max-w-5xl">
       <h1 className="text-[2.3rem] font-bold">Plan and billing</h1>
@@ -131,12 +139,6 @@ export default function Billing() {
         </p>
       </section>
 
-      {!data.payments_enabled ? (
-        <p className="mt-5 rounded-[14px] bg-turmeric/25 px-4 py-3 font-medium">
-          Online payment isn't switched on yet. Please contact Virundhu to choose a plan.
-        </p>
-      ) : null}
-
       {data.promo && data.payments_enabled ? (
         <div className="mt-5 flex flex-wrap items-center gap-3 rounded-[16px] border-2 border-dashed border-night bg-turmeric/30 px-4 py-3">
           <span className="rounded-[10px] bg-night px-3 py-1.5 font-mono text-lg font-bold tracking-wider text-turmeric">{data.promo.code}</span>
@@ -151,8 +153,7 @@ export default function Billing() {
       </p>
       <BillingForm initial={data.billing} value={details} onChange={setDetails} />
       <div className="mt-4">
-        <div id="choose-plan" className="scroll-mt-6"><PriceCalculator tone="light" initialOutlets={data.paid_outlets ?? data.outlets_now} initialMonths={null} onPay={pay} paying={paying} payDisabled={!data.payments_enabled}
-          payDisabledReason="Online payment is being switched on. To pay today, use Help and support and we'll send you a payment link." /></div>
+        <div id="choose-plan" className="scroll-mt-6"><PriceCalculator tone="light" initialOutlets={data.paid_outlets ?? data.outlets_now} initialMonths={null} onPay={(o, m) => { setParams({ step: "checkout", outlets: String(o), months: String(m) }); window.scrollTo({ top: 0 }); }} /></div>
       </div>
       <p className="mt-3 flex items-center gap-2 text-sm text-ink-soft"><Lock className="h-4 w-4" /> {data.provider === "dodo" ? "Paid securely through Dodo Payments: UPI and cards, with a GST invoice. Virundhu never sees your card details." : "Paid securely through Razorpay: UPI, cards, net banking and wallets. Virundhu never sees your card details."}</p>
 
@@ -175,6 +176,52 @@ export default function Billing() {
           </table>
         </div>
       ) : <p className="mt-2 text-ink-soft">No payments yet.</p>}
+    </div>
+  );
+}
+
+/** Step 2 of paying: what they are buying, for whom, and the total. "Pay" opens the secure payment page. */
+function Checkout({ data, outlets, months, bill, paying, onBack, onPay }: {
+  data: BillingStatus; outlets: number; months: number; bill: BillingDetails; paying: boolean; onBack: () => void; onPay: () => void;
+}) {
+  const { data: table } = useQuery({ queryKey: ["pricing-table"], queryFn: billingApi.pricing, staleTime: 3_600_000 });
+  if (!table) return <div className="mx-auto max-w-3xl"><Skeleton className="h-[420px]" /></div>;
+  const q = quoteFrom(table, outlets, months);
+  const totalMonths = months + q.duration.bonus_months;
+  const start = data.expired || !data.ends_at ? new Date() : new Date(data.ends_at);
+  const end = new Date(start); end.setMonth(end.getMonth() + totalMonths);
+  const day = (d: Date) => d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+  const rows: [string, string][] = [
+    ["Restaurant", bill.company_name || "-"],
+    ...(bill.gstin ? [["GSTIN", bill.gstin] as [string, string]] : []),
+    ...(bill.address ? [["Billing address", bill.address] as [string, string]] : []),
+    ["Plan", `${q.tier.name}, ${inr(q.tier.per_outlet_month)} per outlet a month`],
+    ["Outlets", String(outlets)],
+    ["Months", `${months}${q.duration.bonus_months ? ` + ${q.duration.bonus_months} free = ${totalMonths} months` : ""}`],
+    ...(q.duration.discount_percent ? [["Discount", `${q.duration.discount_percent}% off`] as [string, string]] : []),
+    ["Plan valid", `${day(start)} to ${day(end)}`],
+  ];
+  return (
+    <div className="mx-auto max-w-3xl">
+      <button type="button" onClick={onBack} className="flex cursor-pointer items-center gap-2 font-semibold text-ink-soft hover:text-ink"><ArrowLeft className="h-4 w-4" /> Change outlets or months</button>
+      <h1 className="mt-3 text-[2.3rem] font-bold">Review and pay</h1>
+      <section className="mt-5 overflow-hidden rounded-[20px] border-2 border-line bg-white">
+        <dl className="divide-y-2 divide-jasmine-2">
+          {rows.map(([k, v]) => (
+            <div key={k} className="grid grid-cols-[40%_60%] gap-3 px-5 py-3"><dt className="text-ink-soft">{k}</dt><dd className="font-semibold">{v}</dd></div>
+          ))}
+        </dl>
+        <div className="flex flex-wrap items-end justify-between gap-3 bg-night px-5 py-5 text-jasmine">
+          <div><p className="text-mist">Total to pay, GST included</p><p className="tabular font-display text-[2.6rem] font-bold leading-none">{inr(q.total)}</p></div>
+          {q.youSave > 0 ? <p className="rounded-[12px] bg-leaf/20 px-3 py-1.5 font-semibold">You save {inr(q.youSave)}</p> : null}
+        </div>
+      </section>
+      <button type="button" onClick={onPay} disabled={paying}
+        className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-chilli px-5 py-4 font-display text-lg font-bold text-white hover:opacity-90 disabled:opacity-60">
+        <CreditCard className="h-5 w-5" /> {paying ? "Opening the payment page..." : `Pay ${inr(q.total)} securely`}
+      </button>
+      <p className="mt-3 flex items-center gap-2 text-sm text-ink-soft"><Lock className="h-4 w-4" /> You'll go to {data.provider === "dodo" ? "Dodo Payments" : "Razorpay"} to pay by UPI or card. Your plan starts, and every menu unlocks, as soon as the payment succeeds.</p>
     </div>
   );
 }
