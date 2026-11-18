@@ -252,6 +252,7 @@ def send_email(
     if not settings.SMTP_HOST:
         files = ", ".join(f[0] for f in attachments or [])
         logger.info("EMAIL (not sent, SMTP_HOST is empty) to=%s subject=%s %s\n%s", recipients, subject, files, text)
+        _log_customer_email(recipients, f"Not sent (email isn't set up): {subject}", False)
         return True
     msg = EmailMessage()
     msg["From"] = sender()
@@ -270,7 +271,41 @@ def send_email(
             if settings.SMTP_USER:
                 smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             smtp.send_message(msg)
-        return True
+        ok = True
     except Exception:
         logger.exception("Email to %s failed", recipients)
-        return False
+        ok = False
+    _log_customer_email(recipients, subject, ok)
+    return ok
+
+
+def _log_customer_email(recipients: list[str], subject: str, ok: bool) -> None:
+    """Keep a record of every customer email in that restaurant's log (Admin console → Logs). Never raises."""
+    if settings.SUPERADMIN_EMAIL.lower() in recipients:
+        return
+    try:
+        from sqlalchemy import select
+
+        from app.database import SessionLocal
+        from app.models import Membership, Organization, User
+        from app.services import activity
+
+        with SessionLocal() as db:
+            for to in recipients:
+                row = db.execute(
+                    select(Organization.id, Organization.name)
+                    .join(Membership, Membership.organization_id == Organization.id)
+                    .join(User, User.id == Membership.user_id)
+                    .where(User.email == to)
+                    .limit(1)
+                ).first()
+                activity.record(
+                    db,
+                    "email_sent" if ok else "email_failed",
+                    org_id=row[0] if row else None,
+                    restaurant=row[1] if row else None,
+                    email=to,
+                    detail=subject[:300],
+                )
+    except Exception:  # pragma: no cover - logging only
+        logger.warning("Couldn't log the email to %s", recipients)

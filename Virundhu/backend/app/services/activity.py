@@ -23,7 +23,11 @@ LABELS = {
     "support_ticket": "New support ticket",
     "ticket_reply": "Reply on a support ticket",
     "help_question": "Quick help couldn't answer",
+    "email_sent": "Email sent",
+    "email_failed": "Email not delivered",
+    "upload": "Reviews added",
 }
+QUIET = ("signup", "login", "login_failed", "ticket_reply", "help_question", "email_sent", "upload")
 EMAIL_ADMIN = {"account_deleted", "payment", "demo_request", "login_locked", "support_ticket"}
 
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 18 Nov 2026 (Admin console sections, per-restaurant logs, emails log, daily backups)
+
+- Admin console has a grouped left menu: Overview, Customers (Restaurants, Users, Demo requests), Logs (All activity,
+  Emails sent, Sign-ins), Help desk (Support tickets, Testimonials), System (Data and backups).
+- Every restaurant has its own full log (Restaurants → Logs): sign-ins, every email sent to them, uploads, payments,
+  password changes and support requests, with filters.
+- Every customer email is recorded (sent or not delivered) in that restaurant's log and in Logs → Emails sent.
+- VPS: compressed database backup every day at 03:00 India time, newest 30 days kept, shown in Data and backups.
+- Emails: logo, a headline band and Virundhu's own closing line per email type; Reply-To Virundhu.
+
 ## 18 Nov 2026 (Customer emails, Google sign-in, launch)
 
 - Customer emails are now a branded Virundhu card (green header, turmeric button for links, help footer) and show

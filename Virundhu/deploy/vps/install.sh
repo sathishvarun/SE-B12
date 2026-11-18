@@ -12,7 +12,7 @@ if [ -d "$SRC/.git" ]; then git -C "$SRC" fetch -q --depth 1 origin main && git 
   git -C "$SRC" sparse-checkout set Virundhu
 fi
 mkdir -p "$APP"
-rsync -a --delete --exclude .env --exclude deploy/vps/.env "$SRC/Virundhu/" "$APP/"
+rsync -a --delete --exclude .env --exclude deploy/vps/.env --exclude backups --exclude logs "$SRC/Virundhu/" "$APP/"
 cd "$APP"
 rnd() { python3 -c "import secrets;print(secrets.token_urlsafe($1))"; }
 if [ ! -f .env ]; then
@@ -37,5 +37,9 @@ if [ ! -f .env ]; then
 fi
 cd deploy/vps
 docker compose up -d --build
+# Daily backup at 03:00 India time (21:30 UTC), one now if none exists yet
+echo "30 21 * * * root bash /opt/virundhu/deploy/vps/backup.sh >> /opt/virundhu/backups/backup.log 2>&1" > /etc/cron.d/virundhu-backup
+chmod 644 /etc/cron.d/virundhu-backup
+ls /opt/virundhu/backups/virundhu-*.sql.gz >/dev/null 2>&1 || bash /opt/virundhu/deploy/vps/backup.sh
 docker image prune -f >/dev/null
 echo "Virundhu is starting at https://$DOMAIN"

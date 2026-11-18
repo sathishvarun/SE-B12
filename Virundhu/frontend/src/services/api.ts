@@ -290,6 +290,7 @@ export const adminApi = {
   deleteTestAccounts: (ids: number[]) => api.post<{ deleted: number }>("/api/v1/admin/test-accounts/delete", { ids, confirm: "DELETE" }).then((r) => r.data),
   backups: () => api.get<BackupInfo>("/api/v1/admin/backups").then((r) => r.data),
   activity: () => api.get<ActivityItem[]>("/api/v1/admin/activity").then((r) => r.data),
+  orgLog: (id: number) => api.get<{ at: string; kind: string; label: string; who: string | null; detail: string | null }[]>(`/api/v1/admin/organizations/${id}/log`).then((r) => r.data),
   activityOf: (kind: string) => api.get<ActivityItem[]>("/api/v1/admin/activity", { params: { kind } }).then((r) => r.data),
   updateUser: (id: number, is_active: boolean) => api.patch(`/api/v1/admin/users/${id}`, { is_active }),
 };

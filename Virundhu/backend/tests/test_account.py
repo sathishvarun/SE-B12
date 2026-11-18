@@ -117,7 +117,12 @@ def test_admin_sees_activity(client):
     ).json()["access_token"]
     ah = {"Authorization": f"Bearer {admin}"}
     mine = [a for a in client.get("/api/v1/admin/activity", headers=ah).json() if a["user_email"] == email]
-    assert {a["kind"] for a in mine} == {"signup", "login", "password_changed", "account_deleted"}
+    assert {a["kind"] for a in mine} - {"email_sent", "email_failed"} == {
+        "signup",
+        "login",
+        "password_changed",
+        "account_deleted",
+    }
     assert any(e["kind"] == "account_deleted" for e in client.get("/api/v1/admin/events", headers=ah).json())
     assert client.get("/api/v1/admin/activity", headers=h).status_code in (401, 403)
 
@@ -876,3 +881,20 @@ def test_pasted_reviews_appear_in_upload_log(client):
     assert log[0]["source"] == "paste" and log[0]["valid_rows"] == 1 and log[0]["created_at"]
     conns = {c["provider"]: c for c in client.get("/api/v1/connections", headers=h).json()}
     assert "available" in conns["google"]
+
+
+def test_restaurant_log_has_emails_and_uploads(client):
+    """Each restaurant has its own log: emails sent to it (welcome, reset) and the reviews it added."""
+    email, res = _register(client)
+    h = {"Authorization": f"Bearer {res.json()['access_token']}"}
+    with patch("app.routers.intake.enqueue_analysis", new=AsyncMock()):
+        client.post("/api/v1/reviews", json={"text": "Rasam was great", "rating": 5, "platform": "google"}, headers=h)
+    with patch.object(settings, "SMTP_HOST", ""):
+        client.post("/api/v1/auth/forgot-password", json={"email": email})
+    admin = client.post("/api/v1/auth/login", json=ADMIN_LOGIN)
+    ah = {"Authorization": "Bearer " + admin.json()["access_token"]}
+    org_id = client.get("/api/v1/auth/me", headers=h).json()["organization"]["id"]
+    log = client.get(f"/api/v1/admin/organizations/{org_id}/log", headers=ah).json()
+    kinds = {r["kind"] for r in log}
+    assert "upload" in kinds and kinds & {"email_sent", "email_failed"}
+    assert any("Reset your Virundhu password" in (r["detail"] or "") for r in log)

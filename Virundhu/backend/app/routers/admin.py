@@ -344,7 +344,7 @@ def events(db: Session = Depends(get_db)) -> list[AdminEvent]:
     for a in db.scalars(
         select(ActivityLog).where(
             ActivityLog.created_at >= since,
-            ActivityLog.kind.not_in(("signup", "login", "login_failed", "ticket_reply", "help_question")),
+            ActivityLog.kind.not_in(activity.QUIET),
         )
     ):
         out.append(
@@ -388,6 +388,59 @@ def activity_log(kind: str | None = None, db: Session = Depends(get_db)) -> list
         )
         for a in db.scalars(q)
     ]
+
+
+class OrgLogItem(BaseModel):
+    at: datetime
+    kind: str
+    label: str
+    who: str | None = None
+    detail: str | None = None
+
+
+@router.get("/organizations/{org_id}/log", response_model=list[OrgLogItem])
+def org_log(org_id: int, db: Session = Depends(get_db)) -> list[OrgLogItem]:
+    """One restaurant's own history: sign-ins, emails sent to it, uploads, payments, password changes, support."""
+    from app.models import ImportBatch, SupportTicket
+
+    items = [
+        OrgLogItem(
+            at=a.created_at,
+            kind=a.kind,
+            label=activity.LABELS.get(a.kind, a.kind),
+            who=a.user_email,
+            detail=a.detail,
+        )
+        for a in db.scalars(
+            select(ActivityLog)
+            .where(ActivityLog.organization_id == org_id)
+            .order_by(ActivityLog.created_at.desc())
+            .limit(500)
+        )
+    ]
+    for b in db.scalars(
+        select(ImportBatch).where(ImportBatch.organization_id == org_id).order_by(ImportBatch.id.desc()).limit(200)
+    ):
+        items.append(
+            OrgLogItem(
+                at=b.created_at,
+                kind="upload",
+                label="Reviews added",
+                detail=f"{b.filename}: {b.valid_rows} new, {b.duplicate_rows} already there, {b.invalid_rows} skipped",
+            )
+        )
+    for t in db.scalars(
+        select(SupportTicket)
+        .where(SupportTicket.organization_id == org_id)
+        .order_by(SupportTicket.id.desc())
+        .limit(100)
+    ):
+        items.append(
+            OrgLogItem(
+                at=t.created_at, kind="support_ticket", label="Support request", who=t.user_email, detail=t.subject
+            )
+        )
+    return sorted(items, key=lambda i: i.at, reverse=True)[:600]
 
 
 class LeadOut(BaseModel):

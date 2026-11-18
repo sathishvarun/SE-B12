@@ -13,6 +13,7 @@ x-backend: &backend
     redis: { condition: service_started }
   volumes:
     - logs:/app/logs
+    - ../../backups:/backups:ro
 
 services:
   db:

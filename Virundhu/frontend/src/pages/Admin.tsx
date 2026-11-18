@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle2, CircleAlert, Eye, IndianRupee, KeyRound, Mail, MessageSquareText, ShieldAlert, Users } from "lucide-react";
+import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MessageSquareText, Quote, ScrollText, ShieldAlert, Users, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -462,10 +462,84 @@ function AdminPassword() {
   );
 }
 
+type Section = "overview" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "testimonials" | "data";
+const SECTIONS: { group: string; items: [Section, string, typeof Users][] }[] = [
+  { group: "Overview", items: [["overview", "Today and money", LayoutDashboard]] },
+  { group: "Customers", items: [["restaurants", "Restaurants", Building2], ["users", "Users", Users], ["leads", "Demo requests", Inbox]] },
+  { group: "Logs", items: [["activity", "All activity", ScrollText], ["emails", "Emails sent", Mail], ["signins", "Sign-ins", LogIn]] },
+  { group: "Help desk", items: [["support", "Support tickets", LifeBuoy], ["testimonials", "Testimonials", Quote]] },
+  { group: "System", items: [["data", "Data and backups", Database]] },
+];
+const when = (d: string) => new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+const toneOf = (k: string) => (k === "account_deleted" || k === "email_failed" || k === "login_failed" || k === "login_locked" ? "chilli" : k === "payment" ? "leaf" : k.startsWith("password") ? "turmeric" : k === "signup" || k === "email_sent" ? "sky" : "plain") as "chilli" | "leaf" | "turmeric" | "sky" | "plain";
+
+function ActivityTable({ kind, intro }: { kind?: string; intro: string }) {
+  const q = useQuery({ queryKey: ["admin-activity", kind ?? "all"], queryFn: () => (kind ? adminApi.activityOf(kind) : adminApi.activity()), refetchInterval: 60_000 });
+  return (
+    <div>
+      <p className="text-ink-soft">{intro}</p>
+      <div className="mt-3 overflow-x-auto rounded-[20px] border-2 border-line bg-white">
+        <table className="w-full min-w-[820px] text-left text-sm">
+          <thead className="bg-jasmine text-ink-soft"><tr><th className="px-4 py-3">When</th><th>What happened</th><th>Restaurant</th><th>Who</th><th className="px-4">Details</th></tr></thead>
+          <tbody>
+            {q.isLoading ? <tr><td colSpan={5} className="p-4"><Skeleton className="h-10" /></td></tr> : null}
+            {q.data && !q.data.length ? <tr><td colSpan={5} className="p-6 text-center text-ink-soft">Nothing yet.</td></tr> : null}
+            {q.data?.map((a) => (
+              <tr key={a.id} className="border-t-2 border-jasmine-2">
+                <td className="whitespace-nowrap px-4 py-3">{when(a.created_at)}</td>
+                <td><Chip tone={toneOf(a.kind)}>{a.label}</Chip></td>
+                <td className="font-semibold">{a.restaurant ?? "-"}</td>
+                <td className="text-ink-soft">{a.user_email ?? "-"}</td>
+                <td className="max-w-[340px] px-4 text-ink-soft">{a.detail ?? ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function RestaurantLog({ org, onClose }: { org: { id: number; name: string }; onClose: () => void }) {
+  const [filter, setFilter] = useState("all");
+  const q = useQuery({ queryKey: ["org-log", org.id], queryFn: () => adminApi.orgLog(org.id) });
+  const kinds = ["all", "email", "login", "upload", "payment", "password", "support"];
+  const rows = (q.data ?? []).filter((r) => filter === "all" || r.kind.startsWith(filter) || (filter === "support" && r.kind.includes("ticket")));
+  return (
+    <section className="mb-5 rounded-[20px] border-2 border-night bg-white p-5" aria-label={`Log for ${org.name}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-xl font-bold">{org.name}: full log</h2>
+        <button onClick={onClose} className="flex items-center gap-1 rounded-[10px] px-2 py-1 text-sm font-semibold text-ink-soft hover:bg-jasmine cursor-pointer"><X className="h-4 w-4" /> Close</button>
+      </div>
+      <p className="text-sm text-ink-soft">Every sign-in, email sent to them, upload, payment, password change and support request for this restaurant, newest first.</p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {kinds.map((k) => <button key={k} onClick={() => setFilter(k)} className={cn("rounded-full px-3 py-1 text-sm font-semibold cursor-pointer", filter === k ? "bg-night text-jasmine" : "bg-jasmine-2 text-ink-soft")}>{({ all: "All", email: "Emails", login: "Sign-ins", upload: "Uploads", payment: "Payments", password: "Passwords", support: "Support" } as Record<string, string>)[k]}</button>)}
+      </div>
+      <div className="mt-3 max-h-[440px] overflow-auto rounded-[14px] border-2 border-jasmine-2">
+        <table className="w-full min-w-[640px] text-left text-sm">
+          <tbody>
+            {q.isLoading ? <tr><td className="p-4"><Skeleton className="h-10" /></td></tr> : null}
+            {!q.isLoading && !rows.length ? <tr><td className="p-6 text-center text-ink-soft">Nothing recorded for this filter yet.</td></tr> : null}
+            {rows.map((r, i) => (
+              <tr key={i} className="border-t-2 border-jasmine-2 first:border-t-0">
+                <td className="whitespace-nowrap px-3 py-2.5 text-ink-soft">{when(r.at)}</td>
+                <td className="px-2"><Chip tone={toneOf(r.kind)}>{r.label}</Chip></td>
+                <td className="px-2 text-ink-soft">{r.who ?? ""}</td>
+                <td className="px-3 text-ink-soft">{r.detail ?? ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function AdminPanel() {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"restaurants" | "users" | "demo requests" | "activity" | "support" | "testimonials" | "data">("restaurants");
+  const [tab, setTab] = useState<Section>("overview");
+  const [logOrg, setLogOrg] = useState<{ id: number; name: string } | null>(null);
   const stats = useQuery({ queryKey: ["admin-stats"], queryFn: adminApi.stats, refetchInterval: 30_000 });
   const orgs = useQuery({ queryKey: ["admin-orgs"], queryFn: adminApi.orgs, refetchInterval: 30_000 });
   const users = useQuery({ queryKey: ["admin-users"], queryFn: adminApi.users, enabled: tab === "users" });
@@ -497,6 +571,26 @@ function AdminPanel() {
       </div>
       <p className="mt-1 max-w-3xl text-ink-soft">You run Virundhu. Here you see every customer restaurant, their subscription, their users and how many reviews come in.
         Customers never see this page; they only see their own restaurant. Click <b>Open</b> to see a restaurant exactly as its owner does.</p>
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[230px_minmax(0,1fr)]">
+      <nav aria-label="Admin sections" className="lg:sticky lg:top-6 lg:self-start">
+        <div className="flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-4 lg:overflow-visible">
+          {SECTIONS.map((g) => (
+            <div key={g.group} className="flex shrink-0 gap-1.5 lg:block">
+              <p className="hidden px-3 pb-1 text-xs font-semibold text-ink-soft lg:block">{g.group}</p>
+              {g.items.map(([key, label, Icon]) => (
+                <button key={key} onClick={() => setTab(key)} aria-current={tab === key ? "page" : undefined}
+                  className={cn("flex shrink-0 items-center gap-2.5 rounded-[12px] px-3 py-2 text-sm font-semibold cursor-pointer lg:w-full", tab === key ? "bg-night text-jasmine" : "text-ink-soft hover:bg-jasmine-2")}>
+                  <Icon className="h-4 w-4" />{label}
+                  {key === "activity" && weekImportant ? <span className="ml-auto rounded-full bg-turmeric px-1.5 text-xs text-night">{weekImportant}</span> : null}
+                  {key === "leads" && leads.data?.some((l) => l.status === "new") ? <span className="ml-auto rounded-full bg-chilli px-1.5 text-xs text-white">{leads.data.filter((l) => l.status === "new").length}</span> : null}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </nav>
+      <div className="min-w-0">
+      {tab === "overview" ? (<>
       <LaunchChecklist />
 
       {events.data?.length ? (
@@ -561,17 +655,9 @@ function AdminPanel() {
         </div>
       </section>
 
-      <div className="mt-8 inline-flex flex-wrap gap-1.5 rounded-[22px] bg-jasmine-2 p-1" role="tablist">
-        {(["restaurants", "users", "demo requests", "activity", "support", "testimonials", "data"] as const).map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-            className={cn("rounded-full px-4 py-2 text-sm font-semibold capitalize cursor-pointer", tab === t ? "bg-night text-jasmine" : "text-ink-soft")}>
-            {t}{t === "activity" && weekImportant ? <span className="ml-1.5 rounded-full bg-turmeric px-1.5 text-xs text-night">{weekImportant}</span> : null}{t === "demo requests" && leads.data?.some((l) => l.status === "new") ? <span className="ml-1.5 rounded-full bg-chilli px-1.5 text-xs text-white">{leads.data.filter((l) => l.status === "new").length}</span> : null}
-          </button>
-        ))}
-      </div>
-
-      {tab === "restaurants" ? (
-        <div className="mt-4 overflow-x-auto rounded-[20px] border-2 border-line bg-white">
+      </>) : tab === "restaurants" ? (<>
+        {logOrg ? <RestaurantLog org={logOrg} onClose={() => setLogOrg(null)} /> : null}
+        <div className="overflow-x-auto rounded-[20px] border-2 border-line bg-white">
           <table className="w-full min-w-[980px] text-left text-sm">
             <thead className="bg-jasmine text-ink-soft"><tr>
               <th className="px-4 py-3">Restaurant</th><th>Plan</th><th>Users</th><th>Outlets</th><th>Reviews 30d</th><th>Urgent</th><th>AI cost</th><th>Last review</th><th className="px-4 text-right">Actions</th>
@@ -600,6 +686,7 @@ function AdminPanel() {
                   <td className="px-4">
                     <div className="flex justify-end gap-1.5">
                       <button onClick={() => open(o.id, o.name)} className="flex items-center gap-1 rounded-[10px] bg-night px-2.5 py-1.5 font-semibold text-jasmine cursor-pointer"><Eye className="h-3.5 w-3.5" />Open</button>
+                      <button onClick={() => { setLogOrg({ id: o.id, name: o.name }); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center gap-1 rounded-[10px] border-2 border-line px-2.5 py-1 font-semibold cursor-pointer hover:border-night"><ScrollText className="h-3.5 w-3.5" />Logs</button>
                       {!o.is_demo ? <button onClick={() => act(() => adminApi.updateOrg(o.id, { is_suspended: !o.is_suspended }), o.is_suspended ? "Restaurant restored" : "Restaurant suspended")}
                         className="rounded-[10px] px-2.5 py-1.5 font-semibold text-chilli hover:bg-chilli-soft cursor-pointer">{o.is_suspended ? "Restore" : "Suspend"}</button> : null}
                     </div>
@@ -609,36 +696,20 @@ function AdminPanel() {
             </tbody>
           </table>
         </div>
-      ) : tab === "testimonials" ? (
+      </>) : tab === "testimonials" ? (
         <TestimonialsAdmin />
       ) : tab === "data" ? (
         <DataTools />
       ) : tab === "support" ? (
         <SupportAdmin />
       ) : tab === "activity" ? (
-        <div className="mt-4">
-          <p className="text-ink-soft">Every sign-up, password change, password reset, deleted account, payment and demo request, newest first. Kept even after a restaurant deletes its account. Deleted accounts, payments and demo requests are also emailed to you.</p>
-          <div className="mt-3 overflow-x-auto rounded-[20px] border-2 border-line bg-white">
-            <table className="w-full min-w-[820px] text-left text-sm">
-              <thead className="bg-jasmine text-ink-soft"><tr><th className="px-4 py-3">When</th><th>What happened</th><th>Restaurant</th><th>Who</th><th className="px-4">Details</th></tr></thead>
-              <tbody>
-                {activity.isLoading ? <tr><td colSpan={5} className="p-4"><Skeleton className="h-10" /></td></tr> : null}
-                {activity.data && !activity.data.length ? <tr><td colSpan={5} className="p-6 text-center text-ink-soft">Nothing yet. Events appear here as restaurants sign up and use their accounts.</td></tr> : null}
-                {activity.data?.map((a) => (
-                  <tr key={a.id} className="border-t-2 border-jasmine-2">
-                    <td className="whitespace-nowrap px-4 py-3">{new Date(a.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</td>
-                    <td><Chip tone={a.kind === "account_deleted" ? "chilli" : a.kind === "payment" ? "leaf" : a.kind.startsWith("password") ? "turmeric" : a.kind === "signup" ? "sky" : "plain"}>{a.label}</Chip></td>
-                    <td className="font-semibold">{a.restaurant ?? "-"}</td>
-                    <td className="text-ink-soft">{a.user_email ?? "-"}</td>
-                    <td className="max-w-[320px] px-4 text-ink-soft">{a.detail ?? ""}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : tab === "demo requests" ? (
-        <div className="mt-4 overflow-x-auto rounded-[20px] border-2 border-line bg-white">
+        <ActivityTable intro="Everything recorded across all restaurants, newest first: sign-ups, sign-ins, emails, uploads, payments, passwords and support. Kept even after a restaurant deletes its account." />
+      ) : tab === "emails" ? (
+        <ActivityTable kind="email_sent" intro="Every email Virundhu sent to a customer: welcome, password reset, password changed, trial reminders, receipts, alerts and support replies. Open a restaurant's Logs to see only theirs." />
+      ) : tab === "signins" ? (
+        <ActivityTable kind="login" intro="Every sign-in with the time and device. Wrong passwords and locks are under All activity." />
+      ) : tab === "leads" ? (
+        <div className="overflow-x-auto rounded-[20px] border-2 border-line bg-white">
           <table className="w-full min-w-[860px] text-left text-sm">
             <thead className="bg-jasmine text-ink-soft"><tr><th className="px-4 py-3">Who</th><th>Reach them</th><th>Outlets</th><th>Message</th><th>When</th><th className="px-4 text-right">Status</th></tr></thead>
             <tbody>
@@ -667,7 +738,7 @@ function AdminPanel() {
           </table>
         </div>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-[20px] border-2 border-line bg-white">
+        <div className="overflow-x-auto rounded-[20px] border-2 border-line bg-white">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-jasmine text-ink-soft"><tr><th className="px-4 py-3">User</th><th>Restaurants</th><th>Last sign-in</th><th>Joined</th><th className="px-4 text-right">Status</th></tr></thead>
             <tbody>
@@ -690,6 +761,8 @@ function AdminPanel() {
           </table>
         </div>
       )}
+      </div>
+      </div>
     </div>
   );
 }
