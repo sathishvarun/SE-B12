@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    SUPERADMIN_EMAIL: str = "admin@virundhu.local"
+    SUPERADMIN_EMAIL: str = "admin@example.com"
     SUPERADMIN_PASSWORD: str = Field(min_length=8)
     DEMO_EMAIL: str = "demo@virundhu.local"
     DEMO_PASSWORD: str = Field(min_length=8)
@@ -126,7 +126,7 @@ class Settings(BaseSettings):
                 'SECRET_KEY: make a new one with  python -c "import secrets;print(secrets.token_urlsafe(48))"'
             )
         if (
-            self.SUPERADMIN_PASSWORD in {"Virundhu@Admin2026", "admin123", "password"}
+            self.SUPERADMIN_PASSWORD.lower() in {"choose-your-own-long-password", "admin123", "password"}
             or len(self.SUPERADMIN_PASSWORD) < 12
         ):
             problems.append("SUPERADMIN_PASSWORD: choose your own password, at least 12 characters")

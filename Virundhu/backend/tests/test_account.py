@@ -3,9 +3,11 @@
 import uuid
 from unittest.mock import patch
 
+from app.config import settings
 from app.database import SessionLocal
 from app.models import Organization, Review, User
 
+ADMIN_LOGIN = {"email": settings.SUPERADMIN_EMAIL, "password": settings.SUPERADMIN_PASSWORD}
 PW = "Strong#Pass1"
 
 
@@ -218,7 +220,9 @@ def test_admin_excel_and_test_account_cleanup(client):
 
     reg(f"Sangeetha Mess {tag}", real_email)
     reg(f"Quick Bites {tag}", test_email)
-    admin = client.post("/api/v1/auth/login", json={"email": "admin@virundhu.local", "password": "Virundhu@Admin2026"})
+    admin = client.post(
+        "/api/v1/auth/login", json={"email": settings.SUPERADMIN_EMAIL, "password": settings.SUPERADMIN_PASSWORD}
+    )
     h = {"Authorization": "Bearer " + admin.json()["access_token"]}
 
     x = client.get("/api/v1/admin/export.xlsx", headers=h)
@@ -274,7 +278,9 @@ def test_admin_revenue_dashboard(client):
     ends = datetime.fromisoformat(me["organization"]["trial_ends_at"])
     assert timedelta(days=13, hours=23) < ends - datetime.now(UTC) <= timedelta(days=14)  # exactly 14 days
 
-    admin = client.post("/api/v1/auth/login", json={"email": "admin@virundhu.local", "password": "Virundhu@Admin2026"})
+    admin = client.post(
+        "/api/v1/auth/login", json={"email": settings.SUPERADMIN_EMAIL, "password": settings.SUPERADMIN_PASSWORD}
+    )
     h = {"Authorization": "Bearer " + admin.json()["access_token"]}
     before = client.get("/api/v1/admin/revenue", headers=h).json()
     assert any(t["restaurant"] == f"Paid Mess {tag}" for t in before["trials_ending"]) is False  # 14 days away: not yet
@@ -460,7 +466,9 @@ def test_signup_to_receipt_to_monthly_report(client):
     assert rc["invoice_no"].startswith("VR-") and rc["bill_gstin"] == "33ABCDE1234F1Z5"
     assert "641012" in rc["bill_address"] and rc["outlets"] == 2 and rc["months"] == 3 and rc["amount"] == q.total
 
-    admin = client.post("/api/v1/auth/login", json={"email": "admin@virundhu.local", "password": "Virundhu@Admin2026"})
+    admin = client.post(
+        "/api/v1/auth/login", json={"email": settings.SUPERADMIN_EMAIL, "password": settings.SUPERADMIN_PASSWORD}
+    )
     ah = {"Authorization": "Bearer " + admin.json()["access_token"]}
     assert client.get(f"/api/v1/billing/receipts/{rc['id']}", headers=ah).json()["invoice_no"] == rc["invoice_no"]
     other = client.post(
@@ -535,7 +543,9 @@ def test_delete_shows_balance_emails_owner_and_tells_admin(client):
     assert d.status_code == 200
     mine = [m for m in mails if m[0] == [f"bye.{tag}@gmail.com"]]
     assert mine and "has been deleted" in mine[0][1] and "no balance to pay" in mine[0][2]
-    admin = client.post("/api/v1/auth/login", json={"email": "admin@virundhu.local", "password": "Virundhu@Admin2026"})
+    admin = client.post(
+        "/api/v1/auth/login", json={"email": settings.SUPERADMIN_EMAIL, "password": settings.SUPERADMIN_PASSWORD}
+    )
     ah = {"Authorization": "Bearer " + admin.json()["access_token"]}
     gone = client.get("/api/v1/admin/activity", headers=ah, params={"kind": "account_deleted"}).json()
     row = next(a for a in gone if a["restaurant"] == f"Bye Mess {tag}")
@@ -663,7 +673,9 @@ def test_sign_in_log_tickets_and_daily_digest(client):
         headers={"user-agent": "Mozilla/5.0 (iPhone) Safari"},
     )
     h = {"Authorization": "Bearer " + ok.json()["access_token"]}
-    admin = client.post("/api/v1/auth/login", json={"email": "admin@virundhu.local", "password": "Virundhu@Admin2026"})
+    admin = client.post(
+        "/api/v1/auth/login", json={"email": settings.SUPERADMIN_EMAIL, "password": settings.SUPERADMIN_PASSWORD}
+    )
     ah = {"Authorization": "Bearer " + admin.json()["access_token"]}
     logins = client.get("/api/v1/admin/activity", headers=ah, params={"kind": "login"}).json()
     mine = next(a for a in logins if a["user_email"] == email)
@@ -723,17 +735,18 @@ def test_admin_email_moves_to_superadmin_email(monkeypatch):
     from app.models import User
     from app.seed import ensure_admin_email
 
+    original = settings.SUPERADMIN_EMAIL
     monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "owner.admin.test@gmail.com")
     with SessionLocal() as db:
         ensure_admin_email(db)
         db.commit()
         admin = db.query(User).filter_by(is_superadmin=True).order_by(User.id).first()
         assert admin.email == "owner.admin.test@gmail.com"
-    monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "admin@virundhu.local")
+    monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", original)
     with SessionLocal() as db:
         ensure_admin_email(db)
         db.commit()
-        assert db.query(User).filter_by(is_superadmin=True).order_by(User.id).first().email == "admin@virundhu.local"
+        assert db.query(User).filter_by(is_superadmin=True).order_by(User.id).first().email == original
 
 
 def test_quick_help_answers_hands_over_and_drafts(client, monkeypatch):
@@ -774,7 +787,9 @@ def test_quick_help_answers_hands_over_and_drafts(client, monkeypatch):
         json={"message": "Still not active after 10 minutes", "topic": "payment", "history": hist},
     )
     assert t.status_code == 201 and t.json()["number"].startswith("VT-")
-    admin = client.post("/api/v1/auth/login", json={"email": "admin@virundhu.local", "password": "Virundhu@Admin2026"})
+    admin = client.post(
+        "/api/v1/auth/login", json={"email": settings.SUPERADMIN_EMAIL, "password": settings.SUPERADMIN_PASSWORD}
+    )
     ah = {"Authorization": "Bearer " + admin.json()["access_token"]}
     full = client.get(f"/api/v1/admin/tickets/{t.json()['id']}", headers=ah).json()
     assert "Quick help chat" in full["messages"][0]["body"] and full["category"] == "payment"

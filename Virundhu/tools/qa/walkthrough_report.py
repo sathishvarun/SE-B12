@@ -1,3 +1,4 @@
+import os
 """Walk-through test: a robot uses Virundhu like a real visitor, owner, guest and admin, screenshots every step,
 checks the result, and writes one HTML report with the evidence."""
 
@@ -167,8 +168,8 @@ q=pricing.quote(2,3); billing.activate(db, o.id, 2, 3, 'pay_walk_{TAG}', q.total
     a = b.new_context(viewport={"width": 1366, "height": 860}, accept_downloads=True).new_page()
     a.on("console", lambda m: console.append(f"{m.type}: {m.text[:160]}") if m.type in ("error", "warning") else None)
     a.goto(B + "/login", wait_until="networkidle")
-    a.fill("#email", "admin@virundhu.local")
-    a.fill("#password", "Virundhu@Admin2026")
+    a.fill("#email", os.environ["SUPERADMIN_EMAIL"])
+    a.fill("#password", os.environ["SUPERADMIN_PASSWORD"])
     a.click("button[type=submit]")
     a.wait_for_url("**/app**")
     a.wait_for_load_state("networkidle")

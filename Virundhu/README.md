@@ -5,7 +5,7 @@ automatically: happy or unhappy, what it's about, how urgent, and a reply draft 
 complaints raise an instant alert.
 
 **Run it:** `bash start.sh` → http://localhost:5450 (API on 8450). Full steps: **GETTING_STARTED.md**.
-**Admin login:** `admin@virundhu.local` / `Virundhu@Admin2026`
+**Admin login:** the `SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD` you set in your own `.env` (never written in this repo).
 
 ---
 
@@ -107,7 +107,7 @@ Say this upfront when you pitch. Restaurant owners know these apps well, and bei
 
 **You (admin)**
 1. Run `bash start.sh` (on the VPS later, it's your website address).
-2. Sign in with `admin@virundhu.local` / `Virundhu@Admin2026`. You see every restaurant, their plan, trial days, review
+2. Sign in with the admin email and password from your `.env`. You see every restaurant, their plan, trial days, review
    counts per platform and money collected.
 3. Click **Open** on a restaurant to see exactly what the owner sees.
 
@@ -121,7 +121,32 @@ Say this upfront when you pitch. Restaurant owners know these apps well, and bei
 7. **Ask Virundhu** → "What should I fix first?" for priority 1, 2 and 3.
 8. **Plan and billing** → pay before the 14-day trial ends (UPI or card through Dodo Payments).
 
-## Status (16 Nov 2026)
+## Concepts used
+
+| Concept | Where it is used in Virundhu |
+|---|---|
+| **LLM structured output** (LangChain, function calling) | Every review comes back as fixed fields: sentiment, category, urgency, language, one-line summary, reply draft |
+| **Multilingual NLP** | Reads Tamil script, Tanglish (Tamil in English letters) and English; replies in the guest's own language |
+| **Grounded answering (retrieval over a help guide)** | Quick help answers only from `help_guide.md`; if the guide has no answer it hands over to a person |
+| **Human-in-the-loop AI** | Complaint replies and admin ticket replies are AI drafts that a person checks before sending |
+| **Vision OCR with an LLM** | Upload a Zomato/Swiggy screenshot; the AI picks out every review on it |
+| **Event-driven alerts** | A food-safety review raises a bell, email and (optionally) WhatsApp alert within a minute |
+| **Background jobs and schedules** (Redis + ARQ) | Google sync, AI reading, trial reminders, daily digest, monthly audit Excel, data-retention clean-up |
+| **Multi-tenant SaaS** | Each restaurant sees only its own data; every query is scoped to the organisation |
+| **Role-based access** | Platform admin, restaurant owner and branch staff with different permissions |
+| **OAuth 2.0** | Google sign-in and Google Business Profile connection (reviews in, replies out) |
+| **Secure sessions** | HttpOnly cookies, short-lived access tokens, refresh tokens, lockout after wrong passwords, rate limits |
+| **Web security headers** | Content-Security-Policy, HSTS, no framing, served over HTTPS by Caddy |
+| **Subscription billing** | Trial → plans of 1/3/6/9/12 months, per-outlet pricing, GST invoices, unpaid accounts paused, webhooks from Dodo Payments |
+| **Privacy by design (DPDP Act 2023)** | Consent at sign-up, data export, account deletion, retention limits, grievance contact |
+| **Audit logging** | Sign-ins, failed logins, admin actions and payments recorded with time, IP and device |
+| **Automated testing** | 72 backend tests, a 23-step browser walk-through, a sweep over 12 screen sizes |
+| **Containers and reverse proxy** | Docker for PostgreSQL and Redis, Caddy for HTTPS certificates |
+
+Stack: FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, Redis + ARQ, LangChain (OpenAI or Claude, one at a time),
+React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, Playwright.
+
+## Status (18 Nov 2026)
 
 | Area | State |
 |---|---|
@@ -140,7 +165,9 @@ Say this upfront when you pitch. Restaurant owners know these apps well, and bei
 | Own QR feedback link | Done: guests rate the food from a QR on the bill or packet; lands in Virundhu automatically, then every guest is invited to Google |
 | WhatsApp alerts | Built, switched off until a WhatsApp Business (Meta Cloud API) account is added |
 | Admin console | All restaurants, plans, trials, review counts per platform, money collected, AI cost, demo requests from the Contact page |
-| Deploy to VPS, GitHub push | Waiting for owner approval |
+| Quick help chat (answers from the guide, hands over to a person) | Done |
+| GitHub | Done |
+| Deploy to VPS | In progress |
 
 ## What is in this folder
 

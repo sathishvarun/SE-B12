@@ -41,7 +41,7 @@ Do these in order. Tick each one.
 
 ### 2. Your admin login
 - [ ] Set `SUPERADMIN_EMAIL` to your real email **before the first start** on the VPS.
-- [ ] Sign in, then **Admin console → Change my password**. `Virundhu@Admin2026` is written in these docs, so it must not stay.
+- [ ] Sign in, then **Admin console → Change my password**. Use a long password of your own that is not written anywhere else.
 
 ### 3. Your company details (shown on Contact, Privacy, Terms, Refunds, footer)
 In the VPS `.env`:

@@ -438,7 +438,8 @@ def launch_check(db: Session = Depends(get_db)) -> list[LaunchItem]:
     from app.auth.security import verify_password
 
     admin = db.scalar(select(User).where(User.email == settings.SUPERADMIN_EMAIL))
-    default_pw = bool(admin and admin.hashed_password and verify_password("Virundhu@Admin2026", admin.hashed_password))
+    placeholder = "choose-your-own-long-password"
+    default_pw = bool(admin and admin.hashed_password and verify_password(placeholder, admin.hashed_password))
     local = any(x in settings.APP_URL for x in ("localhost", "127.0.0.1"))
     return [
         LaunchItem(

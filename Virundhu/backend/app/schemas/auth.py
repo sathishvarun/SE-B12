@@ -24,7 +24,7 @@ class RegisterIn(BaseModel):
 
 
 class LoginIn(BaseModel):
-    # Plain string on purpose: sign-in must accept the built-in admin@virundhu.local / demo@virundhu.local
+    # Plain string on purpose: sign-in must accept local addresses such as admin@virundhu.local
     email: str = Field(min_length=3, max_length=255, pattern=r"^[^@\s]+@[^@\s]+$")
     password: str = Field(min_length=1, max_length=128)
 

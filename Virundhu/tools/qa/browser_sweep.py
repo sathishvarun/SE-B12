@@ -1,10 +1,11 @@
+import os
 """Visit every page on desktop and two phones; record console errors/warnings, failed requests, sideways scroll, hidden content."""
 import json, sys, time
 from playwright.sync_api import sync_playwright
 
 BASE = "http://localhost:5450"
 OWNER, OWNER_PW, FEED = sys.argv[1], "Demo#Pass123", sys.argv[2]
-ADMIN, ADMIN_PW = "admin@virundhu.local", "Virundhu@Admin2026"
+ADMIN, ADMIN_PW = os.environ["SUPERADMIN_EMAIL"], os.environ["SUPERADMIN_PASSWORD"]
 PUBLIC = ["/", "/how-it-works", "/about", "/pricing", "/contact", "/privacy", "/terms", "/data-processing", "/refunds",
           "/security", "/login", "/register", "/forgot-password", "/no-such-page", FEED.replace(BASE, "")]
 OWNER_PAGES = ["/app", "/app/inbox", "/app/alerts", "/app/import", "/app/connections", "/app/settings", "/app/billing",

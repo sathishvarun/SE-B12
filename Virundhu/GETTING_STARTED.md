@@ -3,7 +3,7 @@
 Follow the parts in order the first time. After that you only need Part 3.
 
 There are only two kinds of people:
-- **You, the admin**: `admin@virundhu.local` / `Virundhu@Admin2026`. You see every restaurant.
+- **You, the admin**: the `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` you put in `.env`. You see every restaurant.
 - **A restaurant owner**: registers from your link and sees only their own restaurant.
 
 ---
@@ -157,7 +157,7 @@ When a trial or paid plan ends, the owner can still look, but adding and replyin
 
 ## Part 6. What you see as admin
 
-Sign in with `admin@virundhu.local` / `Virundhu@Admin2026` in your normal window.
+Sign in with your admin email and password (from `.env`) in your normal window.
 
 - **Admin console**: number of restaurants, paying vs trial, reviews today, urgent reviews nobody replied to, money collected through Razorpay this month, and AI cost.
 - **Restaurants table**: each restaurant's plan and trial days. Here you can:

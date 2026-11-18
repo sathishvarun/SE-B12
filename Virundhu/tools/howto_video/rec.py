@@ -66,7 +66,7 @@ def _(p):
 @step("Urgent complaints alert you", "Hair in the food or food poisoning? The bell lights up within a minute, and you and the branch manager get an email.")
 def _(p):
     scroll(p, -2000, 800); click(p, "[aria-label^='Alerts']", 600)
-@step("Reply from the inbox", "Inbox → Reply today shows what needs an answer now. Open a review to see a summary and a ready reply.")
+@step("Reply to guests", "Reviews to reply → Reply today shows what needs an answer now. Open a review to see a summary and a ready reply.")
 def _(p):
     p.keyboard.press("Escape"); nodot(p); go(p, "/app/inbox?view=today", 1000); click(p, "ul[aria-label='Reviews'] li >> nth=0", 900)
 @step("Send the reply in one tap", "Copy reply, paste it on Zomato or Swiggy, then Mark as replied. Google replies are posted for you.")
