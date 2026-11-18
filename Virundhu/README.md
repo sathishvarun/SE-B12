@@ -6,8 +6,12 @@ complaints raise an instant alert.
 
 **Live:** https://virundhu.sathishsakthivel.tech · **The full story (problem, what existed, what we built, why it's best):** [PRODUCT_STORY.md](PRODUCT_STORY.md)
 
-**Run it:** `bash start.sh` → http://localhost:5450 (API on 8450). Full steps: **GETTING_STARTED.md**.
-**Admin login:** the `SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD` you set in your own `.env` (never written in this repo).
+**Use it:** open https://virundhu.sathishsakthivel.tech (HTTPS, Hostinger VPS, Docker + Traefik). Admin sign-in is at
+`/login`, with the `SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD` from the server's `.env` (never written in this repo).
+
+**Update the live site** after a push to GitHub (on the VPS, as root):
+`cd /opt/virundhu && nohup bash deploy/vps/install.sh > /root/deploy.log 2>&1 &` (pulls GitHub, rebuilds, keeps `.env`,
+data and backups). Secret keys go in with `bash /opt/virundhu/deploy/vps/set-keys.sh`. Full server steps: **LAUNCH_GUIDE.md**.
 
 ---
 
@@ -108,8 +112,8 @@ Say this upfront when you pitch. Restaurant owners know these apps well, and bei
 ## Using it, step by step
 
 **You (admin)**
-1. Run `bash start.sh` (on the VPS later, it's your website address).
-2. Sign in with the admin email and password from your `.env` (never written in this repository).
+1. Open https://virundhu.sathishsakthivel.tech/login.
+2. Sign in with the admin email and password from the server's `.env` (never written in this repository).
 3. The left menu, in order: **Overview** (Today and money, Company mailbox) · **Customers** (Restaurants, Users,
    Demo requests) · **Logs** (All activity, Emails sent, Sign-ins) · **Help desk** (Support tickets, Testimonials) ·
    **System** (Data and backups).
@@ -189,7 +193,7 @@ Check the whole journey on the live server with one test restaurant (it never to
 | Post replies back to Google | Done (needs Google's Business Profile API approval) |
 | Zomato / Swiggy | Not live: no public review API. Owner pastes reviews; reply is copied and their partner site opens |
 | AI | One provider at a time (`LLM_PROVIDER`). Currently OpenAI `gpt-4.1-mini` |
-| Payments | Dodo Payments, test mode. 4 INR products, launch code FIRST10 (20% off, first 10 customers). Razorpay kept as an alternative |
+| Payments | Dodo Payments (built; switched off on the live site until `DODO_PAYMENTS_API_KEY` is added with set-keys.sh). 4 INR products, launch code FIRST10 (20% off, first 10 customers). Razorpay kept as an alternative |
 | Ask Virundhu (chat) | Done: questions about the last 30 days, priorities 1-2-3 |
 | Google auto-pilot | Done: happy Google reviews (4-5★ or 5★ only) get the reply posted by itself |
 | Own QR feedback link | Done: guests rate the food from a QR on the bill or packet; lands in Virundhu automatically, then every guest is invited to Google |
