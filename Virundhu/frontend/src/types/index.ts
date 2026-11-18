@@ -107,12 +107,13 @@ export interface ImportBatch {
   id: number; filename: string; status: "queued" | "processing" | "completed" | "failed";
   total_rows: number; valid_rows: number; duplicate_rows: number; invalid_rows: number; analyzed_rows: number;
   errors: { row: number; reason: string }[] | null;
+  created_at?: string | null; source?: "file" | "paste" | "screenshot";
 }
 
 export interface Connection {
   provider: "google" | "zomato" | "swiggy"; status: string; official_api: boolean;
   account_email: string | null; locations: string[]; last_synced_at: string | null; last_error: string | null;
-  note: string;
+  note: string; available?: boolean;
 }
 
 export interface NotificationItem { id: number; review_id: number | null; severity: string; title: string; body: string; created_at: string; read: boolean }

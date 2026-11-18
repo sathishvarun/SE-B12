@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, FileUp, ImageUp, Upload } from "lucide-react";
+import { ArrowRight, BellRing, CheckCircle2, ClipboardPaste, Download, FileSpreadsheet, FileUp, ImageUp, Inbox, Send, ScanText, Upload, X } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -42,6 +42,7 @@ function UploadBox() {
   const input = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<File | null>(null);
   const [batchId, setBatchId] = useState<number | null>(null);
   const { data: batch } = useQuery({
     queryKey: ["batch", batchId], queryFn: () => appApi.batch(batchId as number), enabled: batchId !== null,
@@ -51,22 +52,30 @@ function UploadBox() {
     if (batch?.status === "completed") {
       void qc.invalidateQueries({ queryKey: ["overview"] });
       void qc.invalidateQueries({ queryKey: ["reviews"] });
+      void qc.invalidateQueries({ queryKey: ["batches"] });
       void qc.invalidateQueries({ queryKey: ["notifications"] });
     }
+    void qc.invalidateQueries({ queryKey: ["batches"] });
   }, [batch?.status, qc]);
 
-  async function send(file: File | undefined) {
+  function pick(file: File | undefined) {
     if (!file) return;
-    if (!/\.(csv|xlsx|xls)$/i.test(file.name)) { toast.error("Please choose a .csv or .xlsx file."); return; }
+    if (!/\.(csv|xlsx|xls)$/i.test(file.name)) { toast.error("Choose a .csv or .xlsx file."); return; }
+    setPicked(file); setBatchId(null);
+  }
+
+  async function send() {
+    if (!picked) return;
     setBusy(true);
     try {
-      const b = await appApi.upload(file);
-      setBatchId(b.id);
-      toast.success(`${b.valid_rows} new reviews added. Reading them now.`);
+      const b = await appApi.upload(picked);
+      setBatchId(b.id); setPicked(null);
+      void qc.invalidateQueries({ queryKey: ["batches"] });
+      toast.success(`${b.valid_rows} new reviews sent. The AI is reading them now.`);
     } catch (err) { toast.error(errorMessage(err)); } finally { setBusy(false); }
   }
 
-  function onDrop(e: DragEvent) { e.preventDefault(); setDrag(false); void send(e.dataTransfer.files[0]); }
+  function onDrop(e: DragEvent) { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files[0]); }
 
   async function downloadTemplate() {
     const res = await fetch(`${API_URL}/api/v1/imports/template.csv`, { headers: { Authorization: `Bearer ${tokens.access() ?? ""}`, ...(viewAs.get() ? { "X-Org-Id": String(viewAs.get()?.id) } : {}) } });
@@ -83,11 +92,19 @@ function UploadBox() {
         <p className="mt-4 font-display text-2xl font-bold">Drop your reviews file here</p>
         <p className="mt-1 max-w-md text-ink-soft">CSV or Excel, up to 5,000 reviews. Needs <b>rating</b> and <b>review_text</b> columns; date, platform, outlet and review_id are optional.</p>
         <div className="mt-5 flex flex-wrap justify-center gap-3">
-          <Button onClick={() => input.current?.click()} disabled={busy}>{busy ? <><Spinner /> Uploading...</> : <><Upload className="h-4 w-4" /> Choose a file</>}</Button>
+          <Button onClick={() => input.current?.click()} disabled={busy}><Upload className="h-4 w-4" /> Choose a file</Button>
           <Button variant="outline" onClick={downloadTemplate}><Download className="h-4 w-4" /> Download template</Button>
         </div>
-        <input ref={input} type="file" aria-label="Screenshots" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => { void send(e.target.files?.[0]); e.target.value = ""; }} />
+        <input ref={input} type="file" aria-label="Reviews file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
       </div>
+      {picked ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-[18px] border-2 border-night bg-white p-4">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[12px] bg-leaf-soft text-[#16784a]"><FileSpreadsheet className="h-5 w-5" /></span>
+          <div className="min-w-0 flex-1"><p className="truncate font-semibold">{picked.name}</p><p className="text-sm text-ink-soft">{(picked.size / 1024).toFixed(0)} KB · ready to send</p></div>
+          <Button variant="outline" onClick={() => setPicked(null)} disabled={busy}><X className="h-4 w-4" /> Remove</Button>
+          <Button onClick={() => void send()} disabled={busy}>{busy ? <><Spinner /> Sending...</> : <><Send className="h-4 w-4" /> Send for reading</>}</Button>
+        </div>
+      ) : null}
       {batch ? <Progress batch={batch} /> : null}
     </div>
   );
@@ -106,7 +123,8 @@ function PasteBox() {
     setBusy(true);
     try {
       await appApi.addReview({ text, rating, platform });
-      toast.success("Review added. It will appear in the inbox in a few seconds.");
+      toast.success("Review sent. The AI is reading it; it appears in Reviews to reply in a few seconds.");
+      void qc.invalidateQueries({ queryKey: ["batches"] });
       setText("");
       setTimeout(() => { void qc.invalidateQueries({ queryKey: ["reviews"] }); void qc.invalidateQueries({ queryKey: ["notifications"] }); }, 4000);
     } catch (err) { toast.error(errorMessage(err)); } finally { setBusy(false); }
@@ -130,7 +148,7 @@ function PasteBox() {
       </div>
       <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} maxLength={5000} placeholder="e.g. Delivery romba late, food ellam cold"
         className="mt-3 w-full rounded-[14px] border-2 border-line p-3.5 font-display text-[1.05rem] focus:border-night focus:outline-none" />
-      <Button type="submit" className="mt-3" disabled={busy}>{busy ? <><Spinner /> Adding...</> : "Add and read this review"}</Button>
+      <Button type="submit" className="mt-3" disabled={busy}>{busy ? <><Spinner /> Sending...</> : <><Send className="h-4 w-4" /> Send this review</>}</Button>
     </form>
   );
 }
@@ -156,6 +174,7 @@ function ScreenshotBox() {
       setLast({ added, duplicates });
       toast.success(added ? `${added} review${added === 1 ? "" : "s"} added from the screenshot` : "No new reviews in that screenshot");
       void qc.invalidateQueries({ queryKey: ["reviews"] });
+      void qc.invalidateQueries({ queryKey: ["batches"] });
       void qc.invalidateQueries({ queryKey: ["overview"] });
     } catch (err) { toast.error(errorMessage(err)); } finally { setBusy(false); if (input.current) input.current.value = ""; }
   }
@@ -193,29 +212,73 @@ function ScreenshotBox() {
   );
 }
 
+const ROADMAP = [
+  { icon: Upload, title: "Add", text: "A file, a pasted review or a screenshot" },
+  { icon: Send, title: "Send", text: "Press Send. It's saved to your restaurant only" },
+  { icon: ScanText, title: "AI reads it", text: "Mood, topic, urgency and a reply, in seconds" },
+  { icon: Inbox, title: "Reply", text: "It lands in Reviews to reply; urgent ones alert you" },
+];
+
+const SOURCE_ICON = { file: FileSpreadsheet, paste: ClipboardPaste, screenshot: ImageUp } as const;
+
+function UploadLog() {
+  const { data: batches } = useQuery({
+    queryKey: ["batches"], queryFn: appApi.batches,
+    refetchInterval: (q) => (q.state.data?.some((b) => b.status !== "completed") ? 3000 : false),
+  });
+  return (
+    <section className="mt-8 rounded-[20px] border-2 border-line bg-white p-5" aria-labelledby="log-h">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div><h2 id="log-h" className="font-display text-xl font-bold">Upload log</h2>
+          <p className="text-sm text-ink-soft">Every review you've added, when, and where it went. Kept for your records.</p></div>
+        <Link to="/app/inbox" className="inline-flex items-center gap-1 text-sm font-semibold text-night underline decoration-turmeric decoration-2 underline-offset-4">Open Reviews to reply <ArrowRight className="h-4 w-4" /></Link>
+      </div>
+      {!batches?.length ? (
+        <p className="mt-4 rounded-[14px] bg-jasmine px-4 py-6 text-center text-ink-soft">Nothing added yet. Your first file, pasted review or screenshot will show up here.</p>
+      ) : (
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[620px] text-left text-sm">
+            <thead className="text-ink-soft"><tr><th className="py-2">When</th><th>What</th><th>New</th><th>Already there</th><th>Skipped</th><th>Status</th></tr></thead>
+            <tbody>{batches.map((b) => {
+              const Icon = SOURCE_ICON[b.source ?? "file"];
+              const done = b.status === "completed";
+              return (
+                <tr key={b.id} className="border-t-2 border-jasmine-2">
+                  <td className="whitespace-nowrap py-2.5 text-ink-soft">{b.created_at ? new Date(b.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : ""}</td>
+                  <td className="max-w-[260px]"><span className="flex items-center gap-2 font-semibold"><Icon className="h-4 w-4 shrink-0 text-ink-soft" /><span className="truncate">{b.filename}</span></span></td>
+                  <td className="tabular">{b.valid_rows}</td><td className="tabular">{b.duplicate_rows}</td><td className="tabular">{b.invalid_rows}</td>
+                  <td>{done ? <Link to="/app/inbox?view=all" className="inline-flex items-center gap-1 rounded-full bg-leaf-soft px-2.5 py-1 text-xs font-semibold text-[#16784a]"><CheckCircle2 className="h-3.5 w-3.5" /> In inbox</Link>
+                    : <span className="inline-flex items-center gap-1.5 rounded-full bg-turmeric/20 px-2.5 py-1 text-xs font-semibold"><Spinner className="h-3 w-3" /> Reading {b.analyzed_rows}/{b.valid_rows}</span>}</td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AddReviews() {
-  const { data: batches } = useQuery({ queryKey: ["batches"], queryFn: appApi.batches });
   return (
     <div className="mx-auto max-w-5xl">
       <h1 className="text-[2.3rem] font-bold">Add reviews</h1>
-      <p className="mt-1 max-w-2xl text-ink-soft">Every review you add is read by the AI within seconds. Serious ones raise an alert straight away.
-        For automatic reviews, see <Link to="/app/connections" className="font-semibold underline decoration-turmeric decoration-2 underline-offset-4">Connections</Link>.</p>
+      <p className="mt-1 max-w-2xl text-ink-soft">Bring in Zomato, Swiggy and other reviews. For automatic Google reviews, see <Link to="/app/connections" className="font-semibold underline decoration-turmeric decoration-2 underline-offset-4">Connections</Link>.</p>
+      <ol className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="What happens to a review you add">
+        {ROADMAP.map(({ icon: Icon, title, text }, i) => (
+          <li key={title} className="relative rounded-[16px] border-2 border-line bg-white p-3">
+            <span className="flex items-center gap-2 font-semibold"><span className="grid h-7 w-7 place-items-center rounded-full bg-night text-xs text-jasmine">{i + 1}</span>{title}<Icon className="ml-auto h-4 w-4 text-turmeric-deep" /></span>
+            <p className="mt-1 text-xs leading-snug text-ink-soft">{text}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 flex items-center gap-1.5 text-xs text-ink-soft"><BellRing className="h-3.5 w-3.5" /> Food-safety complaints alert you and the branch manager within a minute.</p>
       <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
         <UploadBox />
         <PasteBox />
       </div>
       <div className="mt-5"><ScreenshotBox /></div>
-      {batches?.length ? (
-        <div className="mt-8 rounded-[20px] border-2 border-line bg-white p-5">
-          <h2 className="font-display text-xl font-bold">Recent uploads</h2>
-          <table className="mt-3 w-full text-left text-sm">
-            <thead className="text-ink-soft"><tr><th className="py-2">File</th><th>New</th><th>Read</th><th>Duplicates</th><th>Skipped</th><th>Status</th></tr></thead>
-            <tbody>{batches.map((b) => (
-              <tr key={b.id} className="border-t-2 border-jasmine-2"><td className="max-w-[220px] truncate py-2 font-semibold">{b.filename}</td><td className="tabular">{b.valid_rows}</td><td className="tabular">{b.analyzed_rows}</td><td className="tabular">{b.duplicate_rows}</td><td className="tabular">{b.invalid_rows}</td><td>{b.status === "completed" ? "Done" : "Reading..."}</td></tr>
-            ))}</tbody>
-          </table>
-        </div>
-      ) : null}
+      <UploadLog />
     </div>
   );
 }

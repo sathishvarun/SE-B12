@@ -1,7 +1,7 @@
 """Forgot / reset / change password, export and delete (the owner's data rights), signup consent, security headers."""
 
 import uuid
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from app.config import settings
 from app.database import SessionLocal
@@ -855,3 +855,18 @@ def test_reset_email_goes_to_signup_address_and_confirms_change(client):
     assert to == [email] and subject == "Your Virundhu password was changed" and "/forgot-password" in text
     page = branded_html("Reset your Virundhu password", f"Hi,\n\nhttps://x.test/reset-password?token={token}\n")
     assert "Choose a new password" in page and "Every guest, heard" in page
+
+
+def test_pasted_reviews_appear_in_upload_log(client):
+    """Pasted reviews are logged like files, so owners see when and where every review went."""
+    _, res = _register(client)
+    h = {"Authorization": f"Bearer {res.json()['access_token']}"}
+    with patch("app.routers.intake.enqueue_analysis", new=AsyncMock()):
+        r = client.post(
+            "/api/v1/reviews", json={"text": "Sambar was cold", "rating": 2, "platform": "zomato"}, headers=h
+        )
+    assert r.status_code == 202 and r.json()["batch_id"]
+    log = client.get("/api/v1/imports", headers=h).json()
+    assert log[0]["source"] == "paste" and log[0]["valid_rows"] == 1 and log[0]["created_at"]
+    conns = {c["provider"]: c for c in client.get("/api/v1/connections", headers=h).json()}
+    assert "available" in conns["google"]

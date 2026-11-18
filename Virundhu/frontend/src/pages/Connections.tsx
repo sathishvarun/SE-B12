@@ -58,7 +58,9 @@ function GoogleCard({ c, canManage }: { c: Connection; canManage: boolean }) {
               <Button variant="ghost" onClick={disconnect} disabled={busy !== null}><LogOut className="h-4 w-4" /> Disconnect</Button>
             </div>
           ) : (
-            <Button size="lg" onClick={connect} disabled={busy !== null}>{busy === "connect" ? <Spinner /> : null} Connect Google</Button>
+            c.available === false
+              ? <span className="rounded-full bg-turmeric/20 px-3 py-1.5 text-sm font-semibold">Switching on soon</span>
+              : <Button size="lg" onClick={connect} disabled={busy !== null}>{busy === "connect" ? <Spinner /> : null} Connect Google</Button>
           )
         ) : <p className="text-sm text-ink-soft">Only the owner can connect Google.</p>}
       </div>
@@ -69,6 +71,12 @@ function GoogleCard({ c, canManage }: { c: Connection; canManage: boolean }) {
           <div><dt className="text-ink-soft">Last checked</dt><dd className="font-semibold">{c.last_synced_at ? timeAgo(c.last_synced_at) : "Not yet"}</dd></div>
           <div><dt className="text-ink-soft">Checks automatically</dt><dd className="font-semibold">Every 10 minutes</dd></div>
         </dl>
+      ) : c.available === false ? (
+        <p className="mt-4 rounded-[16px] bg-jasmine p-4 text-sm">
+          The Virundhu team is switching on the Google connection for your account. You don't need to do anything; this page
+          will show <b>Connect Google</b> once it's ready. Until then, add Google reviews with <b>Paste one review</b> or a
+          screenshot in <a href="/app/import" className="font-semibold underline">Add reviews</a>.
+        </p>
       ) : (
         <ol className="mt-4 space-y-1.5 rounded-[16px] bg-jasmine p-4 text-sm">
           <li><b>1.</b> Click <b>Connect Google</b>.</li>

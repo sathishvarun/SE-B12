@@ -36,6 +36,8 @@ class BatchOut(BaseModel):
     invalid_rows: int
     analyzed_rows: int
     errors: list[dict] | None
+    created_at: datetime | None = None
+    source: str = "file"
 
 
 def _batch_out(b: ImportBatch) -> BatchOut:
@@ -49,7 +51,40 @@ def _batch_out(b: ImportBatch) -> BatchOut:
         invalid_rows=b.invalid_rows,
         analyzed_rows=b.analyzed_rows,
         errors=b.error_report,
+        created_at=b.created_at,
+        source="paste"
+        if b.filename.startswith("Pasted")
+        else "screenshot"
+        if b.filename.startswith("Screenshot")
+        else "file",
     )
+
+
+def _source(filename: str) -> str:
+    if filename.startswith("Pasted"):
+        return "paste"
+    return "screenshot" if filename.startswith("Screenshot") else "file"
+
+
+def _log_batch(db: Session, ctx: OrgContext, label: str, ids: list[int], duplicates: int = 0) -> int:
+    """Record pasted and screenshot reviews in the same upload log as files, so owners see where every review went."""
+    batch = ImportBatch(
+        organization_id=ctx.org.id,
+        uploaded_by=ctx.user.id,
+        filename=label[:255],
+        total_rows=len(ids) + duplicates,
+        valid_rows=len(ids),
+        duplicate_rows=duplicates,
+        status="processing" if ids else "completed",
+    )
+    db.add(batch)
+    db.flush()
+    for rid in ids:
+        r = db.get(Review, rid)
+        if r is not None:
+            r.import_batch_id = batch.id
+    db.commit()
+    return batch.id
 
 
 def _allowed_outlet(ctx: OrgContext, outlet_id: int | None) -> int | None:
@@ -132,8 +167,9 @@ async def add_review(
     review = intake.add_single(
         db, ctx.org.id, body.text, body.rating, body.platform, _allowed_outlet(ctx, body.outlet_id), body.review_date
     )
-    await enqueue_analysis(ctx.org.id, [review.id])
-    return {"id": review.id}
+    batch_id = _log_batch(db, ctx, f"Pasted review ({body.platform.title()}, {body.rating}★)", [review.id])
+    await enqueue_analysis(ctx.org.id, [review.id], batch_id)
+    return {"id": review.id, "batch_id": batch_id}
 
 
 class ShotOut(BaseModel):
@@ -183,8 +219,9 @@ async def from_screenshot(
             continue
         existing.add(text)
         ids.append(intake.add_single(db, ctx.org.id, text, r.rating, platform, outlet, None).id)
+    batch_id = _log_batch(db, ctx, f"Screenshot: {(file.filename or 'image')[:120]} ({platform.title()})", ids, dupes)
     if ids:
-        await enqueue_analysis(ctx.org.id, ids)
+        await enqueue_analysis(ctx.org.id, ids, batch_id)
     return ShotOut(
         added=len(ids), duplicates=dupes, reviews=[{"rating": r.rating, "text": r.review_text[:200]} for r in found]
     )
@@ -199,6 +236,7 @@ class ConnectionOut(BaseModel):
     last_error: str | None = None
     official_api: bool
     note: str
+    available: bool = True
 
 
 NOTES = {
@@ -233,6 +271,7 @@ def connections(ctx: OrgContext = Depends(get_org_context), db: Session = Depend
                 locations=(c.details or {}).get("locations") or [] if c else [],
                 last_synced_at=c.last_synced_at if c else None,
                 last_error=(c.details or {}).get("last_error") if c else None,
+                available=settings.google_enabled if provider == "google" else True,
             )
         )
     return out
@@ -243,7 +282,9 @@ def connections(ctx: OrgContext = Depends(get_org_context), db: Session = Depend
 def google_start(ctx: OrgContext = Depends(require_owner)) -> dict[str, str]:
     """Where to send the owner to give Virundhu access to their Google reviews."""
     if not settings.google_enabled:
-        raise HTTPException(503, "Google isn't set up on this server yet (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).")
+        raise HTTPException(
+            503, "Google connection is being switched on by the Virundhu team. Add Google reviews by paste for now."
+        )
     return {"url": google_reviews.connect_url(ctx.org.id, ctx.user.id)}
 
 
