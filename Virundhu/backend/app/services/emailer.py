@@ -43,22 +43,85 @@ def _button_label(url: str) -> str:
     return "Open Virundhu"
 
 
-QUOTES = (
-    "“To welcome a guest with a warm face is the finest wealth a home can hold.” A thought from the Thirukkural, "
-    "chapter on hospitality",
-    "“A guest who leaves happy comes back, and brings two more.”",
-    "“Good food fills the plate. Being heard fills the heart.”",
-)
+CHILLI = "#e8492a"
+
+# kind: (headline, sub-line, accent colour, quote). Quotes are Virundhu's own lines.
+KINDS = {
+    "welcome": (
+        "Your table is set.",
+        "14 days free. Every review, every language, heard.",
+        TURMERIC,
+        "Every great restaurant started with one first service. Here's to yours.",
+    ),
+    "reset": (
+        "Let's get you back in.",
+        "One tap below. The link works once, for 30 minutes.",
+        TURMERIC,
+        "A good kitchen keeps its doors open for guests and locked to strangers.",
+    ),
+    "changed": (
+        "Your password was changed.",
+        "If this was you, you're all set. If not, act now.",
+        TURMERIC,
+        "The best hosts check every door before the evening rush.",
+    ),
+    "countdown": (
+        "{n} left on your plan.",
+        "Keep every guest heard without a break.",
+        TURMERIC,
+        "Guests forget a meal. They remember how they were treated.",
+    ),
+    "ended": (
+        "Your plan has paused.",
+        "Your reviews and settings are safe. Pick up right where you left off.",
+        TURMERIC,
+        "The door is always open. Your guests are still talking; let's listen again.",
+    ),
+    "receipt": (
+        "Payment received. Thank you!",
+        "Your receipt is below and attached.",
+        "#2bb673",
+        "Thank you for trusting us with your guests' voices.",
+    ),
+    "urgent": (
+        "A guest needs you now.",
+        "A serious review just came in. A quick, kind reply makes all the difference.",
+        CHILLI,
+        "One fast, honest reply can turn an upset guest into your loudest fan.",
+    ),
+    "support": (
+        "We're on it.",
+        "A real person reads every message.",
+        TURMERIC,
+        "Every question you ask makes Virundhu better for every restaurant.",
+    ),
+    "default": ("", "", TURMERIC, "Good food fills the plate. Being heard fills the heart."),
+}
 
 
-def closing_text() -> str:
-    return "\n\nThank you so much,\nTeam Virundhu\n\n" + _quote() + "\n"
+def email_kind(subject: str) -> str:
+    s = subject.lower()
+    if s.startswith("welcome"):
+        return "welcome"
+    if "reset your" in s:
+        return "reset"
+    if "password was changed" in s:
+        return "changed"
+    if " ends in " in s:
+        return "countdown"
+    if "has ended" in s:
+        return "ended"
+    if s.startswith(("payment received", "receipt")):
+        return "receipt"
+    if s.startswith("urgent"):
+        return "urgent"
+    if "request" in s or s.startswith(("reply on", "we've got your")):
+        return "support"
+    return "default"
 
 
-def _quote() -> str:
-    from datetime import date
-
-    return QUOTES[date.today().toordinal() % len(QUOTES)]
+def closing_text(subject: str = "") -> str:
+    return "\n\nThank you so much,\nTeam Virundhu\n\n\u201c" + KINDS[email_kind(subject)][3] + "\u201d\n"
 
 
 def _cell(content: str, pad: str = "0 28px") -> str:
@@ -111,12 +174,39 @@ def branded_html(
         rows = [_cell(table + r[len("__DETAILS__") :] + "</table>") if r.startswith("__DETAILS__") else r for r in rows]
     site = settings.APP_URL.replace("https://", "").replace("http://", "")
     place = htmlmod.escape(settings.COMPANY_ADDRESS or "Coimbatore, Tamil Nadu")
+    kind = email_kind(subject)
+    headline, subline, accent, quote = KINDS[kind]
+    if kind == "countdown":
+        m = re.search(r"ends in (.+)$", subject)
+        headline = headline.format(n=m.group(1) if m else "A few days")
+    logo = f"{settings.APP_URL}/email-logo.png"
+    header = (
+        f'<tr><td bgcolor="{FOREST}" style="background:{FOREST};padding:20px 28px;border-radius:16px 16px 0 0">'
+        f'<table role="presentation" cellpadding="0" cellspacing="0"><tr>'
+        f'<td style="padding-right:12px"><img src="{logo}" width="44" height="44" alt="Virundhu" '
+        f'style="display:block;border:0"></td>'
+        f'<td><div style="color:{CREAM};font-size:24px;font-weight:700;line-height:1">Virundhu</div>'
+        f'<div style="color:{TURMERIC};font-size:13px;margin-top:4px">Every guest, heard</div></td>'
+        f"</tr></table></td></tr>"
+        f'<tr><td bgcolor="{accent}" style="background:{accent};height:5px;line-height:5px;font-size:0">'
+        "&nbsp;</td></tr>"
+    )
+    hero = ""
+    if headline:
+        hero = (
+            f'<tr><td bgcolor="{CREAM}" style="background:{CREAM};padding:24px 28px;border-bottom:1px solid #efdcbf">'
+            f'<div style="font-size:24px;line-height:1.25;font-weight:700;color:{FOREST}">'
+            f"{htmlmod.escape(headline)}</div>"
+            f'<div style="font-size:14px;color:{SOFT};margin-top:6px">{htmlmod.escape(subline)}</div></td></tr>'
+        )
     closing = _cell(
         f'<p style="margin:8px 0 4px;font-size:15px;color:{INK}">Thank you so much,</p>'
         f'<p style="margin:0 0 18px;font-size:15px;font-weight:700;color:{FOREST}">Team Virundhu</p>'
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
-        f'<td bgcolor="{CREAM}" style="background:{CREAM};border-left:4px solid {TURMERIC};padding:12px 14px;'
-        f'font-size:13px;font-style:italic;color:{SOFT};line-height:1.5">{htmlmod.escape(_quote())}</td></tr></table>',
+        f'<td bgcolor="{FOREST}" style="background:{FOREST};border-radius:12px;padding:16px 18px">'
+        f'<div style="font-size:26px;line-height:1;color:{TURMERIC};font-family:Georgia,serif">\u201c</div>'
+        f'<div style="font-size:15px;line-height:1.5;color:{CREAM};font-family:Georgia,serif;font-style:italic">'
+        f"{htmlmod.escape(quote)}</div></td></tr></table>",
         "0 28px 24px",
     )
     return (
@@ -125,21 +215,19 @@ def branded_html(
         '<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light">'
         f"<title>{htmlmod.escape(subject)}</title></head>"
         f'<body bgcolor="{CREAM}" style="margin:0;padding:0;background:{CREAM};font-family:Arial,Helvetica,sans-serif">'
+        f'<div style="display:none;max-height:0;overflow:hidden">{htmlmod.escape(subline or subject)}</div>'
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="{CREAM}" '
         f'style="background:{CREAM}"><tr><td align="center" style="padding:20px 10px">'
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" '
         f'style="max-width:560px;background:#ffffff;border-radius:16px;border:1px solid #efdcbf">'
-        f'<tr><td bgcolor="{FOREST}" style="background:{FOREST};padding:22px 28px;border-radius:16px 16px 0 0">'
-        f'<div style="color:{CREAM};font-size:24px;font-weight:700">Virundhu</div>'
-        f'<div style="color:{TURMERIC};font-size:13px;margin-top:3px">Every guest, heard</div></td></tr>'
-        f'<tr><td bgcolor="{TURMERIC}" style="background:{TURMERIC};height:4px;line-height:4px;font-size:0">'
-        "&nbsp;</td></tr>"
-        + _cell(f'<p style="margin:0 0 18px;font-size:13px;color:{SOFT}">{htmlmod.escape(subject)}</p>', "22px 28px 0")
+        + header
+        + hero
+        + _cell("", "22px 28px 0")
         + "".join(rows)
         + closing
         + f'<tr><td bgcolor="{CREAM}" style="background:{CREAM};padding:14px 28px;font-size:12px;color:{SOFT};'
-        f'border-radius:0 0 16px 16px">Virundhu · {place} · {htmlmod.escape(site)}<br>Need help? Reply to this email '
-        f"or use Quick help on the site.</td></tr></table></td></tr></table></body></html>"
+        f'border-radius:0 0 16px 16px">Sent by Virundhu · {place} · {htmlmod.escape(site)}<br>Need help? Reply to '
+        f"this email or use Quick help on the site.</td></tr></table></td></tr></table></body></html>"
     )
 
 
@@ -160,7 +248,7 @@ def send_email(
         return False
     if html is None and settings.SUPERADMIN_EMAIL.lower() not in recipients:
         html = branded_html(subject, text, details)
-        text = text.rstrip() + closing_text()
+        text = text.rstrip() + closing_text(subject)
     if not settings.SMTP_HOST:
         files = ", ".join(f[0] for f in attachments or [])
         logger.info("EMAIL (not sent, SMTP_HOST is empty) to=%s subject=%s %s\n%s", recipients, subject, files, text)
@@ -169,6 +257,7 @@ def send_email(
     msg["From"] = sender()
     msg["To"] = ", ".join(recipients)
     msg["Subject"] = subject
+    msg["Reply-To"] = formataddr(("Virundhu", settings.CONTACT_EMAIL or parseaddr(sender())[1]))
     msg.set_content(text)
     if html:
         msg.add_alternative(html, subtype="html")

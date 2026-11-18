@@ -7,9 +7,9 @@ export function LogoMark({ className, onDark }: { className?: string; onDark?: b
   return (
     <svg viewBox="0 0 32 32" className={cn("h-9 w-9", className)} aria-hidden="true">
       <path d="M16 3.5c7.2 0 12.5 4.7 12.5 11s-5.3 11-12.5 11c-1.3 0-2.6-.2-3.8-.5L6.5 28l1.3-5.4C5 20.6 3.5 17.7 3.5 14.5c0-6.3 5.3-11 12.5-11z"
-        fill={onDark ? "#FBF6EC" : "#11132A"} />
-      {DOTS.map(([x, y]) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.6" fill={onDark ? "#11132A" : "#FBF6EC"} />)}
-      <circle cx="16" cy="14.5" r="2.4" fill="#F6B93B" />
+        fill={onDark ? "#FFF8EE" : "#0C3B2E"} />
+      {DOTS.map(([x, y]) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.6" fill={onDark ? "#0C3B2E" : "#FFF8EE"} />)}
+      <circle cx="16" cy="14.5" r="2.4" fill="#F8B62D" />
     </svg>
   );
 }

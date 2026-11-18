@@ -58,5 +58,5 @@ def send_welcome(user: User, org: Organization, phone: str | None = None, outlet
     subject = f"Welcome to Virundhu, {first}: your free trial is on"
     body = "\n".join(lines)
     listed = "\n".join(f"{k}: {v}" for k, v in details)
-    text = body.replace("details you gave us:", f"details you gave us:\n\n{listed}", 1) + closing_text()
+    text = body.replace("details you gave us:", f"details you gave us:\n\n{listed}", 1) + closing_text(subject)
     return send_email([user.email], subject, text, html=branded_html(subject, body, details))
