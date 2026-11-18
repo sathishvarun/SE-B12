@@ -147,8 +147,10 @@ def _password_changed_email(user: User, request: Request) -> None:
         "Your Virundhu password was changed",
         f"Hi {user.full_name.split(' ')[0]},\n\nThe password for your Virundhu account ({user.email}) was changed on "
         f"{when}. Other devices were signed out to keep your account safe.\n\nDevice: {device}\n\n"
-        "If this was you, there's nothing else to do. If it wasn't, reset your password straight away and tell us "
-        f"by replying to this email.\n\n{settings.APP_URL}/forgot-password\n",
+        "Your password is updated. Please sign in with your new password:\n\n"
+        f"{settings.APP_URL}/login\n\n"
+        "Wasn't you? Reset your password straight away at "
+        f"{settings.APP_URL}/forgot-password and tell us by replying to this email.\n",
     )
 
 

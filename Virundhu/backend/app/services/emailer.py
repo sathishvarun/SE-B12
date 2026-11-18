@@ -28,6 +28,8 @@ def sender() -> str:
 def _button_label(url: str) -> str:
     if "reset-password" in url:
         return "Choose a new password"
+    if url.rstrip("/").endswith("/login"):
+        return "Sign in to Virundhu"
     if "forgot-password" in url:
         return "It wasn't me: reset my password"
     if "verify-email" in url:
@@ -63,7 +65,7 @@ KINDS = {
     ),
     "changed": (
         "Your password was changed.",
-        "If this was you, you're all set. If not, act now.",
+        "Your password is updated. Please sign in with the new one.",
         TURMERIC,
         "The best hosts check every door before the evening rush.",
     ),
