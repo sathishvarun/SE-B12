@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-18: Company mailbox and the full customer email journey
+
+- **Admin → Company mailbox**: demo requests, info/support and sent-to-customer counts (total, this week, new or open),
+  the latest messages, and an **Open in Gmail** button per company address (MAILBOX_ACCOUNT).
+- **Trial reminders** now go 5, 4, 2 and 1 days before the end, each with the owner's first name and a details table.
+- **Suspension email** when a trial or plan ends without renewal: data stays safe, features switch off until renewed.
+- **Payment confirmation** shows invoice number, months added, outlets covered, plan dates, amount, GST note, payment ID.
+
 ## 18 Nov 2026 (Admin console sections, per-restaurant logs, emails log, daily backups)
 
 - Admin console has a grouped left menu: Overview, Customers (Restaurants, Users, Demo requests), Logs (All activity,

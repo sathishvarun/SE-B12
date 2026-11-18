@@ -99,7 +99,9 @@ class Settings(BaseSettings):
     # Where Virundhu's own notifications go (sign-ups, payments, tickets, daily digest). Default: admin login.
     NOTIFY_EMAIL: str = ""
     # Where demo requests from the Contact page go. Defaults to NOTIFY_EMAIL.
-    DEMO_REQUESTS_EMAIL: str = ""  # name the server gives when sending (Google SMTP relay wants a real domain)
+    DEMO_REQUESTS_EMAIL: str = ""
+    # Google Workspace user whose inbox holds the info and demo aliases (Admin console → Company mailbox).
+    MAILBOX_ACCOUNT: str = ""
 
     @property
     def notify_email(self) -> str:

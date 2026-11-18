@@ -46,7 +46,7 @@ def send_welcome(user: User, org: Organization, phone: str | None = None, outlet
     if not user.is_verified:
         lines += ["Please confirm this is your email address:", "", confirm, ""]
     lines += [
-        "Your 14-day free trial includes everything, and no card is needed. We'll remind you 4, 3, 2 and 1 days "
+        "Your 14-day free trial includes everything, and no card is needed. We'll remind you 5, 4, 2 and 1 days "
         "before it ends. Plans never renew by themselves.",
         "",
         "To keep Virundhu after the trial, choose a plan (1 to 12 months, priced by outlets):",

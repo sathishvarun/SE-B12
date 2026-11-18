@@ -128,7 +128,7 @@ async def retention_tick(ctx: dict[str, Any]) -> None:
 
 
 async def plan_reminder_tick(ctx: dict[str, Any]) -> None:
-    """Hourly: 'your trial/plan ends in 4/3/2/1 days' and 'has ended' reminders (each once, 9 am to 9 pm India time)."""
+    """Hourly: 'your trial/plan ends in 5/4/2/1 days' and 'has ended' reminders (each once, 9 am to 9 pm India time)."""
 
     def run() -> int:
         with SessionLocal() as db:

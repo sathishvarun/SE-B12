@@ -32,8 +32,10 @@ def _button_label(url: str) -> str:
         return "It wasn't me: reset my password"
     if "verify-email" in url:
         return "Confirm my email"
+    if "/receipt/" in url:
+        return "View or print receipt"
     if "/billing" in url or "pay" in url:
-        return "Open plan and payment"
+        return "Renew or choose a plan"
     if "/support" in url:
         return "Open your request"
     if "/join" in url or "invite" in url:
@@ -77,9 +79,15 @@ KINDS = {
         TURMERIC,
         "The door is always open. Your guests are still talking; let's listen again.",
     ),
+    "suspended": (
+        "Your account is suspended.",
+        "Your free period is over. Your reviews and settings are safe; renew to switch everything back on.",
+        CHILLI,
+        "The door is always open. Your guests are still talking; let's listen again.",
+    ),
     "receipt": (
         "Payment received. Thank you!",
-        "Your receipt is below and attached.",
+        "Your receipt details are below.",
         "#2bb673",
         "Thank you for trusting us with your guests' voices.",
     ),
@@ -109,6 +117,8 @@ def email_kind(subject: str) -> str:
         return "changed"
     if " ends in " in s:
         return "countdown"
+    if "suspended" in s:
+        return "suspended"
     if "has ended" in s:
         return "ended"
     if s.startswith(("payment received", "receipt")):
@@ -128,6 +138,14 @@ def _cell(content: str, pad: str = "0 28px") -> str:
     return f'<tr><td bgcolor="#ffffff" style="background:#ffffff;padding:{pad}">{content}</td></tr>'
 
 
+def _detail_rows(details: list[tuple[str, str]]) -> str:
+    return "".join(
+        f'<tr><td style="padding:7px 12px;color:{SOFT};font-size:14px;width:38%">{htmlmod.escape(k)}</td>'
+        f'<td style="padding:7px 12px;color:{INK};font-size:14px;font-weight:700">{htmlmod.escape(v)}</td></tr>'
+        for k, v in details
+    )
+
+
 def branded_html(
     subject: str,
     text: str,
@@ -141,9 +159,16 @@ def branded_html(
     paras = [p.strip() for p in re.split(r"\n\s*\n", text.strip()) if p.strip()]
     paras = [p for p in paras if p not in ("- Virundhu", "Team Virundhu")]
     rows: list[str] = []
+    marker = bool(details) and any(p.rstrip().endswith("details you gave us:") for p in paras)
+    placed = False
     for para in paras:
         lines = para.split("\n")
         if len(lines) == 1 and URL_LINE.match(lines[0]):
+            if details and not marker and not placed:
+                # The table goes above the "Choose a plan:" style line that introduces the button.
+                at = len(rows) - 1 if rows and paras[paras.index(para) - 1].rstrip().endswith(":") else len(rows)
+                rows.insert(at, "__DETAILS__" + _detail_rows(details))
+                placed = True
             url = htmlmod.escape(lines[0].strip(), quote=True)
             rows.append(
                 _cell(
@@ -160,12 +185,9 @@ def branded_html(
         style = f"margin:0 0 16px;font-size:{'18px;font-weight:700' if big else '15px'};line-height:1.6;color:{INK}"
         rows.append(_cell(f'<p style="{style}">{safe}</p>'))
         if details and para.rstrip().endswith("details you gave us:"):
-            trs = "".join(
-                f'<tr><td style="padding:7px 12px;color:{SOFT};font-size:14px;width:38%">{htmlmod.escape(k)}</td>'
-                f'<td style="padding:7px 12px;color:{INK};font-size:14px;font-weight:700">{htmlmod.escape(v)}</td></tr>'
-                for k, v in details
-            )
-            rows.append("__DETAILS__" + trs)
+            rows.append("__DETAILS__" + _detail_rows(details))
+    if details and not marker and not placed:
+        rows.append("__DETAILS__" + _detail_rows(details))
     if details:
         table = (
             f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="{CREAM}" '
@@ -179,6 +201,8 @@ def branded_html(
     if kind == "countdown":
         m = re.search(r"ends in (.+)$", subject)
         headline = headline.format(n=m.group(1) if m else "A few days")
+        if "free trial" in subject.lower():
+            headline = headline.replace("your plan", "your free trial")
     logo = f"{settings.APP_URL}/email-logo.png"
     header = (
         f'<tr><td bgcolor="{FOREST}" style="background:{FOREST};padding:20px 28px;border-radius:16px 16px 0 0">'
@@ -249,6 +273,8 @@ def send_email(
     internal = {settings.SUPERADMIN_EMAIL.lower(), settings.notify_email.lower(), settings.demo_requests_email.lower()}
     if html is None and not internal & set(recipients):
         html = branded_html(subject, text, details)
+        if details:
+            text = text.rstrip() + "\n\n" + "\n".join(f"{k}: {v}" for k, v in details)
         text = text.rstrip() + closing_text(subject)
     if not settings.SMTP_HOST:
         files = ", ".join(f[0] for f in attachments or [])

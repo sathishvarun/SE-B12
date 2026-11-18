@@ -477,6 +477,111 @@ def update_lead(lead_id: int, body: LeadPatch, db: Session = Depends(get_db)) ->
     return LeadOut.model_validate(lead, from_attributes=True)
 
 
+class MailboxBox(BaseModel):
+    key: str
+    label: str
+    address: str
+    purpose: str
+    total: int
+    new: int
+    week: int
+    gmail_url: str
+
+
+class MailboxItem(BaseModel):
+    at: datetime
+    box: str
+    who: str | None
+    title: str
+    detail: str | None
+    status: str
+
+
+class MailboxOut(BaseModel):
+    account: str
+    sender: str
+    boxes: list[MailboxBox]
+    recent: list[MailboxItem]
+
+
+def _gmail(account: str, address: str) -> str:
+    from urllib.parse import quote
+
+    return f"https://mail.google.com/mail/?authuser={quote(account)}#search/{quote('to:' + address)}"
+
+
+@router.get("/mailbox", response_model=MailboxOut)
+def mailbox(db: Session = Depends(get_db)) -> MailboxOut:
+    """The company inboxes (info, demo, sender) with counts from what Virundhu itself recorded, plus Gmail links."""
+    from email.utils import parseaddr
+
+    from app.models import ActivityLog, SupportTicket
+
+    week = datetime.now(UTC) - timedelta(days=7)
+    account = settings.MAILBOX_ACCOUNT or settings.notify_email
+    sender = parseaddr(settings.EMAIL_FROM)[1] or settings.notify_email
+    n = lambda q: db.scalar(q) or 0  # noqa: E731
+    leads_q = select(func.count()).select_from(Lead)
+    tickets_q = select(func.count()).select_from(SupportTicket)
+    sent_q = select(func.count()).select_from(ActivityLog).where(ActivityLog.kind == "email_sent")
+    failed = n(select(func.count()).select_from(ActivityLog).where(ActivityLog.kind == "email_failed"))
+    boxes = [
+        MailboxBox(
+            key="demo",
+            label="Demo requests",
+            address=settings.demo_requests_email,
+            purpose="Contact page demo requests land here",
+            total=n(leads_q),
+            new=n(leads_q.where(Lead.status == "new")),
+            week=n(leads_q.where(Lead.created_at >= week)),
+            gmail_url=_gmail(account, settings.demo_requests_email),
+        ),
+        MailboxBox(
+            key="info",
+            label="Info and support",
+            address=settings.notify_email,
+            purpose="Questions, Quick help hand-overs, support tickets, sign-up and payment alerts",
+            total=n(tickets_q),
+            new=n(tickets_q.where(SupportTicket.status != "resolved")),
+            week=n(tickets_q.where(SupportTicket.created_at >= week)),
+            gmail_url=_gmail(account, settings.notify_email),
+        ),
+        MailboxBox(
+            key="sent",
+            label="Sent to customers",
+            address=sender,
+            purpose="Welcome, password, reminder, suspension and receipt emails go out from here",
+            total=n(sent_q),
+            new=failed,
+            week=n(sent_q.where(ActivityLog.created_at >= week)),
+            gmail_url=f"https://mail.google.com/mail/?authuser={account}#sent",
+        ),
+    ]
+    recent = [
+        MailboxItem(
+            at=x.created_at,
+            box="demo",
+            who=x.email or x.phone,
+            title=f"{x.name}, {x.restaurant}",
+            detail=", ".join(str(v) for v in (x.city, f"{x.outlets} outlets" if x.outlets else None, x.message) if v),
+            status=x.status,
+        )
+        for x in db.scalars(select(Lead).order_by(Lead.created_at.desc()).limit(15))
+    ] + [
+        MailboxItem(
+            at=t.created_at,
+            box="info",
+            who=t.user_email,
+            title=f"VT-{t.id:05d} {t.subject}",
+            detail=t.restaurant,
+            status=t.status,
+        )
+        for t in db.scalars(select(SupportTicket).order_by(SupportTicket.created_at.desc()).limit(15))
+    ]
+    recent.sort(key=lambda r: r.at, reverse=True)
+    return MailboxOut(account=account, sender=sender, boxes=boxes, recent=recent[:20])
+
+
 class LaunchItem(BaseModel):
     key: str
     label: str

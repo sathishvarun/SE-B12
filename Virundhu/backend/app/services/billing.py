@@ -120,6 +120,9 @@ def activate(db: Session, org_id: int, outlets: int, months: int, payment_id: st
         db.rollback()
         return False
     org = db.get(Organization, org_id)
+    from app.services.autopilot import plan_active
+
+    was_off = org is not None and not org.is_demo and not plan_active(db, org)
     sub = db.scalar(select(Subscription).where(Subscription.organization_id == org_id))
     if sub is None:
         sub = Subscription(organization_id=org_id, plan=q.plan, status="active")
@@ -148,6 +151,15 @@ def activate(db: Session, org_id: int, outlets: int, months: int, payment_id: st
             + (f" + {q.bonus_months} free" if q.bonus_months else ""),
             commit=False,
         )
+        if was_off:
+            activity.record(
+                db,
+                "account_reactivated",
+                org_id=org_id,
+                restaurant=org.name,
+                detail=f"Renewed: {months} month(s), {outlets} outlet(s). Every feature is switched back on.",
+                commit=False,
+            )
     db.commit()
     logger.info("Payment %s: org %s now on %s until %s", payment_id, org_id, q.plan, sub.current_period_end)
     if pay is not None and org is not None:

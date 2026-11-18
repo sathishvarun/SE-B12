@@ -276,6 +276,7 @@ export const adminApi = {
   saveTestimonial: (id: number, b: TestimonialInput) => api.put<Testimonial>(`/api/v1/admin/testimonials/${id}`, b).then((r) => r.data),
   deleteTestimonial: (id: number) => api.delete(`/api/v1/admin/testimonials/${id}`),
   leads: () => api.get<Lead[]>("/api/v1/admin/leads").then((r) => r.data),
+  mailbox: () => api.get<Mailbox>("/api/v1/admin/mailbox").then((r) => r.data),
   updateLead: (id: number, status: string) => api.patch<Lead>(`/api/v1/admin/leads/${id}`, { status }).then((r) => r.data),
   stats: () => api.get<AdminStats>("/api/v1/admin/stats").then((r) => r.data),
   orgs: () => api.get<AdminOrg[]>("/api/v1/admin/organizations").then((r) => r.data),
@@ -294,3 +295,10 @@ export const adminApi = {
   activityOf: (kind: string) => api.get<ActivityItem[]>("/api/v1/admin/activity", { params: { kind } }).then((r) => r.data),
   updateUser: (id: number, is_active: boolean) => api.patch(`/api/v1/admin/users/${id}`, { is_active }),
 };
+
+export interface Mailbox {
+  account: string;
+  sender: string;
+  boxes: { key: string; label: string; address: string; purpose: string; total: number; new: number; week: number; gmail_url: string }[];
+  recent: { at: string; box: string; who: string | null; title: string; detail: string | null; status: string }[];
+}

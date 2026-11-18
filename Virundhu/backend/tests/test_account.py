@@ -153,8 +153,8 @@ def test_retention_deletes_only_old_data(client):
         db.commit()
 
 
-def test_trial_reminders_go_once_at_4_3_2_1_days_and_when_ended(client):
-    """A new trial gets reminders 4, 3, 2 and 1 days before the end and once after; never twice; never at night."""
+def test_trial_reminders_go_once_at_5_4_2_1_days_and_when_ended(client):
+    """A new trial gets reminders 5, 4, 2 and 1 days before the end and once after; never twice; never at night."""
     from datetime import timedelta
 
     from app.database import SessionLocal
@@ -177,21 +177,25 @@ def test_trial_reminders_go_once_at_4_3_2_1_days_and_when_ended(client):
         org = db.query(Organization).filter_by(name="Reminder Mess").one()
         end = org.trial_ends_at
         noon = end.replace(hour=6, minute=30)  # 12:00 India time on the end date
+        assert due(end, noon - timedelta(days=3)) is None  # 3 days left: no reminder that day
         assert due(end, noon - timedelta(days=10)) is None  # day 4 of the trial: nothing yet
         assert due(end, noon - timedelta(days=4)) == 4
         assert due(end, noon - timedelta(days=1)) == 1
         assert due(end, end + timedelta(hours=2)) == 0  # ended
         assert due(end, end + timedelta(days=5)) is None  # long ended: stop
-        night = (noon - timedelta(days=3)).replace(hour=18)  # 11:30 pm India time
+        night = (noon - timedelta(days=4)).replace(hour=18)  # 11:30 pm India time
         assert send_due(db, night) == 0
-        for days in (4, 3, 2, 1):
+        for days in (5, 4, 2, 1):
             assert send_due(db, noon - timedelta(days=days)) >= 1
             assert send_due(db, noon - timedelta(days=days)) == 0  # same reminder never twice
         assert send_due(db, end + timedelta(hours=3)) >= 1
+        from app.models import ActivityLog
+
+        assert db.query(ActivityLog).filter_by(organization_id=org.id, kind="account_suspended").count() == 1
         kinds = sorted(x.days_left for x in db.query(PlanReminder).filter_by(organization_id=org.id))
-        assert kinds == [0, 1, 2, 3, 4]
+        assert kinds == [0, 1, 2, 4, 5]
         bell = db.query(Notification).filter_by(organization_id=org.id).all()
-        assert any("ends in 3 days" in n.title for n in bell) and any("has ended" in n.title for n in bell)
+        assert any("ends in 5 days" in n.title for n in bell) and any("suspended" in n.title for n in bell)
         from app.models import Membership, User
 
         uids = [m.user_id for m in db.query(Membership).filter_by(organization_id=org.id)]

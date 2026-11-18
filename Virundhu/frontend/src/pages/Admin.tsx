@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MessageSquareText, Quote, ScrollText, ShieldAlert, Users, X } from "lucide-react";
+import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -462,16 +462,16 @@ function AdminPassword() {
   );
 }
 
-type Section = "overview" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "testimonials" | "data";
+type Section = "overview" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "testimonials" | "data";
 const SECTIONS: { group: string; items: [Section, string, typeof Users][] }[] = [
-  { group: "Overview", items: [["overview", "Today and money", LayoutDashboard]] },
+  { group: "Overview", items: [["overview", "Today and money", LayoutDashboard], ["mailbox", "Company mailbox", MailOpen]] },
   { group: "Customers", items: [["restaurants", "Restaurants", Building2], ["users", "Users", Users], ["leads", "Demo requests", Inbox]] },
   { group: "Logs", items: [["activity", "All activity", ScrollText], ["emails", "Emails sent", Mail], ["signins", "Sign-ins", LogIn]] },
   { group: "Help desk", items: [["support", "Support tickets", LifeBuoy], ["testimonials", "Testimonials", Quote]] },
   { group: "System", items: [["data", "Data and backups", Database]] },
 ];
 const when = (d: string) => new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
-const toneOf = (k: string) => (k === "account_deleted" || k === "email_failed" || k === "login_failed" || k === "login_locked" ? "chilli" : k === "payment" ? "leaf" : k.startsWith("password") ? "turmeric" : k === "signup" || k === "email_sent" ? "sky" : "plain") as "chilli" | "leaf" | "turmeric" | "sky" | "plain";
+const toneOf = (k: string) => (k === "account_deleted" || k === "account_suspended" || k === "email_failed" || k === "login_failed" || k === "login_locked" ? "chilli" : k === "payment" || k === "account_reactivated" ? "leaf" : k.startsWith("password") ? "turmeric" : k === "signup" || k === "email_sent" ? "sky" : "plain") as "chilli" | "leaf" | "turmeric" | "sky" | "plain";
 
 function ActivityTable({ kind, intro }: { kind?: string; intro: string }) {
   const q = useQuery({ queryKey: ["admin-activity", kind ?? "all"], queryFn: () => (kind ? adminApi.activityOf(kind) : adminApi.activity()), refetchInterval: 60_000 });
@@ -491,6 +491,56 @@ function ActivityTable({ kind, intro }: { kind?: string; intro: string }) {
                 <td className="font-semibold">{a.restaurant ?? "-"}</td>
                 <td className="text-ink-soft">{a.user_email ?? "-"}</td>
                 <td className="max-w-[340px] px-4 text-ink-soft">{a.detail ?? ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function MailboxPanel() {
+  const q = useQuery({ queryKey: ["admin-mailbox"], queryFn: adminApi.mailbox, refetchInterval: 60_000 });
+  const m = q.data;
+  const look: Record<string, { ring: string; chip: "chilli" | "turmeric" | "leaf" | "sky" | "plain"; badge: string }> = {
+    demo: { ring: "border-chilli", chip: "chilli", badge: "new" },
+    info: { ring: "border-turmeric", chip: "turmeric", badge: "open" },
+    sent: { ring: "border-night", chip: "sky", badge: "failed" },
+  };
+  return (
+    <div>
+      <p className="text-ink-soft">Every company email lives on your Google Workspace domain. Counts come from what Virundhu recorded; <b>Open in Gmail</b> opens that inbox{m ? <> (signed in as <b>{m.account}</b>)</> : null} filtered to the address.</p>
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {!m ? Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-[190px]" />) : m.boxes.map((b) => (
+          <section key={b.key} className={cn("flex flex-col rounded-[20px] border-2 bg-white p-5", look[b.key]?.ring)}>
+            <h2 className="font-display text-lg font-bold">{b.label}</h2>
+            <p className="break-all text-sm font-semibold text-night">{b.address}</p>
+            <p className="mt-1 text-sm text-ink-soft">{b.purpose}</p>
+            <div className="mt-3 flex items-end gap-4">
+              <p><span className="font-display text-[2.2rem] font-bold leading-none">{b.total}</span><span className="ml-1 text-sm text-ink-soft">total</span></p>
+              <p className="text-sm text-ink-soft">{b.week} this week</p>
+              {b.new ? <Chip tone={look[b.key]?.chip ?? "plain"}>{b.new} {look[b.key]?.badge}</Chip> : null}
+            </div>
+            <a href={b.gmail_url} target="_blank" rel="noreferrer" className="mt-4 flex items-center justify-center gap-2 rounded-[12px] bg-night px-3 py-2.5 text-sm font-semibold text-jasmine hover:opacity-90">
+              Open in Gmail <ExternalLink className="h-4 w-4" />
+            </a>
+          </section>
+        ))}
+      </div>
+      <h2 className="mt-7 font-display text-xl font-bold">Latest messages</h2>
+      <div className="mt-3 overflow-x-auto rounded-[20px] border-2 border-line bg-white">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead className="bg-jasmine text-ink-soft"><tr><th className="px-4 py-3">When</th><th>Inbox</th><th>From</th><th>Message</th><th className="px-4">Status</th></tr></thead>
+          <tbody>
+            {m && !m.recent.length ? <tr><td colSpan={5} className="p-6 text-center text-ink-soft">No demo requests or support messages yet.</td></tr> : null}
+            {m?.recent.map((r, i) => (
+              <tr key={i} className="border-t-2 border-jasmine-2">
+                <td className="whitespace-nowrap px-4 py-3">{when(r.at)}</td>
+                <td><Chip tone={r.box === "demo" ? "chilli" : "turmeric"}>{r.box === "demo" ? "Demo" : "Info"}</Chip></td>
+                <td className="text-ink-soft">{r.who ?? "-"}</td>
+                <td><p className="font-semibold">{r.title}</p>{r.detail ? <p className="max-w-[360px] truncate text-ink-soft">{r.detail}</p> : null}</td>
+                <td className="px-4 capitalize text-ink-soft">{r.status.replace("_", " ")}</td>
               </tr>
             ))}
           </tbody>
@@ -704,6 +754,8 @@ function AdminPanel() {
         <SupportAdmin />
       ) : tab === "activity" ? (
         <ActivityTable intro="Everything recorded across all restaurants, newest first: sign-ups, sign-ins, emails, uploads, payments, passwords and support. Kept even after a restaurant deletes its account." />
+      ) : tab === "mailbox" ? (
+        <MailboxPanel />
       ) : tab === "emails" ? (
         <ActivityTable kind="email_sent" intro="Every email Virundhu sent to a customer: welcome, password reset, password changed, trial reminders, receipts, alerts and support replies. Open a restaurant's Logs to see only theirs." />
       ) : tab === "signins" ? (

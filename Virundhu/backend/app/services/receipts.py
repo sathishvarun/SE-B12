@@ -64,23 +64,45 @@ def as_dict(pay: Payment, org: Organization) -> dict:
     }
 
 
-def email_receipt(db: Session, pay: Payment, org: Organization) -> None:
+def receipt_email(pay: Payment, org: Organization, first: str = "there") -> tuple[str, str, list[tuple[str, str]]]:
+    """(subject, text, details table) for the payment confirmation."""
     r = as_dict(pay, org)
+    tz = ZoneInfo(settings.TIMEZONE)
+    paid = (pay.created_at or datetime.now(tz)).astimezone(tz)
+    months = r["months"] or 1
+    added = "1 month" if months == 1 else f"{months} months"
+    outlets = r["outlets"] or 1
     link = f"{settings.APP_URL}/app/receipt/{pay.id}"
-    lines = [
-        f"Thank you. Your payment to Virundhu is received, and {org.name} is active.",
-        "",
-        f"Receipt number: {r['invoice_no']}",
-        f"Billed to: {r['bill_name']}" + (f" (GSTIN {r['bill_gstin']})" if r["bill_gstin"] else ""),
-        *([f"Address: {r['bill_address']}"] if r["bill_address"] else []),
-        f"Plan: {r['outlets']} outlet(s), {r['months']} month(s)",
-        f"Covers: {r['period_start']:%d %b %Y} to {r['period_end']:%d %b %Y}" if r["period_end"] else "",
-        f"Amount paid: Rs {r['amount']:,.2f} (taxes included)",
-        f"Payment ID: {r['payment_id']}",
-        "",
-        f"View or print this receipt: {link}",
-        "Dodo Payments, our payment partner, emails the tax invoice separately.",
-        "",
-        "- Virundhu",
+    details = [
+        ("Invoice number", r["invoice_no"] or "-"),
+        ("Restaurant", org.name),
+        ("Billed to", r["bill_name"]),
+        *([("GSTIN", r["bill_gstin"])] if r["bill_gstin"] else []),
+        *([("Address", r["bill_address"])] if r["bill_address"] else []),
+        ("Months added", added),
+        ("Outlets covered", f"{outlets} outlet" + ("" if outlets == 1 else "s")),
+        *(
+            [("Plan valid", f"{r['period_start']:%d %b %Y} to {r['period_end']:%d %b %Y}")]
+            if r["period_start"] and r["period_end"]
+            else []
+        ),
+        ("Amount paid", f"Rs {r['amount']:,.2f}"),
+        ("Taxes (GST)", "Included in the amount"),
+        ("Paid on", f"{paid:%d %b %Y, %I:%M %p}"),
+        ("Payment ID", r["payment_id"] or "-"),
+        ("Status", "Paid"),
     ]
-    send_email([u.email for u in owners(db, org.id)], f"Payment received: {r['invoice_no']}", "\n".join(lines))
+    text = (
+        f"Hi {first},\n\nThank you! Your payment is received and {added} {'has' if months == 1 else 'have'} been added "
+        f"to {org.name} for {outlets} outlet{'' if outlets == 1 else 's'}. Everything is switched on.\n\n"
+        f"View, print or download this receipt:\n\n{link}\n\n"
+        "Dodo Payments, our payment partner, also emails you the GST tax invoice for this payment."
+    )
+    return f"Payment received: {r['invoice_no']} ({added} added)", text, details
+
+
+def email_receipt(db: Session, pay: Payment, org: Organization) -> None:
+    for u in owners(db, org.id):
+        first = (u.full_name or "").split(" ")[0] or "there"
+        subject, text, details = receipt_email(pay, org, first)
+        send_email([u.email], subject, text, details=details)

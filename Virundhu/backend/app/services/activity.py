@@ -26,9 +26,19 @@ LABELS = {
     "email_sent": "Email sent",
     "email_failed": "Email not delivered",
     "upload": "Reviews added",
+    "account_suspended": "Account suspended (trial or plan ended, not renewed)",
+    "account_reactivated": "Account reactivated after payment",
 }
 QUIET = ("signup", "login", "login_failed", "ticket_reply", "help_question", "email_sent", "upload")
-EMAIL_ADMIN = {"account_deleted", "payment", "demo_request", "login_locked", "support_ticket"}
+EMAIL_ADMIN = {
+    "account_suspended",
+    "account_reactivated",
+    "account_deleted",
+    "payment",
+    "demo_request",
+    "login_locked",
+    "support_ticket",
+}
 
 
 def record(
