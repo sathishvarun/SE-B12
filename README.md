@@ -5,10 +5,12 @@ Demo projects by **[Sathish Sakthivel](https://github.com/sathishvarun)** — se
 👉 **Full profile, featured projects and descriptions:** [github.com/sathishvarun](https://github.com/sathishvarun)
 
 ## 🚀 Live apps
+- **Virundhu** (review intelligence for Tamil Nadu restaurants) — https://virundhu.sathishsakthivel.tech · [code](Virundhu)
 - **AI Help Desk** (AutoGen + RAG + human approval) — https://helpdesk.sathishsakthivel.tech · [code](Week5/smart-helpdesk-agents)
 - **AI Customer Support Desk** (3-agent AutoGen) — https://support.sathishsakthivel.tech · [code](Week5/support-desk-project)
 
 ## ⭐ Newest project
+- **Virundhu — every guest, heard** (FastAPI + PostgreSQL + Redis/ARQ + LangChain + React 19 + Docker/Traefik): Google, QR, Zomato and Swiggy reviews in one inbox, read in Tamil, Tanglish and English, instant food-safety alerts, reply drafts, Quick help chat with hand-over to a person, admin console with billing and audit. [code & concepts](Virundhu) · [live](https://virundhu.sathishsakthivel.tech)
 - **Beldex AI — bilingual crypto assistant** (FastAPI + LangChain RAG + FAISS/BM25 + CrewAI + Playwright + voice + Docker): separate user/admin sign-in, answers in English or Tamil (text or voice) with sources, and an admin console for sessions, time used, tokens, cost and CPU. [code & setup](beldex) · [live demo](https://demo.sathishsakthivel.tech)
 
 ## 🗂️ Projects by folder
@@ -20,6 +22,7 @@ Demo projects by **[Sathish Sakthivel](https://github.com/sathishvarun)** — se
 | [Week 4](Week4) | n8n agents & CrewAI | [Telegram agents](Week4/Day1), [n8n agent workflows](Week4/Day2), [Travel planner](Week4/Day3), [Newsletter crew](Week4/Day4), [Support crew](Week4/Day5/support-agent) |
 | [Week 5](Week5) | AutoGen multi-agent | [HR agent](Week5/Day1/hr-agent), [Weather agent](Week5/Day2/weather-news-agent), [Support hub](Week5/Day3/autogen-support-hub), [Support desk](Week5/support-desk-project), [AI Help Desk](Week5/smart-helpdesk-agents) |
 | [Week 6](Week6) | Fine-tuning & distillation | [Marketing AI Assistant (LoRA + RAG)](Week6/Day1-Day2/Marketing_AI_Assistant), [SLM distillation](Week6/Day3-Day4/slm-distillation) |
+| [Virundhu](Virundhu) | Full-stack SaaS | [Restaurant review intelligence: AI reading, alerts, billing, admin](Virundhu) |
 | [beldex](beldex) | Full-stack AI product | [Beldex AI: RAG + agents + voice + admin analytics](beldex) |
 | [Live session](Offline%20Session/Live%20Session%2024-10-2026) | Vector search | [Hybrid music search (Qdrant)](Offline%20Session/Live%20Session%2024-10-2026/spotify-hybrid-search) |
 
