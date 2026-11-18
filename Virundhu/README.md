@@ -4,6 +4,8 @@ Review intelligence for Tamil Nadu restaurants and cloud kitchens. Every review 
 automatically: happy or unhappy, what it's about, how urgent, and a reply draft in the guest's language. Serious
 complaints raise an instant alert.
 
+**Live:** https://virundhu.sathishsakthivel.tech · **The full story (problem, what existed, what we built, why it's best):** [PRODUCT_STORY.md](PRODUCT_STORY.md)
+
 **Run it:** `bash start.sh` → http://localhost:5450 (API on 8450). Full steps: **GETTING_STARTED.md**.
 **Admin login:** the `SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD` you set in your own `.env` (never written in this repo).
 
@@ -167,7 +169,7 @@ React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, Playwright.
 | Admin console | All restaurants, plans, trials, review counts per platform, money collected, AI cost, demo requests from the Contact page |
 | Quick help chat (answers from the guide, hands over to a person) | Done |
 | GitHub | Done |
-| Deploy to VPS | In progress |
+| Deploy to VPS | Done: https://virundhu.sathishsakthivel.tech (Docker + Traefik HTTPS) |
 
 ## What is in this folder
 

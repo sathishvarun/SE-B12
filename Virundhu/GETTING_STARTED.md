@@ -25,8 +25,8 @@ Then open **Docker Desktop** once from Applications and wait until it says "runn
 
 The file is `Virundhu/.env`. Open it in VS Code. Keys live only in this file, and it is never uploaded to GitHub.
 
-### 2a. AI key (already done)
-You pasted an **OpenAI** key (it starts with `sk-proj`). It was sitting in the Claude line, so no review could be read. It has been moved, and the file now says:
+### 2a. AI key
+Pick one provider. For OpenAI the lines look like this:
 
 ```
 LLM_PROVIDER=openai
@@ -44,7 +44,7 @@ These are set up in your Dodo dashboard (Test Mode), and their values are alread
 | What | In Dodo | In `.env` |
 |---|---|---|
 | API key "Virundhu app (test)" | Developer → API Keys | `DODO_PAYMENTS_API_KEY` |
-| 1 product "Virundhu subscription (outlets x months)": INR, one time, tax inclusive, **Pay What You Want** ticked (minimum ₹1,000) | Products | `DODO_PRODUCT_FLEX=pdt_0Ns4GiQfCbUinuuwqa9GL` (test mode). Virundhu sets the exact amount for each checkout from the outlet count and months. The 4 older fixed-price products are no longer used; you can archive them. |
+| 1 product "Virundhu subscription (outlets x months)": INR, one time, tax inclusive, **Pay What You Want** ticked (minimum ₹1,000) | Products | `DODO_PRODUCT_FLEX=pdt_xxxxxxxx (your product id)` (test mode). Virundhu sets the exact amount for each checkout from the outlet count and months. The 4 older fixed-price products are no longer used; you can archive them. |
 | Discount code FIRST10: 20% off, 10 uses in total, once per customer | Sales → Discounts | `PROMO_CODE=FIRST10` (shown on the billing page) |
 
 `PAYMENT_PROVIDER=dodo` picks Dodo. Razorpay code is still there; set `PAYMENT_PROVIDER=razorpay` and add its keys to switch.

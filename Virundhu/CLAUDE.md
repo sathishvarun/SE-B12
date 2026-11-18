@@ -17,9 +17,9 @@ and the restaurant owner (registers, sees only their own restaurant). Features d
 - Frontend: React + Vite + TypeScript (strict)
 - Database: PostgreSQL 16 + SQLAlchemy 2.0 (Alembic migrations)
 - Auth: JWT (email/password) + Google OAuth. Roles in use: owner; platform super admin
-- UI: Tailwind CSS v4 + motion + Recharts + sonner (kolam-night palette, Anek Tamil + Hind Madurai fonts)
+- UI: Tailwind CSS v4 + motion + Recharts + sonner (banana-leaf feast palette + food line-art backgrounds in public/patterns, Anek Tamil + Hind Madurai fonts)
 - Payments: Dodo Payments (default, `PAYMENT_PROVIDER=dodo`), Razorpay as alternative. One-time payment per 1 or 12 months
-- Deploy: Docker Compose + Caddy (auto HTTPS) on Hostinger VPS, GitHub Actions CI
+- Deploy: Docker Compose behind the VPS's Traefik (auto HTTPS), `deploy/vps/install.sh`; live at https://virundhu.sathishsakthivel.tech
 
 ---
 
