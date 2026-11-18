@@ -421,8 +421,14 @@ def test_signup_to_receipt_to_monthly_report(client):
     assert r.status_code == 201
     to, subject, text = sent[0]
     assert to == [f"lakshmi.{tag}@gmail.com"] and "Lakshmi" in subject
-    assert "Coimbatore" in text and "9876543210" in text and "ends on" in text and "/app/billing" in text
-    link = text.split("confirm this is your email address: ")[1].split()[0]
+    assert (
+        "Coimbatore" in text
+        and "9876543210" in text
+        and "Free trial:" in text
+        and "/app/billing" in text
+        and "Last name: Narayanan" in text
+    )
+    link = text.split("confirm this is your email address:")[1].split()[0]
     token = link.split("token=")[1]
     v = client.get(f"/api/v1/auth/verify-email?token={token}", follow_redirects=False)
     assert v.status_code in (302, 307) and "email_confirmed=1" in v.headers["location"]
