@@ -506,7 +506,7 @@ def launch_check(db: Session = Depends(get_db)) -> list[LaunchItem]:
         LaunchItem(
             key="smtp",
             label="Email sending (SMTP)",
-            ok=bool(settings.SMTP_HOST and settings.SMTP_USER),
+            ok=bool(settings.SMTP_HOST and (settings.SMTP_USER or "relay" in settings.SMTP_HOST)),
             required=True,
             fix="Add SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD and EMAIL_FROM in .env. Without it no alerts or "
             "password-reset emails go out. Then press 'Send test email'.",
@@ -565,7 +565,7 @@ def test_email(user: User = Depends(require_superadmin)) -> dict[str, bool]:
     from app.services.emailer import send_email
 
     ok = send_email(
-        [settings.CONTACT_EMAIL or user.email],
+        [settings.notify_email],
         "Virundhu test email",
         "If you can read this, Virundhu can send emails. - Virundhu",
     )

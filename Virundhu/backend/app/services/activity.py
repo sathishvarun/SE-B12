@@ -52,7 +52,7 @@ def record(
     if kind in EMAIL_ADMIN:
         try:
             send_email(
-                [settings.SUPERADMIN_EMAIL],
+                [settings.demo_requests_email if kind == "demo_request" else settings.notify_email],
                 f"Virundhu: {LABELS.get(kind, kind)}{f' - {restaurant}' if restaurant else ''}",
                 f"{LABELS.get(kind, kind)}\nRestaurant: {restaurant or '-'}\nUser: {email or '-'}\n{detail or ''}\n\n"
                 f"Admin console: {settings.APP_URL}/app/admin",

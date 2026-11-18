@@ -246,7 +246,8 @@ def send_email(
     recipients = sorted({r.strip().lower() for r in to if r and "@" in r})
     if not recipients:
         return False
-    if html is None and settings.SUPERADMIN_EMAIL.lower() not in recipients:
+    internal = {settings.SUPERADMIN_EMAIL.lower(), settings.notify_email.lower(), settings.demo_requests_email.lower()}
+    if html is None and not internal & set(recipients):
         html = branded_html(subject, text, details)
         text = text.rstrip() + closing_text(subject)
     if not settings.SMTP_HOST:
@@ -282,7 +283,9 @@ def send_email(
 
 def _log_customer_email(recipients: list[str], subject: str, ok: bool) -> None:
     """Keep a record of every customer email in that restaurant's log (Admin console → Logs). Never raises."""
-    if settings.SUPERADMIN_EMAIL.lower() in recipients:
+    if {settings.SUPERADMIN_EMAIL.lower(), settings.notify_email.lower(), settings.demo_requests_email.lower()} & set(
+        recipients
+    ):
         return
     try:
         from sqlalchemy import select

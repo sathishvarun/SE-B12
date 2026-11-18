@@ -149,7 +149,7 @@ def owner_reply(
         detail=f"{number(t)}: {body.message.strip()[:300]}",
     )
     send_email(
-        [settings.SUPERADMIN_EMAIL],
+        [settings.notify_email],
         f"Customer replied on {number(t)}: {t.subject}",
         f"{t.restaurant} ({t.user_email}) wrote:\n\n{body.message.strip()}\n\n{settings.APP_URL}/app/admin",
     )

@@ -898,3 +898,18 @@ def test_restaurant_log_has_emails_and_uploads(client):
     kinds = {r["kind"] for r in log}
     assert "upload" in kinds and kinds & {"email_sent", "email_failed"}
     assert any("Reset your Virundhu password" in (r["detail"] or "") for r in log)
+
+
+def test_notifications_go_to_company_inboxes(client, monkeypatch):
+    """Admin notifications go to NOTIFY_EMAIL and demo requests to DEMO_REQUESTS_EMAIL, never a personal inbox."""
+    from app.database import SessionLocal
+    from app.services import activity
+
+    monkeypatch.setattr(settings, "NOTIFY_EMAIL", "virundhu.info@skminimart.com")
+    monkeypatch.setattr(settings, "DEMO_REQUESTS_EMAIL", "virundhu.demo@skminimart.com")
+    sent = []
+    with patch("app.services.activity.send_email", side_effect=lambda to, s, t, *a, **k: sent.append(to) or True):
+        with SessionLocal() as db:
+            activity.record(db, "demo_request", restaurant="Test Mess", email="lead@example.com")
+            activity.record(db, "payment", restaurant="Test Mess", email="owner@example.com")
+    assert sent == [["virundhu.demo@skminimart.com"], ["virundhu.info@skminimart.com"]]

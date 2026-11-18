@@ -95,7 +95,19 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     EMAIL_FROM: str = "Virundhu <hello@example.com>"
-    SMTP_HELO: str = ""  # name the server gives when sending (Google SMTP relay wants a real domain)
+    SMTP_HELO: str = ""
+    # Where Virundhu's own notifications go (sign-ups, payments, tickets, daily digest). Default: admin login.
+    NOTIFY_EMAIL: str = ""
+    # Where demo requests from the Contact page go. Defaults to NOTIFY_EMAIL.
+    DEMO_REQUESTS_EMAIL: str = ""  # name the server gives when sending (Google SMTP relay wants a real domain)
+
+    @property
+    def notify_email(self) -> str:
+        return self.NOTIFY_EMAIL or self.SUPERADMIN_EMAIL
+
+    @property
+    def demo_requests_email(self) -> str:
+        return self.DEMO_REQUESTS_EMAIL or self.notify_email
 
     @property
     def google_enabled(self) -> bool:

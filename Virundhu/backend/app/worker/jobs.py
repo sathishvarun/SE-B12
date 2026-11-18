@@ -159,7 +159,7 @@ async def monthly_report_tick(ctx: dict[str, Any]) -> None:
             f"Renewals due next month: {len(m.due_next)}.\n\nThe full report is attached.\n\n- Virundhu"
         )
         send_email(
-            [settings.SUPERADMIN_EMAIL, settings.CONTACT_EMAIL],
+            [settings.notify_email],
             f"Virundhu monthly report: {m.label}",
             body,
             attachments=[
@@ -205,6 +205,6 @@ async def daily_digest_tick(ctx: dict[str, Any]) -> None:
             lines += ["", "Wrong passwords and locks:"]
             lines += [f"  {e.created_at.astimezone(tz):%H:%M} {e.user_email}: {e.detail}" for e in fails[:30]]
         lines += ["", f"Full log (Excel): {settings.APP_URL}/app/admin  (Data tab, Log history)", "- Virundhu"]
-        send_email([settings.SUPERADMIN_EMAIL], "Virundhu daily summary", "\n".join(lines))
+        send_email([settings.notify_email], "Virundhu daily summary", "\n".join(lines))
 
     await asyncio.to_thread(run)
