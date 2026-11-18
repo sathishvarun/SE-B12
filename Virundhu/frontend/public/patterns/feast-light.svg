@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="250" viewBox="0 0 250 250"><g stroke="#0C3B2E" stroke-opacity="0.045">
+<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6">
+ <!-- banana leaf -->
+ <path d="M14 62 C44 22 104 16 136 40 C104 72 46 82 14 62 Z"/><path d="M14 62 L136 40"/>
+ <path d="M40 57 L52 38 M62 53 L76 31 M86 49 L100 28 M108 45 L120 30 M44 58 L58 70 M68 54 L84 68 M92 50 L106 61"/>
+ <!-- dosa -->
+ <path d="M168 28 L222 28 L195 96 Z"/><path d="M176 40 L214 40 M184 58 L206 58 M190 74 L200 74"/>
+ <!-- idli on plate -->
+ <ellipse cx="44" cy="156" rx="34" ry="9"/><path d="M20 152 Q32 132 44 152 M44 152 Q56 132 68 152"/>
+ <!-- filter coffee tumbler + dabarah -->
+ <path d="M112 132 L148 132 L144 178 L116 178 Z"/><path d="M98 178 Q130 194 162 178"/>
+ <path d="M122 122 q-6 -8 0 -16 M136 122 q-6 -8 0 -16"/>
+ <!-- chilli -->
+ <path d="M178 160 C200 154 220 170 228 196 C208 186 192 176 178 168 Z"/><path d="M178 160 q-6 -8 -1 -15"/>
+ <!-- curry leaves -->
+ <path d="M222 104 L238 128"/><path d="M226 110 q-10 -2 -10 -10 q8 0 10 10 M232 119 q10 -2 10 -10 q-8 0 -10 10"/>
+ <!-- review star -->
+ <path d="M70 200 l5 11 12 1 -9 8 3 12 -11 -7 -11 7 3 -12 -9 -8 12 -1 z"/>
+ <!-- speech bubble -->
+ <path d="M168 208 h46 a8 8 0 0 1 8 8 v16 a8 8 0 0 1 -8 8 h-30 l-10 9 v-9 h-6 a8 8 0 0 1 -8 -8 v-16 a8 8 0 0 1 8 -8 z"/><path d="M174 220 h34 M174 228 h22"/>
+</g></g></svg>

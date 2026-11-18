@@ -1,0 +1,54 @@
+"""Import every model so Alembic and SQLAlchemy see all tables."""
+
+from app.models.base import Base
+from app.models.ops import (
+    ActivityLog,
+    AlertLog,
+    AlertRule,
+    Lead,
+    Notification,
+    Payment,
+    PlanReminder,
+    ReviewRequest,
+    SourceConnection,
+    Subscription,
+    SupportTicket,
+    Testimonial,
+    TicketMessage,
+    WebhookEvent,
+    WeeklyReport,
+)
+from app.models.review import ImportBatch, Outlet, Review, ReviewAnalysis, ReviewCorrection, UsageCounter
+from app.models.user import Invitation, Membership, Organization, PasswordResetToken, RefreshToken, User
+
+__all__ = [
+    "ActivityLog",
+    "PlanReminder",
+    "SupportTicket",
+    "TicketMessage",
+    "ReviewRequest",
+    "Testimonial",
+    "Testimonial",
+    "Base",
+    "User",
+    "Organization",
+    "Membership",
+    "Invitation",
+    "RefreshToken",
+    "PasswordResetToken",
+    "Outlet",
+    "ImportBatch",
+    "Review",
+    "ReviewAnalysis",
+    "ReviewCorrection",
+    "UsageCounter",
+    "AlertRule",
+    "AlertLog",
+    "Notification",
+    "SourceConnection",
+    "WeeklyReport",
+    "Lead",
+    "Subscription",
+    "Payment",
+    "WebhookEvent",
+]

@@ -1,0 +1,40 @@
+# Secrets - never commit
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# OS / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Local data
+uploads/
+*.log
+
+# Database backups (personal data: never commit)
+backups/
+
+# Server log files (may contain emails and IP addresses: never commit)
+backend/logs/
+
+# Stray runtime files
+dump.rdb
+backend/package-lock.json
+virundhu-test-report.html

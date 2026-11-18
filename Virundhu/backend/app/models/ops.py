@@ -1,0 +1,211 @@
+"""Alerts, weekly reports and billing."""
+
+from datetime import date, datetime
+
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.models.base import Base, OrgScopedMixin, TimestampMixin, str_enum
+from app.models.review import URGENCIES
+from app.models.user import PLANS
+
+SUB_STATUS = ("trialing", "active", "past_due", "cancelled", "expired")
+
+
+class AlertRule(OrgScopedMixin, TimestampMixin, Base):
+    __tablename__ = "alert_rules"
+
+    channel: Mapped[str] = mapped_column(str_enum("alert_channel", "email"), default="email", nullable=False)
+    recipients: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    min_urgency: Mapped[str] = mapped_column(str_enum("alert_min_urgency", *URGENCIES), default="high", nullable=False)
+    categories: Mapped[list | None] = mapped_column(JSONB)
+    outlet_ids: Mapped[list | None] = mapped_column(JSONB)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class AlertLog(OrgScopedMixin, TimestampMixin, Base):
+    __tablename__ = "alert_logs"
+    __table_args__ = (UniqueConstraint("review_id", "recipient", name="uq_alert_review_recipient"),)
+
+    review_id: Mapped[int | None] = mapped_column(ForeignKey("reviews.id", ondelete="CASCADE"))
+    channel: Mapped[str] = mapped_column(String(16), default="email", nullable=False)
+    recipient: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class WeeklyReport(OrgScopedMixin, TimestampMixin, Base):
+    __tablename__ = "weekly_reports"
+    __table_args__ = (UniqueConstraint("organization_id", "outlet_id", "week_start", name="uq_report_org_outlet_week"),)
+
+    outlet_id: Mapped[int | None] = mapped_column(ForeignKey("outlets.id", ondelete="CASCADE"))
+    week_start: Mapped[date] = mapped_column(Date, nullable=False)
+    week_end: Mapped[date] = mapped_column(Date, nullable=False)
+    metrics: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    narrative: Mapped[dict | None] = mapped_column(JSONB)
+    generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Subscription(TimestampMixin, Base):
+    __tablename__ = "subscriptions"
+
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    razorpay_customer_id: Mapped[str | None] = mapped_column(String(64))
+    razorpay_subscription_id: Mapped[str | None] = mapped_column(String(64), unique=True)
+    plan: Mapped[str] = mapped_column(str_enum("sub_plan", *PLANS), default="trial", nullable=False)
+    status: Mapped[str] = mapped_column(str_enum("sub_status", *SUB_STATUS), default="trialing", nullable=False)
+    current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class Payment(OrgScopedMixin, TimestampMixin, Base):
+    __tablename__ = "payments"
+
+    razorpay_payment_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    amount_paise: Mapped[int] = mapped_column(Integer, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), default="INR", nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False)
+    invoice_url: Mapped[str | None] = mapped_column(String(500))
+    outlets: Mapped[int | None] = mapped_column(Integer)
+    months: Mapped[int | None] = mapped_column(Integer)  # months paid for (free bonus months not counted)
+    period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    invoice_no: Mapped[str | None] = mapped_column(String(24), unique=True)  # VR-202611-00012
+    bill_name: Mapped[str | None] = mapped_column(String(160))
+    bill_gstin: Mapped[str | None] = mapped_column(String(15))
+    bill_address: Mapped[str | None] = mapped_column(String(300))
+    bill_email: Mapped[str | None] = mapped_column(String(255))
+
+
+class WebhookEvent(TimestampMixin, Base):
+    __tablename__ = "webhook_events"
+
+    event_id: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class Notification(OrgScopedMixin, TimestampMixin, Base):
+    """In-app alert for one user (bell icon). Created the moment an urgent review is read."""
+
+    __tablename__ = "notifications"
+    __table_args__ = (UniqueConstraint("user_id", "review_id", name="uq_notification_user_review"),)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    review_id: Mapped[int | None] = mapped_column(ForeignKey("reviews.id", ondelete="CASCADE"))
+    severity: Mapped[str] = mapped_column(str_enum("notification_severity", "high", "medium", "info"), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str] = mapped_column(String(500), nullable=False)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class SourceConnection(OrgScopedMixin, TimestampMixin, Base):
+    """Where reviews come from: google (official API), zomato / swiggy (file import + test feed)."""
+
+    __tablename__ = "source_connections"
+    __table_args__ = (UniqueConstraint("organization_id", "provider", name="uq_connection_org_provider"),)
+
+    provider: Mapped[str] = mapped_column(str_enum("connection_provider", "google", "zomato", "swiggy"), nullable=False)
+    status: Mapped[str] = mapped_column(
+        str_enum("connection_status", "not_connected", "connected", "error"), default="not_connected", nullable=False
+    )
+    test_feed_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    test_feed_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    details: Mapped[dict | None] = mapped_column(JSONB)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Lead(TimestampMixin, Base):
+    """A restaurant that wrote in through the Contact page. Seen by the platform admin only."""
+
+    __tablename__ = "leads"
+
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    restaurant: Mapped[str] = mapped_column(String(120), nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(30))
+    email: Mapped[str | None] = mapped_column(String(160))
+    city: Mapped[str | None] = mapped_column(String(80))
+    outlets: Mapped[int | None] = mapped_column(Integer)
+    message: Mapped[str | None] = mapped_column(String(2000))
+    status: Mapped[str] = mapped_column(String(16), default="new", server_default="new", nullable=False)
+
+
+class ActivityLog(TimestampMixin, Base):
+    """Things the platform admin should know about: sign-ups, password changes, deletions, payments, demo requests.
+
+    organization_id is a plain number (no foreign key) so the record survives when a restaurant is deleted.
+    """
+
+    __tablename__ = "activity_log"
+
+    kind: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    organization_id: Mapped[int | None] = mapped_column(Integer)
+    restaurant: Mapped[str | None] = mapped_column(String(120))
+    user_email: Mapped[str | None] = mapped_column(String(255))
+    detail: Mapped[str | None] = mapped_column(String(500))
+    seen: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+
+
+class ReviewRequest(TimestampMixin, Base):
+    """One 'how was your food?' message to a guest. Only a hash of the number is kept (to avoid asking twice)."""
+
+    __tablename__ = "review_requests"
+
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    outlet_id: Mapped[int | None] = mapped_column(ForeignKey("outlets.id", ondelete="SET NULL"))
+    phone_hash: Mapped[str] = mapped_column(String(64), index=True)
+    channel: Mapped[str] = mapped_column(String(20))  # whatsapp_api | whatsapp_link
+
+
+class Testimonial(TimestampMixin, Base):
+    """A real customer's words, added by the admin with their permission. Shown on the home page when published."""
+
+    __tablename__ = "testimonials"
+
+    name: Mapped[str] = mapped_column(String(120))
+    role: Mapped[str | None] = mapped_column(String(120))  # "Owner, Annapoorna Mess, Coimbatore"
+    quote: Mapped[str] = mapped_column(String(600))
+    published: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+
+
+class PlanReminder(OrgScopedMixin, TimestampMixin, Base):
+    """One 'your trial/plan ends in N days' reminder, recorded so each one goes out only once (days_left 0 = ended)."""
+
+    __tablename__ = "plan_reminders"
+    __table_args__ = (UniqueConstraint("organization_id", "period_end", "days_left", name="uq_plan_reminder"),)
+
+    period_end: Mapped[date] = mapped_column(Date, nullable=False)
+    days_left: Mapped[int] = mapped_column(Integer, nullable=False)
+    kind: Mapped[str] = mapped_column(String(10), nullable=False)  # trial | plan
+
+
+class SupportTicket(TimestampMixin, Base):
+    """A customer's question or problem (payment, bug, account...), handled by the admin. Number: VT-00012."""
+
+    __tablename__ = "support_tickets"
+
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id", ondelete="SET NULL"), index=True)
+    restaurant: Mapped[str | None] = mapped_column(String(160))  # kept if the restaurant is later deleted
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    user_email: Mapped[str | None] = mapped_column(String(255))
+    category: Mapped[str] = mapped_column(String(20), nullable=False)  # payment | bug | account | feature | other
+    subject: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="open", nullable=False)  # open | in_progress | resolved
+    payment_id: Mapped[int | None] = mapped_column(ForeignKey("payments.id", ondelete="SET NULL"))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TicketMessage(TimestampMixin, Base):
+    __tablename__ = "ticket_messages"
+
+    ticket_id: Mapped[int] = mapped_column(
+        ForeignKey("support_tickets.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    from_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    author_email: Mapped[str | None] = mapped_column(String(255))
+    body: Mapped[str] = mapped_column(Text, nullable=False)
