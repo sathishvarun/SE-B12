@@ -11,6 +11,7 @@ const About = lazy(() => import("@/pages/site/About"));
 const PricingPage = lazy(() => import("@/pages/site/PricingPage"));
 const Compare = lazy(() => import("@/pages/site/Compare"));
 const WhatsNext = lazy(() => import("@/pages/site/WhatsNext"));
+const DemoBooking = lazy(() => import("@/pages/site/DemoBooking"));
 const Contact = lazy(() => import("@/pages/site/Contact"));
 const PrivacyPage = lazy(() => import("@/pages/site/Legal").then((m) => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import("@/pages/site/Legal").then((m) => ({ default: m.TermsPage })));
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/compare" element={<Compare />} />
           <Route path="/whats-next" element={<WhatsNext />} />
+          <Route path="/demo/:token" element={<DemoBooking />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<PrivacyPage />} />

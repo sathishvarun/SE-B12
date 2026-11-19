@@ -301,3 +301,15 @@ general-purpose agents using the matching skill file.
 - `organizations.billing_key_hash`, `ask_after_bill`; `POST /settings/billing-key`; `POST /hooks/bill`.
 - `outlets.competitors` (JSONB) + `competitors_at`; `services/competitors.py` (Places Text Search); `GET /competitors`.
 - `testimonials` table; `GET /public/testimonials`; admin CRUD `/admin/testimonials`.
+
+### AI agent team (migration 0018, `services/agent_team.py`)
+- Virundhu is AI as a service: its own operations run on agents with no person in the loop. Worker cron `agent_tick`
+  (every minute) = Mani, the lead agent, who runs `nila_round` (demos) and `tara_round` (support); each action is a row
+  in `agent_runs`, shown at Admin → Autopilot (`GET /admin/agents`).
+- Nila: a new Lead (contact form now requires email + `meet_mode`) gets 6 open times (`DEMO_DAYS`, `DEMO_TIMES`, India
+  time, never a booked time). The restaurant books at `/demo/:token` (public, token is the key; `/api/v1/public/contact/
+  demo/{token}` + `/book`, `/more`, `/cancel`). Booking emails both sides an .ics invite and a link (`DEMO_LINK_*` or a
+  per-demo meet.jit.si room), WhatsApps `ADMIN_WHATSAPP`, reminds 24 h and 1 h before, follows up with the trial link.
+- Tara: answers every ticket whose last message is the customer's. Payment issues: `recover_payment` finds a succeeded
+  Dodo payment for the org that never activated and activates it. Refunds/legal/abuse or a 4th round →
+  `call_admin` (WhatsApp + email + bell). Never promise refunds. Agent messages have author `tara@agents.virundhu`.

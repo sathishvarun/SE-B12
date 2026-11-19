@@ -173,7 +173,7 @@ def test_contact_form_creates_a_lead_admin_can_see(client):
     assert client.post("/api/v1/public/contact", json={"name": "Ravi K", "restaurant": "Ravi Mess"}).status_code == 422
     res = client.post(
         "/api/v1/public/contact",
-        json={"name": "Ravi K", "restaurant": "Ravi Mess", "phone": "+919800000000", "city": "Madurai", "outlets": 2},
+        json={"name": "Ravi K", "restaurant": "Ravi Mess", "email": "ravi+lead@example.com", "outlets": 2},
     )
     assert res.status_code == 201
     admin = client.post(

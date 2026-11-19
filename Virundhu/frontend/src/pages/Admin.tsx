@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { shortDate } from "@/lib/copy";
 import { useCountUp } from "@/lib/useCountUp";
 import { cn } from "@/lib/utils";
-import { accountApi, adminApi, adminAutopilotApi, api, errorMessage, viewAs } from "@/services/api";
+import { accountApi, adminApi, adminAgentsApi, adminAutopilotApi, api, errorMessage, viewAs } from "@/services/api";
 
 const PLATFORM_COLORS = { google: "#6cb8ff", zomato: "#ff5b3a", swiggy: "#f6b93b", direct: "#2bb673", other: "#a9acd0", tripadvisor: "#34a77b", instagram: "#f06ba8", facebook: "#4a6cf7" } as const;
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -509,7 +509,7 @@ function AutopilotPanel() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="max-w-3xl text-ink-soft">Your daily admin jobs and who handles them now. {q.data ? <b className="text-ink">{need ? `${need} thing${need === 1 ? "" : "s"} need you today.` : "Nothing needs you today."}</b> : null}</p>
+        <p className="max-w-3xl text-ink-soft">Mani, the lead agent, hands every job to the right agent around the clock. You don't need to sign in: if something truly needs you, it comes by WhatsApp and email. {q.data ? <b className="text-ink">{need ? `${need} thing${need === 1 ? "" : "s"} went to you today.` : "Nothing needed you today."}</b> : null}</p>
         <div role="tablist" className="inline-flex rounded-full bg-jasmine-2 p-1">
           <button role="tab" aria-selected={view === "before"} onClick={() => setView("before")} className={cn("cursor-pointer rounded-full px-4 py-1.5 text-sm font-semibold", view === "before" ? "bg-chilli text-white" : "text-ink-soft")}>Before</button>
           <button role="tab" aria-selected={view === "now"} onClick={() => setView("now")} className={cn("cursor-pointer rounded-full px-4 py-1.5 text-sm font-semibold", view === "now" ? "bg-leaf text-white" : "text-ink-soft")}>Now</button>
@@ -532,6 +532,48 @@ function AutopilotPanel() {
           </section>
         ))}
       </div>
+      <AgentFeedPanel />
+    </div>
+  );
+}
+
+const IST = (iso: string) => new Date(iso).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+
+function AgentFeedPanel() {
+  const q = useQuery({ queryKey: ["admin-agents"], queryFn: adminAgentsApi.get, refetchInterval: 30_000 });
+  const f = q.data;
+  if (!f) return <Skeleton className="mt-6 h-[300px]" />;
+  return (
+    <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.3fr]">
+      <section className="rounded-[20px] border-2 border-line bg-white p-5">
+        <h3 className="font-display text-xl font-bold">Demos Nila has booked</h3>
+        {f.upcoming_demos.length === 0 ? <p className="mt-2 text-sm text-ink-soft">No demos coming up. New requests get times within a minute.</p> : (
+          <ul className="mt-3 divide-y divide-line">
+            {f.upcoming_demos.map((d) => (
+              <li key={d.starts_at + d.restaurant} className="py-3">
+                <p className="font-semibold">{d.restaurant} <span className="font-normal text-ink-soft">· {d.name}</span></p>
+                <p className="text-sm">{IST(d.starts_at)} · {d.mode}</p>
+                <p className="text-sm text-ink-soft">{d.email}{d.phone ? ` · ${d.phone}` : ""}</p>
+                {d.link ? <a href={d.link} target="_blank" rel="noreferrer" className="text-sm font-semibold text-night underline">Join link</a> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="rounded-[20px] border-2 border-line bg-white p-5">
+        <h3 className="font-display text-xl font-bold">What the agents did</h3>
+        <p className="text-sm text-ink-soft">Live, newest first. Red lines went to you.</p>
+        {f.runs.length === 0 ? <p className="mt-3 text-sm text-ink-soft">Nothing yet. The team checks for work every minute.</p> : (
+          <ol className="mt-3 max-h-[420px] space-y-2 overflow-y-auto pr-1">
+            {f.runs.map((r) => (
+              <li key={r.id} className={cn("rounded-[12px] px-3 py-2 text-sm", r.outcome === "escalated" ? "bg-chilli-soft" : r.outcome === "failed" ? "bg-jasmine-2" : "bg-jasmine")}>
+                <span className="font-semibold">{r.name}</span> {r.action}
+                <span className="block text-xs text-ink-soft">{IST(r.at)}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </div>
   );
 }

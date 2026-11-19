@@ -208,3 +208,15 @@ async def daily_digest_tick(ctx: dict[str, Any]) -> None:
         send_email([settings.notify_email], "Virundhu daily summary", "\n".join(lines))
 
     await asyncio.to_thread(run)
+
+
+async def agent_tick(ctx: dict[str, Any]) -> None:
+    """Every minute: Mani, the lead agent, hands waiting work to Nila (demos) and Tara (support)."""
+    from app.database import SessionLocal
+    from app.services import agent_team
+
+    def run() -> None:
+        with SessionLocal() as db:
+            agent_team.run_once(db)
+
+    await asyncio.to_thread(run)

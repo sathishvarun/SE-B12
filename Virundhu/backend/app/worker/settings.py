@@ -5,6 +5,7 @@ from arq.connections import RedisSettings
 
 from app.config import settings
 from app.worker.jobs import (
+    agent_tick,
     analyze_job,
     daily_digest_tick,
     google_sync_tick,
@@ -22,6 +23,7 @@ class WorkerSettings:
 
     functions = [analyze_job]
     cron_jobs = [
+        cron(agent_tick, second={0}, run_at_startup=True),  # AI agent team: demos and support, every minute
         cron(retry_unread_tick, minute=set(range(0, 60, 5)), run_at_startup=True),  # re-read failed reviews
         cron(google_sync_tick, minute={0, 10, 20, 30, 40, 50}),  # live Google reviews
         cron(holding_reply_tick, minute={5, 20, 35, 50}),  # safe first reply to unanswered complaints (opt-in)

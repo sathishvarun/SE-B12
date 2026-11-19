@@ -48,4 +48,4 @@ def test_opaque_token_only_hash_is_stored():
 
 
 def test_all_tables_registered():
-    assert len(Base.metadata.tables) == 28  # 27 + guest_recoveries (AI staff win-back)
+    assert len(Base.metadata.tables) == 30  # + guest_recoveries, demo_meetings, agent_runs

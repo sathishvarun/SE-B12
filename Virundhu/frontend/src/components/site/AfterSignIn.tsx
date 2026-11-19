@@ -15,15 +15,15 @@ const VIEWS = {
     ],
   },
   admin: {
-    tab: "What our team sees",
+    tab: "What our agents do",
     img: "/demo/after-admin.jpg",
     alt: "Our team's Autopilot screen: new leads, trials ending, open support, account health and payments today",
-    lead: "Behind the scenes, our team watches every account so nothing waits on you.",
+    lead: "Behind the scenes, our own AI agents run the service: Mani, the lead agent, hands every job to the right one, day and night.",
     steps: [
-      { t: "New leads and demos", b: "Every demo request reaches us at once. We reply within one working day." },
+      { t: "Demos book themselves", b: "Nila emails open times within a minute; you tap one and get a calendar invite for Meet, Zoom, Teams, phone or in person." },
       { t: "Trials ending", b: "Reminders go out 5, 4, 3, 2 and 1 day before your trial ends, and stop the moment you pay." },
-      { t: "Support you raise", b: "Questions from the Help page land in our queue with your restaurant attached, so you never repeat yourself." },
-      { t: "Health checks", b: "If your review sources stop syncing or replies fail, we see it and fix it, often before you notice." },
+      { t: "Support answers itself", b: "Tara replies to your ticket within minutes. If a payment didn't switch your plan on, she checks it and fixes it." },
+      { t: "Health checks", b: "Dev watches syncing, emails and backups every night, so problems are caught before you notice." },
     ],
   },
 } as const;

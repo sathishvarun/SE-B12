@@ -76,7 +76,7 @@ export default function About() {
               <div>
                 <p className="font-display text-sm font-semibold uppercase tracking-[0.18em] text-turmeric">The people behind it</p>
                 <h2 className="mt-2 font-display text-[2.4rem] font-bold leading-[1.05] sm:text-[3rem]">Built by {company.parent}.<br /><span className="text-turmeric">Made for restaurants.</span></h2>
-                <p className="mt-4 max-w-xl text-lg text-mist">{company.name} is the restaurant software of {company.parent}, a Coimbatore company. We build the tools and run the service. Your kitchen, your guests and your name stay yours.</p>
+                <p className="mt-4 max-w-xl text-lg text-mist">{company.name} is the AI service of {company.parent}, a Coimbatore company. Our AI agents do the work, from reading reviews to booking demos and fixing payment problems. Your kitchen, your guests and your name stay yours.</p>
                 <dl className="mt-6 grid max-w-xl grid-cols-3 gap-3">
                   {[
                     { k: "Started", v: company.founded ?? "2026" },
@@ -100,13 +100,13 @@ export default function About() {
                 <div className="rounded-[16px] bg-turmeric px-5 py-4 text-center text-night">
                   <p className="text-sm font-semibold">Our product</p>
                   <p className="font-display text-2xl font-bold">{company.name}</p>
-                  <p className="text-sm">Review care and AI staff for restaurants</p>
+                  <p className="text-sm">AI staff as a service for restaurants</p>
                 </div>
               </div>
             </div>
             <ul className="grid border-t border-white/10 sm:grid-cols-3">
               {[
-                { t: "We make software, not food", b: "We don't own or run any restaurant, so we're never your competitor." },
+                { t: "We run AI agents, not kitchens", b: "We don't own or run any restaurant, so we're never your competitor." },
                 { t: "Your guests stay yours", b: "Reviews, guest contacts and QR feedback belong to you. One restaurant never sees another's." },
                 { t: "Why @skminimart.com?", b: `Our emails come from ${company.parent}, the company behind ${company.name}. Same team, one inbox.` },
               ].map((x) => (

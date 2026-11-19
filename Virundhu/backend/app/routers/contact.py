@@ -2,14 +2,14 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.limiter import limiter
-from app.models import Lead
-from app.services import activity
+from app.models import DemoMeeting, Lead
+from app.services import activity, agent_team
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/public/contact", tags=["contact"])
@@ -24,11 +24,12 @@ class ContactIn(BaseModel):
     outlets: int | None = Field(default=None, ge=1, le=1000)
     message: str = Field(default="", max_length=2000)
     website: str = Field(default="", max_length=200)  # honeypot
+    meet_mode: str = Field(default="meet", pattern="^(meet|zoom|teams|in_person|phone)$")
 
     @model_validator(mode="after")
     def _reachable(self) -> "ContactIn":
-        if not self.phone.strip() and "@" not in self.email:
-            raise ValueError("Give us a phone number or an email so we can reach you.")
+        if "@" not in self.email or "." not in self.email.split("@")[-1]:
+            raise ValueError("Give us your email; our demo agent sends the times there within a minute.")
         return self
 
 
@@ -45,6 +46,7 @@ def contact(request: Request, body: ContactIn, db: Session = Depends(get_db)) ->
         city=body.city.strip() or None,
         outlets=body.outlets,
         message=body.message.strip() or None,
+        meet_mode=body.meet_mode,
     )
     db.add(lead)
     db.commit()
@@ -57,3 +59,53 @@ def contact(request: Request, body: ContactIn, db: Session = Depends(get_db)) ->
         commit=True,
     )
     return {"ok": True}
+
+
+# ---------- the demo agent's booking page (/demo/:token), no sign-in; the token is the key
+
+class BookIn(BaseModel):
+    slot: str = Field(max_length=40)
+    mode: str = Field(pattern="^(meet|zoom|teams|in_person|phone)$")
+
+
+def _meeting(db: Session, token: str) -> tuple[DemoMeeting, Lead]:
+    m = db.query(DemoMeeting).filter(DemoMeeting.token == token).one_or_none()
+    lead = db.get(Lead, m.lead_id) if m else None
+    if m is None or lead is None:
+        raise HTTPException(404, "This demo link isn't valid. Ask for a demo on the contact page.")
+    return m, lead
+
+
+@router.get("/demo/{token}")
+@limiter.limit("30/minute")
+def demo_page(request: Request, token: str, db: Session = Depends(get_db)) -> dict:
+    m, lead = _meeting(db, token)
+    return agent_team.public_view(m, lead)
+
+
+@router.post("/demo/{token}/book")
+@limiter.limit("10/minute")
+def demo_book(request: Request, token: str, body: BookIn, db: Session = Depends(get_db)) -> dict:
+    m, lead = _meeting(db, token)
+    try:
+        agent_team.book(db, m, body.slot, body.mode)
+    except agent_team.BookingError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return agent_team.public_view(m, lead)
+
+
+@router.post("/demo/{token}/more")
+@limiter.limit("10/minute")
+def demo_more(request: Request, token: str, db: Session = Depends(get_db)) -> dict:
+    m, lead = _meeting(db, token)
+    agent_team.more_times(db, m)
+    return agent_team.public_view(m, lead)
+
+
+@router.post("/demo/{token}/cancel")
+@limiter.limit("10/minute")
+def demo_cancel(request: Request, token: str, db: Session = Depends(get_db)) -> dict:
+    m, lead = _meeting(db, token)
+    agent_team.cancel(db, m)
+    db.commit()
+    return agent_team.public_view(m, lead)

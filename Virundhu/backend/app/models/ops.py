@@ -132,6 +132,36 @@ class Lead(TimestampMixin, Base):
     outlets: Mapped[int | None] = mapped_column(Integer)
     message: Mapped[str | None] = mapped_column(String(2000))
     status: Mapped[str] = mapped_column(String(16), default="new", server_default="new", nullable=False)
+    meet_mode: Mapped[str | None] = mapped_column(String(12))  # meet | zoom | teams | in_person | phone
+
+
+class DemoMeeting(TimestampMixin, Base):
+    """Demo agent: times offered to a lead, the one they booked, and the reminders sent."""
+
+    __tablename__ = "demo_meetings"
+
+    lead_id: Mapped[int] = mapped_column(ForeignKey("leads.id", ondelete="CASCADE"), index=True, nullable=False)
+    token: Mapped[str] = mapped_column(String(40), unique=True, nullable=False)
+    slots: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)  # ISO times (UTC) offered
+    mode: Mapped[str] = mapped_column(String(12), default="meet", nullable=False)
+    starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    meeting_link: Mapped[str | None] = mapped_column(String(300))
+    status: Mapped[str] = mapped_column(String(12), default="offered", nullable=False)  # offered|booked|done|expired
+    nudged: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    reminded_day: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    reminded_hour: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class AgentRun(TimestampMixin, Base):
+    """One thing an AI agent did on its own (or handed to a person). Shown in the admin's Autopilot feed."""
+
+    __tablename__ = "agent_runs"
+
+    agent: Mapped[str] = mapped_column(String(20), index=True, nullable=False)
+    action: Mapped[str] = mapped_column(String(200), nullable=False)
+    outcome: Mapped[str] = mapped_column(String(12), default="done", nullable=False)  # done | escalated | failed
+    ref: Mapped[str | None] = mapped_column(String(40))  # lead:12, ticket:5, meeting:3
+    detail: Mapped[str | None] = mapped_column(Text)
 
 
 class ActivityLog(TimestampMixin, Base):

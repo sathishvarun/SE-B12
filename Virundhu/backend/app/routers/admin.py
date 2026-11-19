@@ -582,11 +582,18 @@ def mailbox(db: Session = Depends(get_db)) -> MailboxOut:
     return MailboxOut(account=account, sender=sender, boxes=boxes, recent=recent[:20])
 
 
+@router.get("/agents")
+def agent_feed(db: Session = Depends(get_db)) -> dict:
+    """The AI agent team: who did what, upcoming demos, and anything that needed you."""
+    from app.services import agent_team
+
+    return agent_team.feed(db)
+
+
 @router.get("/autopilot")
 def autopilot(db: Session = Depends(get_db)) -> dict:
     """The admin's daily chores, what runs by itself and what still needs a person today."""
-    from app.auth.deps import plan_lock
-    from app.models import ActivityLog, Payment, SupportTicket
+    from app.models import ActivityLog, Payment
 
     now = datetime.now(UTC)
     day = now - timedelta(days=1)
@@ -595,10 +602,13 @@ def autopilot(db: Session = Depends(get_db)) -> dict:
     ending = [
         o for o in orgs if o.plan == "trial" and o.trial_ends_at and now <= o.trial_ends_at <= now + timedelta(days=3)
     ]
-    locked = [o for o in orgs if plan_lock(db, o)]
-    stale_leads = n(select(func.count()).select_from(Lead).where(Lead.status == "new", Lead.created_at < day))
-    new_leads = n(select(func.count()).select_from(Lead).where(Lead.created_at >= day))
-    open_tickets = n(select(func.count()).select_from(SupportTicket).where(SupportTicket.status != "resolved"))
+    from app.models import AgentRun
+
+    def runs(agent: str, outcome: str = "done") -> int:
+        return n(select(func.count()).select_from(AgentRun).where(
+            AgentRun.agent == agent, AgentRun.outcome == outcome, AgentRun.created_at >= day))
+
+    no_email = n(select(func.count()).select_from(Lead).where(Lead.status == "no_email", Lead.created_at >= day))
     failed = n(
         select(func.count())
         .select_from(ActivityLog)
@@ -616,15 +626,16 @@ def autopilot(db: Session = Depends(get_db)) -> dict:
         {
             "key": "leads",
             "name": "Nila",
-            "title": "The Lead Chaser",
-            "chore": "Following up demo requests",
-            "before": "Open the mailbox, copy each request, write a reply, remember to call back.",
-            "now": "Every demo request lands in Demo requests and the virundhu.demo inbox within a minute, with the "
-            "restaurant's details. Nila lists the ones nobody has answered for 24 hours.",
-            "needs_you": stale_leads,
-            "needs_label": "waiting over 24 h",
-            "done": new_leads,
-            "done_label": "new today",
+            "title": "The Demo Booker",
+            "chore": "Booking demos",
+            "before": "Open the mailbox, reply to each request, agree a time, send an invite, remember to remind.",
+            "now": "Within a minute Nila emails open times; the restaurant taps one and it's booked with a calendar "
+            "invite for both sides and a Meet, Zoom, Teams, phone or in-person plan. You get the details on "
+            "WhatsApp and email, and both sides get reminders.",
+            "needs_you": no_email,
+            "needs_label": "left no email",
+            "done": runs("nila"),
+            "done_label": "actions today",
             "link": "/app/admin/leads",
         },
         {
@@ -635,24 +646,24 @@ def autopilot(db: Session = Depends(get_db)) -> dict:
             "before": "Check each restaurant's end date, send reminders by hand, switch features off when unpaid.",
             "now": "Reminders go out at 5, 4, 3, 2 and 1 days; unpaid accounts lock by themselves and unlock the "
             "moment they pay. You get an alert for every suspension and reactivation.",
-            "needs_you": len(ending),
-            "needs_label": "trials ending in 3 days",
-            "done": len(locked),
-            "done_label": "locked until they pay",
+            "needs_you": 0,
+            "needs_label": "",
+            "done": len(ending),
+            "done_label": "trials ending in 3 days, being reminded",
             "link": "/app/admin/restaurants",
         },
         {
             "key": "support",
             "name": "Tara",
             "title": "The Help Desk Hero",
-            "chore": "Answering support questions",
-            "before": "Read every message, look up the account, type an answer.",
-            "now": "Quick help answers from the Virundhu guide day and night; hand-overs arrive as tickets with an "
-            "AI-drafted reply you check and send.",
-            "needs_you": open_tickets,
-            "needs_label": "open tickets",
-            "done": 0,
-            "done_label": "",
+            "chore": "Answering and fixing support tickets",
+            "before": "Read every message, look up the account, check the payment, type an answer.",
+            "now": "Tara replies to every ticket within minutes, day and night. For payment problems she checks Dodo "
+            "herself and switches the plan on if the money arrived. Only refunds and legal matters come to you.",
+            "needs_you": runs("tara", "escalated"),
+            "needs_label": "sent to you",
+            "done": runs("tara"),
+            "done_label": "answered today",
             "link": "/app/admin/support",
         },
         {

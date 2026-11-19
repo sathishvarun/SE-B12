@@ -160,7 +160,7 @@ export interface RazorpayOrder { order_id: string; amount: number; currency: str
 export interface Lead { id: number; name: string; restaurant: string; phone: string | null; email: string | null; city: string | null; outlets: number | null; message: string | null; status: string; created_at: string }
 
 export const siteApi = {
-  contact: (body: { name: string; restaurant: string; phone: string; email: string; city: string; outlets: number | null; message: string; website: string }) =>
+  contact: (body: { name: string; restaurant: string; phone: string; email: string; city: string; outlets: number | null; message: string; website: string; meet_mode: string }) =>
     api.post("/api/v1/public/contact", body).then((r) => r.data),
 };
 
@@ -327,4 +327,18 @@ export const aiStaffApi = {
 };
 
 export interface AdminChore { key: string; name: string; title: string; chore: string; before: string; now: string; needs_you: number; needs_label: string; done: number; done_label: string; link: string }
+export interface DemoView { restaurant: string; name: string; status: "offered" | "booked" | "done" | "expired" | "cancelled"; mode: string; modes: Record<string, string>; minutes: number; starts_at: string | null; where: string | null; slots: string[]; office: string }
+export const demoApi = {
+  get: (t: string) => api.get<DemoView>(`/api/v1/public/contact/demo/${t}`).then((r) => r.data),
+  book: (t: string, slot: string, mode: string) => api.post<DemoView>(`/api/v1/public/contact/demo/${t}/book`, { slot, mode }).then((r) => r.data),
+  more: (t: string) => api.post<DemoView>(`/api/v1/public/contact/demo/${t}/more`).then((r) => r.data),
+  cancel: (t: string) => api.post<DemoView>(`/api/v1/public/contact/demo/${t}/cancel`).then((r) => r.data),
+};
+export interface AgentFeed {
+  team: { key: string; name: string; title: string; job: string; today: number }[];
+  needs_you_24h: number;
+  upcoming_demos: { restaurant: string; name: string; starts_at: string; mode: string; link: string | null; email: string | null; phone: string | null }[];
+  runs: { id: number; agent: string; name: string; action: string; outcome: "done" | "escalated" | "failed"; at: string }[];
+}
+export const adminAgentsApi = { get: () => api.get<AgentFeed>("/api/v1/admin/agents").then((r) => r.data) };
 export const adminAutopilotApi = { get: () => api.get<{ as_of: string; chores: AdminChore[]; restaurants: number }>("/api/v1/admin/autopilot").then((r) => r.data) };

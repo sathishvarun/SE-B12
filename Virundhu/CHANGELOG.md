@@ -1,5 +1,13 @@
 # Changelog
 
+
+## 2026-11-19: AI agent team (AI as a service)
+- Mani, the lead agent, runs every minute and hands work to Nila (demos) and Tara (support); Autopilot shows a live feed.
+- Demos book themselves: open times by email, one-tap booking page, calendar invites, Meet/Zoom/Teams/phone/in person,
+  WhatsApp and email to the admin, reminders and follow-up.
+- Support answers itself: Tara replies to every ticket and switches a plan on when Dodo shows the money arrived.
+- Contact form needs an email and asks how to meet. Site copy: AI staff as a service.
+
 ## 2026-11-19: AI staff (AI-as-a-Service)
 
 - **Your AI staff** page (`/app/ai-staff`, `GET /api/v1/ai-staff`): seven named agents with work done in 30 days,

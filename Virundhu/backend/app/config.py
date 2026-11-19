@@ -103,6 +103,16 @@ class Settings(BaseSettings):
     NOTIFY_EMAIL: str = ""
     # Where demo requests from the Contact page go. Defaults to NOTIFY_EMAIL.
     DEMO_REQUESTS_EMAIL: str = ""
+    # AI agent team (services/agent_team.py)
+    ADMIN_WHATSAPP: str = ""  # your number, +91...; agents message it only when they truly need you
+    WHATSAPP_TEMPLATE_ADMIN: str = "virundhu_admin_alert"  # Utility: '{{1}}: {{2}}. Details: {{3}}'
+    DEMO_DAYS: str = "0,1,2,3,4,5"  # Monday=0 ... Saturday=5
+    DEMO_TIMES: str = "11:00,15:00,17:30"  # India time
+    DEMO_MINUTES: int = 30
+    DEMO_LINK_MEET: str = ""  # optional fixed rooms; empty = a private video room is made for each demo
+    DEMO_LINK_ZOOM: str = ""
+    DEMO_LINK_TEAMS: str = ""
+    DEMO_OFFICE: str = "SK Mini Mart, Ganapathy, Coimbatore"
     # Google Workspace user whose inbox holds the info and demo aliases (Admin console → Company mailbox).
     MAILBOX_ACCOUNT: str = ""
 

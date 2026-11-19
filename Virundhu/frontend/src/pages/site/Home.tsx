@@ -42,7 +42,7 @@ export default function Home() {
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-48 -left-32 h-[420px] w-[420px] rounded-full bg-lotus/15 blur-[120px]" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-12 sm:px-8 lg:grid-cols-[1fr_minmax(0,560px)] lg:gap-14 lg:pb-24 lg:pt-16">
           <div>
-            <p className="type-label text-turmeric animate-rise">For restaurants and cloud kitchens in Tamil Nadu</p>
+            <p className="type-label text-turmeric animate-rise">AI staff as a service, for restaurants and cloud kitchens</p>
             <h1 className="type-hero mt-4">
               <RiseWords text="Every guest, heard." delay={0.1} />
               <br />
@@ -55,7 +55,7 @@ export default function Home() {
               <Link to="/register" className={cn(buttonVariants({ size: "lg" }), "h-auto min-h-12 max-w-full whitespace-normal py-3 text-center")}>Start 14-day free trial</Link>
               <Link to="/how-it-works#demo" className={cn(buttonVariants({ variant: "outlineDark", size: "lg" }), "h-auto min-h-12 max-w-full whitespace-normal py-3 text-center")}><PlayCircle className="h-5 w-5" /> See how it works</Link>
             </div>
-            <p className="mt-5 text-sm text-mist animate-rise [animation-delay:1000ms]">No card needed. Set up in 10 minutes.</p>
+            <p className="mt-5 text-sm text-mist animate-rise [animation-delay:1000ms]">Not software you operate: a team of AI agents that does the work. No card needed.</p>
           </div>
           <div className="relative mx-auto w-full max-w-[560px] animate-rise [animation-delay:300ms]">
             <FeastLeaf className="hidden px-6 py-10 sm:block" />

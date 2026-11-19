@@ -3,8 +3,10 @@
 from app.models.base import Base
 from app.models.ops import (
     ActivityLog,
+    AgentRun,
     AlertLog,
     AlertRule,
+    DemoMeeting,
     GuestRecovery,
     Lead,
     Notification,
@@ -23,6 +25,8 @@ from app.models.review import ImportBatch, Outlet, Review, ReviewAnalysis, Revie
 from app.models.user import Invitation, Membership, Organization, PasswordResetToken, RefreshToken, User
 
 __all__ = [
+    "AgentRun",
+    "DemoMeeting",
     "GuestRecovery",
     "ActivityLog",
     "PlanReminder",

@@ -917,7 +917,8 @@ def test_notifications_go_to_company_inboxes(client, monkeypatch):
         with SessionLocal() as db:
             activity.record(db, "demo_request", restaurant="Test Mess", email="lead@example.com")
             activity.record(db, "payment", restaurant="Test Mess", email="owner@example.com")
-    assert sent == [["virundhu.demo@skminimart.com"], ["virundhu.info@skminimart.com"]]
+    # Demo requests are handled by Nila (the demo agent), so they no longer email anyone directly.
+    assert sent == [["virundhu.info@skminimart.com"]]
 
 
 def test_paying_mid_countdown_stops_the_remaining_reminders(client):

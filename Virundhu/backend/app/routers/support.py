@@ -102,7 +102,7 @@ def create(body: NewTicket, ctx: OrgContext = Depends(get_org_context), db: Sess
     send_email(
         [ctx.user.email],
         f"We've got your request {number(t)}: {t.subject}",
-        f"Thank you. Your request {number(t)} is logged and we'll reply within 24 hours.\n\n"
+        f"Thank you. Tara, our support agent, is on {number(t)} now; her reply usually arrives in a few minutes.\n\n"
         f"Track it here: {settings.APP_URL}/app/support\n\n- Virundhu support",
     )
     return _out(db, t, True)
@@ -147,11 +147,6 @@ def owner_reply(
         restaurant=ctx.org.name,
         email=ctx.user.email,
         detail=f"{number(t)}: {body.message.strip()[:300]}",
-    )
-    send_email(
-        [settings.notify_email],
-        f"Customer replied on {number(t)}: {t.subject}",
-        f"{t.restaurant} ({t.user_email}) wrote:\n\n{body.message.strip()}\n\n{settings.APP_URL}/app/admin",
     )
     return _out(db, t, True)
 

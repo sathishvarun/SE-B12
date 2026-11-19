@@ -26,6 +26,8 @@ def sender() -> str:
 
 
 def _button_label(url: str) -> str:
+    if "/demo/" in url:
+        return "Book this time" if "slot=" in url else "See the times"
     if "reset-password" in url:
         return "Choose a new password"
     if url.rstrip("/").endswith("/login"):

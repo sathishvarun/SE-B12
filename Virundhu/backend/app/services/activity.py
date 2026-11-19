@@ -28,6 +28,8 @@ LABELS = {
     "upload": "Reviews added",
     "account_suspended": "Account suspended (trial or plan ended, not renewed)",
     "account_reactivated": "Account reactivated after payment",
+    "demo_booked": "Demo booked by Nila",
+    "agent_escalation": "An agent needs you",
 }
 QUIET = ("signup", "login", "login_failed", "ticket_reply", "help_question", "email_sent", "upload")
 EMAIL_ADMIN = {
@@ -35,9 +37,7 @@ EMAIL_ADMIN = {
     "account_reactivated",
     "account_deleted",
     "payment",
-    "demo_request",
     "login_locked",
-    "support_ticket",
 }
 
 
