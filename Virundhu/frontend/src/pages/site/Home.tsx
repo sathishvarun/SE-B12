@@ -6,6 +6,7 @@ import { useCountUp } from "@/lib/useCountUp";
 import { Link } from "react-router-dom";
 import { LiveBoard } from "@/components/landing/LiveBoard";
 import { TryIt } from "@/components/landing/TryIt";
+import { AfterSignIn } from "@/components/site/AfterSignIn";
 import { AutomationCards } from "@/components/site/AutomationCards";
 import { ClosingCta } from "@/components/site/SiteLayout";
 import { Testimonials } from "@/components/site/Testimonials";
@@ -120,6 +121,8 @@ export default function Home() {
           </li>
         </ul>
       </section>
+
+      <AfterSignIn />
 
       <section className="kolam-dark text-jasmine">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[1fr_minmax(0,560px)] lg:py-20">

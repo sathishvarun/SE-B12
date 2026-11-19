@@ -77,12 +77,24 @@ export default function About() {
                 <p className="font-display text-sm font-semibold uppercase tracking-[0.18em] text-turmeric">The people behind it</p>
                 <h2 className="mt-2 font-display text-[2.4rem] font-bold leading-[1.05] sm:text-[3rem]">Built by {company.parent}.<br /><span className="text-turmeric">Made for restaurants.</span></h2>
                 <p className="mt-4 max-w-xl text-lg text-mist">{company.name} is the restaurant software of {company.parent}, a Coimbatore company. We build the tools and run the service. Your kitchen, your guests and your name stay yours.</p>
+                <dl className="mt-6 grid max-w-xl grid-cols-3 gap-3">
+                  {[
+                    { k: "Started", v: company.founded ?? "2026" },
+                    { k: "Based in", v: (company.address ?? "").replace(/, India$/, "") },
+                    { k: "Write to us", v: company.email ?? "" },
+                  ].map((f) => (
+                    <div key={f.k} className="rounded-[14px] bg-white/[0.06] px-4 py-3">
+                      <dt className="text-sm text-mist">{f.k}</dt>
+                      <dd className="mt-0.5 break-words font-semibold">{f.k === "Write to us" ? <a className="underline" href={`mailto:${f.v}`}>{f.v}</a> : f.v}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
               <div className="relative rounded-[22px] bg-white/[0.06] p-5" aria-label={`${company.parent} is the parent company of ${company.name}`}>
                 <div className="rounded-[16px] border-2 border-white/15 px-5 py-4 text-center">
                   <p className="text-sm text-mist">Parent company</p>
                   <p className="font-display text-2xl font-bold">{company.parent}</p>
-                  <p className="text-sm text-mist">Coimbatore, Tamil Nadu</p>
+                  <p className="text-sm text-mist">{(company.address ?? "").replace(/, Tamil Nadu, India$/, "")} · since {company.founded ?? "2026"}</p>
                 </div>
                 <div className="mx-auto h-8 w-0.5 bg-turmeric" aria-hidden="true" />
                 <div className="rounded-[16px] bg-turmeric px-5 py-4 text-center text-night">

@@ -97,6 +97,8 @@ export function SiteLayout() {
             <Logo onDark />
             <p className="mt-3 max-w-sm">Every guest, heard. Review care for restaurants and cloud kitchens, made in Tamil Nadu.</p>
             {company?.email ? <p className="mt-3"><a href={`mailto:${company.email}`} className="hover:text-white">{company.email}</a></p> : null}
+            {company?.demo_email ? <p><a href={`mailto:${company.demo_email}`} className="hover:text-white">{company.demo_email}</a> (demos)</p> : null}
+            {company?.address ? <p className="mt-2">{company.address}</p> : null}
             {company?.phone ? <p><a href={`tel:${company.phone.replace(/\s/g, "")}`} className="hover:text-white">{company.phone}</a></p> : null}
           </div>
           <div>

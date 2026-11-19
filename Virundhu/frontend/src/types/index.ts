@@ -10,7 +10,7 @@ export type WorkflowStatus = "new" | "in_progress" | "replied" | "ignored";
 export type InboxView = "all" | "today" | "week" | "replied";
 
 export interface PublicConfig {
-  company?: { name: string; email: string | null; phone: string | null; address: string | null; grievance_officer: string; parent?: string | null; parent_gstin?: string | null };
+  company?: { name: string; email: string | null; phone: string | null; address: string | null; grievance_officer: string; parent?: string | null; demo_email?: string | null; founded?: string | null; parent_gstin?: string | null };
   app_name: string;
   google_enabled: boolean;
   google_client_id?: string | null;

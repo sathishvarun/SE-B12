@@ -72,12 +72,17 @@ export default function Contact() {
           )}
         </div>
         <aside className="space-y-5">
-          {company?.email || company?.phone ? (
-            <div className="rounded-[20px] bg-night p-5 text-jasmine">
+          {company ? (
+            <div className="rounded-[20px] bg-night p-6 text-jasmine">
               <h3 className="text-xl font-bold">Reach us directly</h3>
-              {company.email ? <p className="mt-2"><a className="underline" href={`mailto:${company.email}`}>{company.email}</a></p> : null}
-              {company.phone ? <p className="mt-1"><a className="underline" href={`https://wa.me/${company.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer">WhatsApp {company.phone}</a></p> : null}
-              {company.address ? <p className="mt-1 text-mist">{company.address}</p> : null}
+              <dl className="mt-4 space-y-3">
+                {company.email ? <div><dt className="text-sm text-mist">Questions and support</dt><dd><a className="font-semibold underline" href={`mailto:${company.email}`}>{company.email}</a></dd></div> : null}
+                {company.demo_email ? <div><dt className="text-sm text-mist">Book a demo</dt><dd><a className="font-semibold underline" href={`mailto:${company.demo_email}`}>{company.demo_email}</a></dd></div> : null}
+                {company.phone ? <div><dt className="text-sm text-mist">WhatsApp</dt><dd><a className="font-semibold underline" href={`https://wa.me/${company.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer">{company.phone}</a></dd></div> : null}
+                {company.address ? <div><dt className="text-sm text-mist">Office</dt><dd className="font-semibold">{company.parent ? `${company.parent}, ` : ""}{company.address}</dd></div> : null}
+                <div><dt className="text-sm text-mist">Hours</dt><dd className="font-semibold">Monday to Saturday, 10 am to 7 pm IST</dd></div>
+              </dl>
+              <p className="mt-4 text-sm text-mist">We reply within one working day.</p>
             </div>
           ) : null}
           {[

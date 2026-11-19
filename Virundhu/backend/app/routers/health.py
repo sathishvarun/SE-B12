@@ -50,9 +50,11 @@ def public_config() -> dict[str, object]:
         "llm_provider": settings.LLM_PROVIDER,
         "company": {
             "name": settings.COMPANY_NAME,
-            "email": settings.CONTACT_EMAIL or None,
+            "email": settings.CONTACT_EMAIL or "virundhu.info@skminimart.com",
+            "demo_email": settings.DEMO_REQUESTS_EMAIL or "virundhu.demo@skminimart.com",
+            "founded": settings.COMPANY_FOUNDED or None,
             "phone": settings.CONTACT_PHONE or None,
-            "address": settings.COMPANY_ADDRESS or None,
+            "address": settings.COMPANY_ADDRESS or "Ganapathy, Coimbatore, Tamil Nadu, India",
             "parent": settings.PARENT_COMPANY or None,
             "parent_gstin": settings.PARENT_GSTIN or None,
             "grievance_officer": settings.GRIEVANCE_OFFICER or settings.COMPANY_NAME,
