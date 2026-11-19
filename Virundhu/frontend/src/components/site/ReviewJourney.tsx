@@ -153,7 +153,7 @@ export function ReviewJourney() {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-12">
         <ol className="space-y-2" role="tablist" aria-label="One review, step by step">
           {STEPS.map((s, i) => (
-            <li key={s.title}>
+            <li key={s.title} role="none">
               <button role="tab" aria-selected={step === i} onClick={() => { setStep(i); setAuto(false); }}
                 className={cn("relative w-full overflow-hidden rounded-[16px] px-4 py-3 text-left transition-colors cursor-pointer",
                   step === i ? "bg-white/10" : "hover:bg-white/5")}>

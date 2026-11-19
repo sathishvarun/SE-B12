@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
 /** Animates a number from its previous value to `target` (instant when reduced motion is on). */
-export function useCountUp(target: number, duration = 900): number {
-  const [value, setValue] = useState(0);
-  const from = useRef(0);
+export function useCountUp(target: number, duration = 900, startAtTarget = false): number {
+  // startAtTarget: show the real number straight away (prebuilt pages that search engines read).
+  const [value, setValue] = useState(startAtTarget ? target : 0);
+  const from = useRef(startAtTarget ? target : 0);
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const start = performance.now();

@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /invite/
+Disallow: /auth/
+Disallow: /demo/
+Disallow: /f/
+Disallow: /w/
+
+Sitemap: https://virundhu.sathishsakthivel.tech/sitemap.xml

@@ -16,9 +16,9 @@ const ROWS: { what: string; virundhu: Mark; dashboards: Mark; pos: Mark; global:
 ];
 
 function Cell({ m }: { m: Mark }) {
-  if (m === "yes") return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-leaf text-white" aria-label="Yes"><Check className="h-4 w-4" /></span>;
-  if (m === "part") return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-turmeric text-night" aria-label="Partly"><Minus className="h-4 w-4" /></span>;
-  return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-jasmine-2 text-ink-soft" aria-label="No"><X className="h-4 w-4" /></span>;
+  if (m === "yes") return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-leaf text-white" ><span className="sr-only">Yes</span><Check aria-hidden="true" className="h-4 w-4" /></span>;
+  if (m === "part") return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-turmeric text-night" ><span className="sr-only">Partly</span><Minus aria-hidden="true" className="h-4 w-4" /></span>;
+  return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-jasmine-2 text-ink-soft" ><span className="sr-only">No</span><X aria-hidden="true" className="h-4 w-4" /></span>;
 }
 
 export default function Compare() {

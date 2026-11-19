@@ -38,7 +38,7 @@ export default function WhatsNext() {
           <ol className="mt-4 grid gap-3 sm:grid-cols-2">
             {SOON.map((s) => (
               <li key={s.title} className="rounded-[18px] border-2 border-line bg-white p-4">
-                <p className="flex items-center gap-1.5 text-sm font-semibold text-chilli"><CalendarClock className="h-4 w-4" /> {s.when}</p>
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-[#b32f12]"><CalendarClock className="h-4 w-4" /> {s.when}</p>
                 <p className="mt-1 font-display text-xl font-bold">{s.title}</p>
                 <p className="mt-1 text-ink-soft">{s.body}</p>
               </li>

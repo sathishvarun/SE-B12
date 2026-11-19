@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "sonner";
 import App from "@/App";
+import { markPainted } from "@/components/motion/Reveal";
 import { AuthProvider } from "@/context/AuthContext";
+import { STATIC_CONFIG } from "@/lib/seo";
 // Fonts are bundled with the app (no Google CDN call): Tamil + Latin from Indian type foundries.
 import "@fontsource-variable/anek-tamil/wdth.css";
 import "@fontsource/anek-tamil/500.css";
@@ -20,7 +22,7 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWind
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root element in index.html");
 
-createRoot(root).render(
+const tree = (
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -30,8 +32,18 @@ createRoot(root).render(
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
-  </StrictMode>,
+  </StrictMode>
 );
+
+// Public pages arrive as prebuilt HTML (scripts/prerender.mjs): reuse it instead of drawing the page again.
+if (root.hasChildNodes()) {
+  queryClient.setQueryData(["public-config"], STATIC_CONFIG);
+  hydrateRoot(root, tree);
+  setTimeout(() => queryClient.invalidateQueries({ queryKey: ["public-config"] }), 0);
+} else {
+  createRoot(root).render(tree);
+}
+requestAnimationFrame(() => markPainted());
 
 // Lets owners add Virundhu to their phone's home screen (production builds only).
 if (import.meta.env.PROD && "serviceWorker" in navigator) {

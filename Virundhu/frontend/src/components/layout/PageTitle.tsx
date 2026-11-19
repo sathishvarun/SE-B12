@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { SEO, SITE_URL } from "@/lib/seo";
 
 const TITLES: Record<string, string> = {
   "/": "Virundhu - Every guest, heard",
@@ -33,7 +34,14 @@ export function PageTitle() {
   const { pathname } = useLocation();
   useEffect(() => {
     const path = pathname.replace(/\/$/, "") || "/";
-    document.title = TITLES[path] ?? (path.startsWith("/f/") ? "Tell us about your visit" : "Virundhu");
+    const seo = SEO[path];
+    document.title = seo?.title ?? TITLES[path] ?? (path.startsWith("/f/") ? "Tell us about your visit" : "Virundhu");
+    if (!seo) return;
+    const set = (sel: string, attr: string, value: string) => document.querySelector(sel)?.setAttribute(attr, value);
+    set('meta[name="description"]', "content", seo.description);
+    set('meta[property="og:title"]', "content", seo.title);
+    set('meta[property="og:description"]', "content", seo.description);
+    set('link[rel="canonical"]', "href", `${SITE_URL}${path}`);
   }, [pathname]);
   return null;
 }

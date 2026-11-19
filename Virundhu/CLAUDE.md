@@ -318,3 +318,12 @@ general-purpose agents using the matching skill file.
   5/min), `POST /feedback`, `GET /feedback/ease-prompt`, `POST /feedback/ease`, `GET /admin/feedback` (numbers in
   Python, never by the model). `isai_round` runs before Tara: problems/questions or ease <= 2 with a message open a
   ticket; ideas are counted by area; praise with `consent_quote` and rating >= 4 becomes a published testimonial.
+
+### SEO (prerendered public pages)
+- `npm run build` = client build + SSR build of `src/entry-server.tsx` + `scripts/prerender.mjs`, which writes real
+  HTML for every path in `lib/seo.ts` (`SEO`: title, description, JSON-LD), plus `404.html` (noindex), `app-shell.html`
+  (noindex, for /app, /login, /f, /demo, /w...) and `sitemap.xml`. `public/robots.txt` blocks app routes.
+- nginx: public pages from files (`try_files $uri $uri/index.html =404`), unknown URLs get a real 404, app routes get the
+  shell. `main.tsx` hydrates prebuilt pages (`hydrateRoot`) and seeds `public-config` with `STATIC_CONFIG`.
+- Content in the first paint must be visible without JavaScript: `Reveal`/`RiseWords` skip their entrance on first
+  paint (`markPainted`), and `useCountUp(..., true)` starts at the real number. New public page → add it to `SEO`.

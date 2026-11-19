@@ -13,12 +13,11 @@ import { Testimonials } from "@/components/site/Testimonials";
 import { buttonVariants } from "@/components/ui/button";
 
 function Stat({ value, prefix, suffix, label }: { value: number; prefix: string; suffix: string; label: string }) {
-  const n = useCountUp(value, 1400);
+  const n = useCountUp(value, 1400, true);
   return (
-    <Reveal>
-      <dt className="sr-only">{label}</dt>
-      <dd className="font-display text-[2.6rem] font-extrabold leading-none text-turmeric tabular">{prefix}{Math.round(n)}{suffix}</dd>
-      <p className="mt-2 text-sm text-mist">{label}</p>
+    <Reveal className="flex flex-col">
+      <dt className="order-2 mt-2 text-sm text-mist">{label}</dt>
+      <dd className="order-1 font-display text-[2.6rem] font-extrabold leading-none text-turmeric tabular">{prefix}{Math.round(n)}{suffix}</dd>
     </Reveal>
   );
 }
@@ -42,7 +41,7 @@ export default function Home() {
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-48 -left-32 h-[420px] w-[420px] rounded-full bg-lotus/15 blur-[120px]" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-12 sm:px-8 lg:grid-cols-[1fr_minmax(0,560px)] lg:gap-14 lg:pb-24 lg:pt-16">
           <div>
-            <p className="type-label text-turmeric animate-rise">AI staff as a service, for restaurants and cloud kitchens</p>
+            <p className="type-label text-turmeric animate-rise">AI review management for Zomato, Swiggy and Google, for restaurants in Tamil Nadu</p>
             <h1 className="type-hero mt-4">
               <RiseWords text="Every guest, heard." delay={0.1} />
               <br />
@@ -86,10 +85,10 @@ export default function Home() {
             ["Virundhu reads every one", "In Tamil, Tanglish or English. Food-safety complaints alert you and that branch's manager in a minute."],
             ["Replies go out", "Happy guests are thanked by themselves. For complaints, the reply is ready for you to check."],
           ].map(([title, body], i) => (
-            <Reveal key={title} delay={i * 0.12}><li className="lift flex h-full gap-4 rounded-[20px] border-2 border-line bg-white p-5">
+            <li key={title} className="h-full"><Reveal delay={i * 0.12} className="h-full"><div className="lift flex h-full gap-4 rounded-[20px] border-2 border-line bg-white p-5">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-night font-display text-lg font-bold text-jasmine">{i + 1}</span>
               <div><h3 className="text-xl">{title}</h3><p className="mt-1 text-ink-soft">{body}</p></div>
-            </li></Reveal>
+            </div></Reveal></li>
           ))}
         </ol>
         <Link to="/how-it-works" className="mt-6 inline-flex items-center gap-1.5 font-semibold text-night hover:underline">Follow one review from start to finish <ArrowRight className="h-4 w-4" /></Link>
@@ -109,7 +108,7 @@ export default function Home() {
             <li key={m.name} className="rounded-[18px] border-2 border-line bg-white p-4">
               <div className="flex items-center gap-3">
                 <span className={cn("flex h-11 w-11 items-center justify-center rounded-full font-display text-lg font-bold", m.color)}>{m.name[0]}</span>
-                <div><p className="font-display text-lg font-bold leading-tight">{m.name}</p><p className="font-display text-[0.95rem] font-semibold text-chilli">{m.role}</p></div>
+                <div><p className="font-display text-lg font-bold leading-tight">{m.name}</p><p className="font-display text-[0.95rem] font-semibold text-[#b32f12]">{m.role}</p></div>
               </div>
               <p className="mt-3 text-sm">{m.job}</p>
             </li>

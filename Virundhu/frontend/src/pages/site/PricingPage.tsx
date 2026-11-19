@@ -1,16 +1,8 @@
+import { PRICING_FAQS as QA } from "@/lib/faqs";
 import { RiseWords } from "@/components/motion/Reveal";
 import { PriceCalculator } from "@/components/site/PriceCalculator";
 import { SavingsCalculator } from "@/components/site/SavingsCalculator";
 import { ClosingCta } from "@/components/site/SiteLayout";
-
-const QA = [
-  ["Is there a free trial?", "Yes, 14 days with everything switched on. No card needed to start."],
-  ["How is the price worked out?", "By the number of outlets you run and how long you pay for. The more outlets, the lower the price per outlet: a 100-branch chain pays far less per branch than a single shop. Paying for 3, 6, 9 or 12 months gives a discount, and 9 and 12 months add free months on top."],
-  ["How do I pay?", "UPI or card through Dodo Payments. You get a GST invoice. One payment for the period you choose; no contract and no automatic renewal."],
-  ["Can I add outlets later?", "Yes. Pay again with the new outlet count; your time left carries over and the new period is added on."],
-  ["What happens when the trial or plan ends?", "Nothing is deleted. You can still look at everything; adding and replying to reviews pauses until you pay."],
-  ["Is there a launch offer?", "Yes. The first 10 restaurants get 20% off with the code FIRST10 on the payment page."],
-];
 
 export default function PricingPage() {
   return (

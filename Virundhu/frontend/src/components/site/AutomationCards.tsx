@@ -32,7 +32,7 @@ const CARDS = [
     body: "Food safety or a furious guest: a bell, an email and a WhatsApp message to you and your outlet managers.",
     visual: (
       <div className="rounded-[14px] bg-jasmine p-3 text-sm">
-        <p className="font-semibold text-chilli">Food-safety complaint at RS Puram</p>
+        <p className="font-semibold text-[#b32f12]">Food-safety complaint at RS Puram</p>
         <p className="text-ink-soft">Hair found in the chicken. Call the outlet today.</p>
       </div>
     ),
