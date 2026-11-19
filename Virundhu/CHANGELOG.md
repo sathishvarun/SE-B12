@@ -1,6 +1,13 @@
 # Changelog
 
 
+
+## 2026-11-19: Feedback and ease of use
+- Share-feedback form on the website (/share-feedback) and in the app (/app/feedback).
+- Ease-of-use check: 3 questions after 3 days of use, at most monthly; admin "Feedback and ease" page with ease score,
+  NPS, where people struggle and most asked-for ideas.
+- Isai, the feedback agent: problems become tickets Tara solves, ideas are counted, praise with permission goes on the site.
+
 ## 2026-11-19: AI agent team (AI as a service)
 - Mani, the lead agent, runs every minute and hands work to Nila (demos) and Tara (support); Autopilot shows a live feed.
 - Demos book themselves: open times by email, one-tap booking page, calendar invites, Meet/Zoom/Teams/phone/in person,

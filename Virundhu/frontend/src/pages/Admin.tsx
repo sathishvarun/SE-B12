@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X } from "lucide-react";
+import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X, HeartHandshake } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { shortDate } from "@/lib/copy";
 import { useCountUp } from "@/lib/useCountUp";
 import { cn } from "@/lib/utils";
-import { accountApi, adminApi, adminAgentsApi, adminAutopilotApi, api, errorMessage, viewAs } from "@/services/api";
+import { accountApi, adminApi, adminAgentsApi, adminAutopilotApi, adminFeedbackApi, api, errorMessage, viewAs } from "@/services/api";
 
 const PLATFORM_COLORS = { google: "#6cb8ff", zomato: "#ff5b3a", swiggy: "#f6b93b", direct: "#2bb673", other: "#a9acd0", tripadvisor: "#34a77b", instagram: "#f06ba8", facebook: "#4a6cf7" } as const;
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -462,12 +462,12 @@ function AdminPassword() {
   );
 }
 
-type Section = "overview" | "autopilot" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "testimonials" | "data";
+type Section = "overview" | "autopilot" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "feedback" | "testimonials" | "data";
 const SECTIONS: { group: string; items: [Section, string, typeof Users][] }[] = [
   { group: "Overview", items: [["overview", "Today and money", LayoutDashboard], ["autopilot", "Autopilot", Workflow], ["mailbox", "Company mailbox", MailOpen]] },
   { group: "Customers", items: [["restaurants", "Restaurants", Building2], ["users", "Users", Users], ["leads", "Demo requests", Inbox]] },
   { group: "Logs", items: [["activity", "All activity", ScrollText], ["emails", "Emails sent", Mail], ["signins", "Sign-ins", LogIn]] },
-  { group: "Help desk", items: [["support", "Support tickets", LifeBuoy], ["testimonials", "Testimonials", Quote]] },
+  { group: "Help desk", items: [["support", "Support tickets", LifeBuoy], ["feedback", "Feedback and ease", HeartHandshake], ["testimonials", "Testimonials", Quote]] },
   { group: "System", items: [["data", "Data and backups", Database]] },
 ];
 const when = (d: string) => new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -572,6 +572,85 @@ function AgentFeedPanel() {
               </li>
             ))}
           </ol>
+        )}
+      </section>
+    </div>
+  );
+}
+
+const AREA_LABEL: Record<string, string> = { setup: "Getting set up", inbox: "Reviews inbox", replies: "Replies", alerts: "Alerts", reports: "Reports", ai_staff: "Your AI staff", billing: "Plan and billing", other: "Other" };
+const EASE_LABEL = ["Very hard", "Hard", "Okay", "Easy", "Very easy"];
+
+function FeedbackPanel() {
+  const q = useQuery({ queryKey: ["admin-feedback"], queryFn: adminFeedbackApi.get, refetchInterval: 60_000 });
+  const f = q.data;
+  if (!f) return <Skeleton className="h-[420px]" />;
+  const most = Math.max(1, ...f.ease_split);
+  const tile = (label: string, value: string, note: string, tone: string) => (
+    <div className="rounded-[20px] border-2 border-line bg-white p-5">
+      <p className="text-sm text-ink-soft">{label}</p>
+      <p className={cn("mt-1 font-display text-4xl font-bold", tone)}>{value}</p>
+      <p className="text-sm text-ink-soft">{note}</p>
+    </div>
+  );
+  const easeTone = f.ease_avg == null ? "" : f.ease_avg >= 4 ? "text-leaf" : f.ease_avg >= 3 ? "text-[#a86b00]" : "text-chilli";
+  const npsTone = f.nps == null ? "" : f.nps >= 30 ? "text-leaf" : f.nps >= 0 ? "text-[#a86b00]" : "text-chilli";
+  return (
+    <div className="space-y-5">
+      <p className="max-w-3xl text-ink-soft">Owners answer "How easy is Virundhu?" in the app, and anyone can share ideas, problems or praise from the website or the app. Isai, the feedback agent, reads each one within a minute: problems become tickets Tara solves, ideas are counted, and praise goes on the website when they allow it. Last {f.days} days.</p>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {tile("Ease of use", f.ease_avg == null ? "-" : `${f.ease_avg}/5`, `${f.ease_count} answer${f.ease_count === 1 ? "" : "s"}`, easeTone)}
+        {tile("Would recommend (NPS)", f.nps == null ? "-" : `${f.nps > 0 ? "+" : ""}${f.nps}`, `${f.nps_count} answer${f.nps_count === 1 ? "" : "s"} · above +30 is good`, npsTone)}
+        {tile("Ideas", String(f.kinds.idea ?? 0), "counted by part of the app", "text-night")}
+        {tile("Problems sent to Tara", String((f.kinds.problem ?? 0) + (f.kinds.question ?? 0)), `${f.kinds.praise ?? 0} praise · ${f.total} in all`, "text-night")}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <section className="rounded-[20px] border-2 border-line bg-white p-5">
+          <h3 className="font-display text-lg font-bold">How easy it feels</h3>
+          <ul className="mt-3 space-y-2">
+            {f.ease_split.map((n, i) => (
+              <li key={i} className="grid grid-cols-[80px_1fr_28px] items-center gap-2 text-sm">
+                <span>{EASE_LABEL[i]}</span>
+                <span className="h-3 overflow-hidden rounded-full bg-jasmine-2"><span className={cn("block h-full rounded-full", i <= 1 ? "bg-chilli" : i === 2 ? "bg-turmeric" : "bg-leaf")} style={{ width: `${(n / most) * 100}%` }} /></span>
+                <span className="text-right font-semibold">{n}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section className="rounded-[20px] border-2 border-line bg-white p-5">
+          <h3 className="font-display text-lg font-bold">Where people struggle</h3>
+          {f.hard_areas.length === 0 ? <p className="mt-2 text-sm text-ink-soft">Nobody has reported a hard part yet.</p> : (
+            <ol className="mt-3 space-y-2">{f.hard_areas.slice(0, 6).map(([a, n]) => <li key={a} className="flex justify-between text-sm"><span>{AREA_LABEL[a] ?? a}</span><Chip tone="chilli">{n}</Chip></li>)}</ol>
+          )}
+        </section>
+        <section className="rounded-[20px] border-2 border-line bg-white p-5">
+          <h3 className="font-display text-lg font-bold">Most asked-for ideas</h3>
+          {f.idea_areas.length === 0 ? <p className="mt-2 text-sm text-ink-soft">No ideas yet.</p> : (
+            <ol className="mt-3 space-y-2">{f.idea_areas.slice(0, 6).map(([a, n]) => <li key={a} className="flex justify-between text-sm"><span>{AREA_LABEL[a] ?? a}</span><Chip tone="sky">{n}</Chip></li>)}</ol>
+          )}
+        </section>
+      </div>
+      <section className="rounded-[20px] border-2 border-line bg-white p-5">
+        <h3 className="font-display text-lg font-bold">Every piece of feedback</h3>
+        {f.items.length === 0 ? <p className="mt-2 text-sm text-ink-soft">Nothing yet. The form is at /share-feedback and in the app under Share feedback.</p> : (
+          <ul className="mt-3 divide-y divide-line">
+            {f.items.map((r) => (
+              <li key={r.id} className="grid gap-1 py-3 md:grid-cols-[170px_1fr_260px] md:gap-4">
+                <div className="text-sm">
+                  <Chip tone={r.kind === "problem" || r.kind === "question" ? "chilli" : r.kind === "praise" ? "leaf" : r.kind === "idea" ? "sky" : r.kind === "ease" ? "turmeric" : "plain"}>{r.kind === "ease" ? `Ease ${r.ease}/5` : r.kind}</Chip>
+                  <p className="mt-1 font-semibold">{r.who}</p>
+                  <p className="text-ink-soft">{r.restaurant ?? (r.source === "website" ? "Website" : "")}</p>
+                  <p className="text-xs text-ink-soft">{when(r.at)}</p>
+                </div>
+                <div className="text-sm">
+                  {r.summary ? <p className="font-semibold">{r.summary}</p> : null}
+                  {r.message && r.message !== r.summary ? <p className="mt-0.5 text-ink-soft">{r.message}</p> : null}
+                  <p className="mt-1 text-xs text-ink-soft">{AREA_LABEL[r.area] ?? r.area}{r.rating ? ` · ${r.rating}★` : ""}{r.nps != null ? ` · recommend ${r.nps}/10` : ""}</p>
+                </div>
+                <p className={cn("text-sm", r.status === "new" ? "text-ink-soft" : "text-leaf")}>{r.status === "new" ? "Isai is reading it..." : r.action}</p>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>
@@ -815,6 +894,8 @@ function AdminPanel() {
         <SupportAdmin />
       ) : tab === "activity" ? (
         <ActivityTable intro="Everything recorded across all restaurants, newest first: sign-ups, sign-ins, emails, uploads, payments, passwords and support. Kept even after a restaurant deletes its account." />
+      ) : tab === "feedback" ? (
+        <FeedbackPanel />
       ) : tab === "autopilot" ? (
         <AutopilotPanel />
       ) : tab === "mailbox" ? (

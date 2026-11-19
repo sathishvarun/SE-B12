@@ -37,6 +37,8 @@ const FeedbackPage = lazy(() => import("@/pages/Feedback"));
 const Ask = lazy(() => import("@/pages/Ask"));
 const Billing = lazy(() => import("@/pages/Billing"));
 const Support = lazy(() => import("@/pages/Support"));
+const ShareFeedbackPage = lazy(() => import("@/pages/ShareFeedback"));
+const ShareFeedback = lazy(() => import("@/pages/site/ShareFeedback"));
 const Insights = lazy(() => import("@/pages/Insights"));
 const Widget = lazy(() => import("@/pages/site/Widget"));
 const ReceiptPage = lazy(() => import("@/pages/Receipt"));
@@ -57,6 +59,7 @@ export default function App() {
           <Route path="/compare" element={<Compare />} />
           <Route path="/whats-next" element={<WhatsNext />} />
           <Route path="/demo/:token" element={<DemoBooking />} />
+          <Route path="/share-feedback" element={<ShareFeedback />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<PrivacyPage />} />
@@ -87,6 +90,7 @@ export default function App() {
             <Route path="ask" element={<Ask />} />
             <Route path="insights" element={<Insights />} />
             <Route path="support" element={<Support />} />
+            <Route path="feedback" element={<ShareFeedbackPage />} />
             <Route path="automation" element={<Automation />} />
             <Route path="admin" element={<Admin />} />
             <Route path="admin/:section" element={<Admin />} />

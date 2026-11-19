@@ -340,5 +340,19 @@ export interface AgentFeed {
   upcoming_demos: { restaurant: string; name: string; starts_at: string; mode: string; link: string | null; email: string | null; phone: string | null }[];
   runs: { id: number; agent: string; name: string; action: string; outcome: "done" | "escalated" | "failed"; at: string }[];
 }
+export type FeedbackKind = "idea" | "problem" | "praise" | "other";
+export interface FeedbackBody { kind: FeedbackKind; message: string; rating: number | null; area: string | null; consent_quote: boolean; page: string }
+export const productFeedbackApi = {
+  publicSend: (b: FeedbackBody & { name: string; email: string; restaurant: string; website: string }) => api.post<{ message: string }>("/api/v1/public/feedback", b).then((r) => r.data),
+  send: (b: FeedbackBody) => api.post<{ message: string }>("/api/v1/feedback", b).then((r) => r.data),
+  easePrompt: () => api.get<{ due: boolean }>("/api/v1/feedback/ease-prompt").then((r) => r.data),
+  ease: (b: { ease: number; nps: number | null; area: string | null; message: string; page: string }) => api.post<{ message: string }>("/api/v1/feedback/ease", b).then((r) => r.data),
+};
+export interface AdminFeedback {
+  days: number; total: number; ease_avg: number | null; ease_count: number; ease_split: number[]; nps: number | null; nps_count: number;
+  kinds: Record<string, number>; hard_areas: [string, number][]; idea_areas: [string, number][];
+  items: { id: number; at: string; source: string; kind: string; sentiment: string | null; rating: number | null; ease: number | null; nps: number | null; area: string; message: string | null; summary: string | null; who: string; restaurant: string | null; action: string | null; status: string }[];
+}
+export const adminFeedbackApi = { get: () => api.get<AdminFeedback>("/api/v1/admin/feedback").then((r) => r.data) };
 export const adminAgentsApi = { get: () => api.get<AgentFeed>("/api/v1/admin/agents").then((r) => r.data) };
 export const adminAutopilotApi = { get: () => api.get<{ as_of: string; chores: AdminChore[]; restaurants: number }>("/api/v1/admin/autopilot").then((r) => r.data) };

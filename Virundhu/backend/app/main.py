@@ -27,6 +27,7 @@ from app.routers import (
     insights,
     intake,
     notifications,
+    product_feedback,
     public,
     review_requests,
     reviews,
@@ -88,6 +89,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(public.router)
+app.include_router(product_feedback.router)
 app.include_router(auth.router)
 app.include_router(google_auth.router)
 app.include_router(intake.router)

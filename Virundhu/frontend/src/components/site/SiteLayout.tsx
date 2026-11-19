@@ -113,6 +113,7 @@ export function SiteLayout() {
               <li><Link to="/register" className="hover:text-white">Start free trial</Link></li>
               <li><Link to="/login" className="hover:text-white">Sign in</Link></li>
               <li><Link to="/contact" className="hover:text-white">Book a 10-minute demo</Link></li>
+              <li><Link to="/share-feedback" className="hover:text-white">Share feedback</Link></li>
             </ul>
           </div>
           <div>

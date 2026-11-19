@@ -313,3 +313,8 @@ general-purpose agents using the matching skill file.
 - Tara: answers every ticket whose last message is the customer's. Payment issues: `recover_payment` finds a succeeded
   Dodo payment for the org that never activated and activates it. Refunds/legal/abuse or a 4th round →
   `call_admin` (WhatsApp + email + bell). Never promise refunds. Agent messages have author `tara@agents.virundhu`.
+
+- Isai (migration 0019, `product_feedback` table, `routers/product_feedback.py`): `POST /public/feedback` (honeypot,
+  5/min), `POST /feedback`, `GET /feedback/ease-prompt`, `POST /feedback/ease`, `GET /admin/feedback` (numbers in
+  Python, never by the model). `isai_round` runs before Tara: problems/questions or ease <= 2 with a message open a
+  ticket; ideas are counted by area; praise with `consent_quote` and rating >= 4 becomes a published testimonial.

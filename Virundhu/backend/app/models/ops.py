@@ -164,6 +164,37 @@ class AgentRun(TimestampMixin, Base):
     detail: Mapped[str | None] = mapped_column(Text)
 
 
+class ProductFeedback(TimestampMixin, Base):
+    """Feedback about Virundhu itself (not guest reviews): the share-feedback form and the ease-of-use check.
+
+    Isai, the feedback agent, reads each one, replies, and routes it (ticket for Tara, idea count, testimonial).
+    """
+
+    __tablename__ = "product_feedback"
+
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    source: Mapped[str] = mapped_column(String(10), nullable=False)  # app | website
+    kind: Mapped[str] = mapped_column(String(10), nullable=False)  # idea | problem | praise | other | ease
+    rating: Mapped[int | None] = mapped_column(Integer)  # 1-5 overall
+    ease: Mapped[int | None] = mapped_column(Integer)  # 1 very hard ... 5 very easy
+    nps: Mapped[int | None] = mapped_column(Integer)  # 0-10 would recommend
+    area: Mapped[str | None] = mapped_column(String(12))
+    message: Mapped[str | None] = mapped_column(Text)
+    name: Mapped[str | None] = mapped_column(String(120))
+    email: Mapped[str | None] = mapped_column(String(254))
+    restaurant: Mapped[str | None] = mapped_column(String(160))
+    page: Mapped[str | None] = mapped_column(String(120))
+    consent_quote: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    status: Mapped[str] = mapped_column(String(8), default="new", nullable=False, index=True)  # new | done | failed
+    ai_kind: Mapped[str | None] = mapped_column(String(10))
+    ai_sentiment: Mapped[str | None] = mapped_column(String(10))
+    ai_area: Mapped[str | None] = mapped_column(String(12))
+    ai_summary: Mapped[str | None] = mapped_column(String(300))
+    agent_action: Mapped[str | None] = mapped_column(String(300))
+    ticket_id: Mapped[int | None] = mapped_column(ForeignKey("support_tickets.id", ondelete="SET NULL"))
+
+
 class ActivityLog(TimestampMixin, Base):
     """Things the platform admin should know about: sign-ups, password changes, deletions, payments, demo requests.
 

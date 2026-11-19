@@ -1,9 +1,10 @@
+import { EasePrompt } from "@/components/feedback/EaseCheck";
 import { QuickHelp } from "@/components/help/QuickHelp";
 import { useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bell, CreditCard, Inbox, MessageCircleQuestion,
   UtensilsCrossed,
   LifeBuoy, Workflow, LogOut, MapPin, Menu, Plug, Settings, ShieldCheck, Upload,
-  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database } from "lucide-react";
+  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database, MessageSquareHeart, HeartHandshake } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -73,6 +74,7 @@ export function AppLayout() {
         ] },
         { title: "Help desk", items: [
           { to: "/app/admin/support", label: "Support tickets", icon: LifeBuoy },
+          { to: "/app/admin/feedback", label: "Feedback and ease", icon: HeartHandshake, short: "Feedback" },
           { to: "/app/admin/testimonials", label: "Testimonials", icon: Quote },
         ] },
         { title: "System", items: [{ to: "/app/admin/data", label: "Data and backups", icon: Database }] },
@@ -97,6 +99,7 @@ export function AppLayout() {
           ...(isOwner ? [{ to: "/app/billing", label: "Plan and billing", icon: CreditCard }] : []),
           { to: "/app/settings", label: "Settings", icon: Settings },
           { to: "/app/support", label: "Help and support", icon: LifeBuoy },
+          { to: "/app/feedback", label: "Share feedback", icon: MessageSquareHeart, hint: "Ideas, problems, how easy it is" },
         ] },
       ];
   const items = groups.flatMap((g) => g.items);
@@ -204,6 +207,7 @@ export function AppLayout() {
           <m.div key={pathname} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}>
             <Outlet />
+            {!adminHome ? <EasePrompt /> : null}
             {!adminHome ? <QuickHelp signedIn /> : null}
           </m.div>
         </AnimatePresence>
