@@ -582,6 +582,110 @@ def mailbox(db: Session = Depends(get_db)) -> MailboxOut:
     return MailboxOut(account=account, sender=sender, boxes=boxes, recent=recent[:20])
 
 
+@router.get("/autopilot")
+def autopilot(db: Session = Depends(get_db)) -> dict:
+    """The admin's daily chores, what runs by itself and what still needs a person today."""
+    from app.auth.deps import plan_lock
+    from app.models import ActivityLog, Payment, SupportTicket
+
+    now = datetime.now(UTC)
+    day = now - timedelta(days=1)
+    n = lambda q: db.scalar(q) or 0  # noqa: E731
+    orgs = [o for o in db.scalars(select(Organization).where(Organization.is_demo.is_(False)))]
+    ending = [
+        o for o in orgs if o.plan == "trial" and o.trial_ends_at and now <= o.trial_ends_at <= now + timedelta(days=3)
+    ]
+    locked = [o for o in orgs if plan_lock(db, o)]
+    stale_leads = n(select(func.count()).select_from(Lead).where(Lead.status == "new", Lead.created_at < day))
+    new_leads = n(select(func.count()).select_from(Lead).where(Lead.created_at >= day))
+    open_tickets = n(select(func.count()).select_from(SupportTicket).where(SupportTicket.status != "resolved"))
+    failed = n(
+        select(func.count())
+        .select_from(ActivityLog)
+        .where(ActivityLog.kind == "email_failed", ActivityLog.created_at >= day)
+    )
+    paid_today = (
+        n(
+            select(func.coalesce(func.sum(Payment.amount_paise), 0)).where(
+                Payment.status.in_(("captured", "succeeded", "paid")), Payment.created_at >= day
+            )
+        )
+        // 100
+    )
+    chores = [
+        {
+            "key": "leads",
+            "name": "Nila",
+            "title": "The Lead Chaser",
+            "chore": "Following up demo requests",
+            "before": "Open the mailbox, copy each request, write a reply, remember to call back.",
+            "now": "Every demo request lands in Demo requests and the virundhu.demo inbox within a minute, with the "
+            "restaurant's details. Nila lists the ones nobody has answered for 24 hours.",
+            "needs_you": stale_leads,
+            "needs_label": "waiting over 24 h",
+            "done": new_leads,
+            "done_label": "new today",
+            "link": "/app/admin/leads",
+        },
+        {
+            "key": "trials",
+            "name": "Ravi",
+            "title": "The Trial Saver",
+            "chore": "Chasing trials before they end",
+            "before": "Check each restaurant's end date, send reminders by hand, switch features off when unpaid.",
+            "now": "Reminders go out at 5, 4, 3, 2 and 1 days; unpaid accounts lock by themselves and unlock the "
+            "moment they pay. You get an alert for every suspension and reactivation.",
+            "needs_you": len(ending),
+            "needs_label": "trials ending in 3 days",
+            "done": len(locked),
+            "done_label": "locked until they pay",
+            "link": "/app/admin/restaurants",
+        },
+        {
+            "key": "support",
+            "name": "Tara",
+            "title": "The Help Desk Hero",
+            "chore": "Answering support questions",
+            "before": "Read every message, look up the account, type an answer.",
+            "now": "Quick help answers from the Virundhu guide day and night; hand-overs arrive as tickets with an "
+            "AI-drafted reply you check and send.",
+            "needs_you": open_tickets,
+            "needs_label": "open tickets",
+            "done": 0,
+            "done_label": "",
+            "link": "/app/admin/support",
+        },
+        {
+            "key": "health",
+            "name": "Dev",
+            "title": "The Night Watch",
+            "chore": "Checking the system is healthy",
+            "before": "Log in to the server, read logs, check emails went out and backups ran.",
+            "now": "Every failed email is logged; backups run at 3 am daily; a 9 pm digest sums up the day.",
+            "needs_you": failed,
+            "needs_label": "emails failed in 24 h",
+            "done": 1,
+            "done_label": "backup a day",
+            "link": "/app/admin/emails",
+        },
+        {
+            "key": "money",
+            "name": "Lakshmi",
+            "title": "The Money Keeper",
+            "chore": "Tracking payments and invoices",
+            "before": "Match payments to restaurants, make invoices, update a spreadsheet.",
+            "now": "Payments switch plans on by themselves, receipts and GST-ready invoices are emailed, and a "
+            "monthly audit Excel arrives in your inbox.",
+            "needs_you": 0,
+            "needs_label": "",
+            "done": paid_today,
+            "done_label": "collected today",
+            "link": "/app/admin",
+        },
+    ]
+    return {"as_of": now.isoformat(), "chores": chores, "restaurants": len(orgs)}
+
+
 class LaunchItem(BaseModel):
     key: str
     label: str

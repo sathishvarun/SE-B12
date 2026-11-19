@@ -9,6 +9,8 @@ import Home from "@/pages/site/Home";
 const HowItWorks = lazy(() => import("@/pages/site/HowItWorks"));
 const About = lazy(() => import("@/pages/site/About"));
 const PricingPage = lazy(() => import("@/pages/site/PricingPage"));
+const Compare = lazy(() => import("@/pages/site/Compare"));
+const WhatsNext = lazy(() => import("@/pages/site/WhatsNext"));
 const Contact = lazy(() => import("@/pages/site/Contact"));
 const PrivacyPage = lazy(() => import("@/pages/site/Legal").then((m) => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import("@/pages/site/Legal").then((m) => ({ default: m.TermsPage })));
@@ -37,6 +39,7 @@ const Support = lazy(() => import("@/pages/Support"));
 const Insights = lazy(() => import("@/pages/Insights"));
 const Widget = lazy(() => import("@/pages/site/Widget"));
 const ReceiptPage = lazy(() => import("@/pages/Receipt"));
+const AiStaffPage = lazy(() => import("@/pages/AiStaff"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -50,6 +53,8 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
+          <Route path="/compare" element={<Compare />} />
+          <Route path="/whats-next" element={<WhatsNext />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<PrivacyPage />} />
@@ -69,6 +74,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Dashboard />} />
+            <Route path="ai-staff" element={<AiStaffPage />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="alerts" element={<Alerts />} />
             <Route path="import" element={<AddReviews />} />

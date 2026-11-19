@@ -5,6 +5,7 @@ from app.models.ops import (
     ActivityLog,
     AlertLog,
     AlertRule,
+    GuestRecovery,
     Lead,
     Notification,
     Payment,
@@ -22,6 +23,7 @@ from app.models.review import ImportBatch, Outlet, Review, ReviewAnalysis, Revie
 from app.models.user import Invitation, Membership, Organization, PasswordResetToken, RefreshToken, User
 
 __all__ = [
+    "GuestRecovery",
     "ActivityLog",
     "PlanReminder",
     "SupportTicket",

@@ -198,6 +198,8 @@ def branded_html(
         rows = [_cell(table + r[len("__DETAILS__") :] + "</table>") if r.startswith("__DETAILS__") else r for r in rows]
     site = settings.APP_URL.replace("https://", "").replace("http://", "")
     place = htmlmod.escape(settings.COMPANY_ADDRESS or "Coimbatore, Tamil Nadu")
+    if settings.PARENT_COMPANY:
+        place += htmlmod.escape(f" · {settings.COMPANY_NAME} is a product of {settings.PARENT_COMPANY}")
     kind = email_kind(subject)
     headline, subline, accent, quote = KINDS[kind]
     if kind == "countdown":

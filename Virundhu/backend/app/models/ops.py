@@ -209,3 +209,16 @@ class TicketMessage(TimestampMixin, Base):
     from_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     author_email: Mapped[str | None] = mapped_column(String(255))
     body: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class GuestRecovery(OrgScopedMixin, TimestampMixin, Base):
+    """Win-back agent: an unhappy guest who left a phone/email gets an apology and a comeback code."""
+
+    __tablename__ = "guest_recoveries"
+
+    review_id: Mapped[int] = mapped_column(ForeignKey("reviews.id", ondelete="CASCADE"), unique=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(16), unique=True, nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="drafted", nullable=False)  # drafted | sent | returned
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    returned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

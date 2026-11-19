@@ -22,6 +22,16 @@ function Stat({ value, prefix, suffix, label }: { value: number; prefix: string;
   );
 }
 
+const AI_TEAM = [
+  { name: "Kavya", role: "The Guest Whisperer", job: "Reads every review the moment it lands, in Tamil, Tanglish or English.", color: "bg-leaf text-white" },
+  { name: "Arjun", role: "The Reply Maestro", job: "Writes the reply in the guest's language; posts happy Google replies within your rules.", color: "bg-turmeric text-night" },
+  { name: "Meera", role: "The Kitchen Guardian", job: "Food-safety and hygiene complaints reach your branch manager within a minute.", color: "bg-chilli text-white" },
+  { name: "Vikram", role: "The Trouble Spotter", job: "Spots the same complaint repeating at one outlet before it hurts your rating.", color: "bg-night text-turmeric" },
+  { name: "Anbu", role: "The Comeback Captain", job: "Sends unhappy guests an apology and a comeback code, then tells you who returned.", color: "bg-lotus text-white" },
+  { name: "Priya", role: "The Star Builder", job: "Invites happy guests to post on Google, so your rating climbs.", color: "bg-sky text-white" },
+  { name: "Siva", role: "The Monday Strategist", job: "Monday brief: what to fix, which dish, who to thank, how each outlet moved.", color: "bg-[#7a4b2a] text-white" },
+];
+
 export default function Home() {
   return (
     <>
@@ -85,6 +95,32 @@ export default function Home() {
       </section>
 
       {/* The product, live: reviews landing and being sorted */}
+      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="max-w-2xl">
+            <h2 className="type-section">Meet your AI staff</h2>
+            <p className="mt-2 text-lg text-ink-soft">Seven team members who work every shift: they read, reply, watch for trouble and win unhappy guests back. You set the rules; they do the work.</p>
+          </div>
+          <Link to="/compare" className="inline-flex items-center gap-1 font-semibold text-night underline-offset-4 hover:underline">How this is different <ArrowRight className="h-4 w-4" /></Link>
+        </div>
+        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {AI_TEAM.map((m) => (
+            <li key={m.name} className="rounded-[18px] border-2 border-line bg-white p-4">
+              <div className="flex items-center gap-3">
+                <span className={cn("flex h-11 w-11 items-center justify-center rounded-full font-display text-lg font-bold", m.color)}>{m.name[0]}</span>
+                <div><p className="font-display text-lg font-bold leading-tight">{m.name}</p><p className="font-display text-[0.95rem] font-semibold text-chilli">{m.role}</p></div>
+              </div>
+              <p className="mt-3 text-sm">{m.job}</p>
+            </li>
+          ))}
+          <li className="flex flex-col justify-center rounded-[18px] bg-night p-4 text-jasmine">
+            <p className="font-display text-lg font-bold">And every morning: today's 3 moves</p>
+            <p className="mt-1 text-sm text-mist">What to fix, which dish to check and who to thank, with money at risk shown in rupees.</p>
+            <Link to="/whats-next" className="mt-3 text-sm font-semibold text-turmeric hover:underline">See what's coming next</Link>
+          </li>
+        </ul>
+      </section>
+
       <section className="kolam-dark text-jasmine">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[1fr_minmax(0,560px)] lg:py-20">
           <div>

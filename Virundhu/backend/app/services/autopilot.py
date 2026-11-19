@@ -53,6 +53,10 @@ def maybe_auto_reply(db: Session, review: Review, analysis: ReviewAnalysis | Non
     org = db.get(Organization, review.organization_id)
     if org is None or not eligible(org, review, analysis) or not plan_active(db, org):
         return False
+    from app.services.ai_staff import reply_allowed
+
+    if not reply_allowed(org, review, analysis):  # the owner's rules: banned words, topics that wait for a person
+        return False
     try:
         google_reviews.post_reply(db, org.id, review, analysis.suggested_reply.strip())
     except Exception as exc:  # Google down, token revoked, API not approved

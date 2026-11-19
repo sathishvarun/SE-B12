@@ -13,6 +13,7 @@ from app.routers import (
     account,
     admin,
     admin_data,
+    ai_staff,
     assistant,
     auth,
     billing,
@@ -106,3 +107,4 @@ app.include_router(dashboard.router)
 app.include_router(reviews.router)
 app.include_router(review_requests.router)
 app.include_router(extras.router)
+app.include_router(ai_staff.router)

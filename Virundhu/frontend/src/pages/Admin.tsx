@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X } from "lucide-react";
+import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { shortDate } from "@/lib/copy";
 import { useCountUp } from "@/lib/useCountUp";
 import { cn } from "@/lib/utils";
-import { accountApi, adminApi, api, errorMessage, viewAs } from "@/services/api";
+import { accountApi, adminApi, adminAutopilotApi, api, errorMessage, viewAs } from "@/services/api";
 
 const PLATFORM_COLORS = { google: "#6cb8ff", zomato: "#ff5b3a", swiggy: "#f6b93b", direct: "#2bb673", other: "#a9acd0", tripadvisor: "#34a77b", instagram: "#f06ba8", facebook: "#4a6cf7" } as const;
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -462,9 +462,9 @@ function AdminPassword() {
   );
 }
 
-type Section = "overview" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "testimonials" | "data";
+type Section = "overview" | "autopilot" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "testimonials" | "data";
 const SECTIONS: { group: string; items: [Section, string, typeof Users][] }[] = [
-  { group: "Overview", items: [["overview", "Today and money", LayoutDashboard], ["mailbox", "Company mailbox", MailOpen]] },
+  { group: "Overview", items: [["overview", "Today and money", LayoutDashboard], ["autopilot", "Autopilot", Workflow], ["mailbox", "Company mailbox", MailOpen]] },
   { group: "Customers", items: [["restaurants", "Restaurants", Building2], ["users", "Users", Users], ["leads", "Demo requests", Inbox]] },
   { group: "Logs", items: [["activity", "All activity", ScrollText], ["emails", "Emails sent", Mail], ["signins", "Sign-ins", LogIn]] },
   { group: "Help desk", items: [["support", "Support tickets", LifeBuoy], ["testimonials", "Testimonials", Quote]] },
@@ -495,6 +495,42 @@ function ActivityTable({ kind, intro }: { kind?: string; intro: string }) {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+const CHORE_COLOR: Record<string, string> = { leads: "bg-lotus text-white", trials: "bg-chilli text-white", support: "bg-sky text-white", health: "bg-night text-turmeric", money: "bg-leaf text-white" };
+
+function AutopilotPanel() {
+  const q = useQuery({ queryKey: ["admin-autopilot"], queryFn: adminAutopilotApi.get, refetchInterval: 60_000 });
+  const [view, setView] = useState<"now" | "before">("now");
+  const need = (q.data?.chores ?? []).reduce((n, c) => n + c.needs_you, 0);
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-3xl text-ink-soft">Your daily admin jobs and who handles them now. {q.data ? <b className="text-ink">{need ? `${need} thing${need === 1 ? "" : "s"} need you today.` : "Nothing needs you today."}</b> : null}</p>
+        <div role="tablist" className="inline-flex rounded-full bg-jasmine-2 p-1">
+          <button role="tab" aria-selected={view === "before"} onClick={() => setView("before")} className={cn("cursor-pointer rounded-full px-4 py-1.5 text-sm font-semibold", view === "before" ? "bg-chilli text-white" : "text-ink-soft")}>Before</button>
+          <button role="tab" aria-selected={view === "now"} onClick={() => setView("now")} className={cn("cursor-pointer rounded-full px-4 py-1.5 text-sm font-semibold", view === "now" ? "bg-leaf text-white" : "text-ink-soft")}>Now</button>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {!q.data ? Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-[240px]" />) : q.data.chores.map((c) => (
+          <section key={c.key} className={cn("flex flex-col rounded-[20px] border-2 bg-white p-5", c.needs_you ? "border-chilli" : "border-line")}>
+            <div className="flex items-center gap-3">
+              <span className={cn("flex h-12 w-12 items-center justify-center rounded-full font-display text-xl font-bold", CHORE_COLOR[c.key])}>{c.name[0]}</span>
+              <div><p className="font-display text-lg font-bold leading-tight">{c.name}</p><p className="font-display text-[0.95rem] font-semibold text-chilli">{c.title}</p></div>
+            </div>
+            <p className="mt-3 font-semibold">{c.chore}</p>
+            <p className={cn("mt-1 flex-1 text-sm", view === "now" ? "text-ink" : "text-[#c23a1c]")}>{view === "now" ? c.now : `Before: ${c.before}`}</p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {c.needs_label ? <Chip tone={c.needs_you ? "chilli" : "leaf"}>{c.needs_you ? `${c.needs_you} ${c.needs_label}` : `No ${c.needs_label}`}</Chip> : null}
+              {c.done_label ? <Chip tone="plain">{c.key === "money" ? `₹${c.done.toLocaleString("en-IN")}` : c.done} {c.done_label}</Chip> : null}
+            </div>
+            <Link to={c.link} className="mt-3 text-sm font-semibold text-night hover:underline">Open</Link>
+          </section>
+        ))}
       </div>
     </div>
   );
@@ -737,6 +773,8 @@ function AdminPanel() {
         <SupportAdmin />
       ) : tab === "activity" ? (
         <ActivityTable intro="Everything recorded across all restaurants, newest first: sign-ups, sign-ins, emails, uploads, payments, passwords and support. Kept even after a restaurant deletes its account." />
+      ) : tab === "autopilot" ? (
+        <AutopilotPanel />
       ) : tab === "mailbox" ? (
         <MailboxPanel />
       ) : tab === "emails" ? (

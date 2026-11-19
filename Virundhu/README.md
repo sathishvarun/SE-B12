@@ -199,6 +199,7 @@ Check the whole journey on the live server with one test restaurant (it never to
 | Own QR feedback link | Done: guests rate the food from a QR on the bill or packet; lands in Virundhu automatically, then every guest is invited to Google |
 | WhatsApp alerts | Built, switched off until a WhatsApp Business (Meta Cloud API) account is added |
 | Admin console | Grouped left menu: today and money, company mailbox (demo/info counts + Open in Gmail), restaurants, users, demo requests, activity/email/sign-in logs, per-restaurant log, support tickets, testimonials, backups |
+| AI staff | Seven agents (Listener, Responder, Guardian, Crisis radar, Win-back, Promoter, Analyst), today's 3 moves, crisis radar, win-back codes, money at risk/won back, owner rules |
 | Customer emails | Welcome, reset, password changed, 5/4/3/2/1-day reminders, suspension, payment confirmation; admin alerts for suspension and reactivation |
 | Quick help chat (answers from the guide, hands over to a person) | Done |
 | GitHub | Done |

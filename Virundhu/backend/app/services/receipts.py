@@ -60,7 +60,13 @@ def as_dict(pay: Payment, org: Organization) -> dict:
         "currency": pay.currency,
         "payment_id": pay.razorpay_payment_id,
         "status": pay.status,
-        "seller": {"name": settings.COMPANY_NAME, "email": settings.CONTACT_EMAIL, "address": settings.COMPANY_ADDRESS},
+        "seller": {
+            "name": settings.COMPANY_NAME,
+            "email": settings.CONTACT_EMAIL,
+            "address": settings.COMPANY_ADDRESS,
+            "parent": settings.PARENT_COMPANY or None,
+            "gstin": settings.PARENT_GSTIN or None,
+        },
     }
 
 

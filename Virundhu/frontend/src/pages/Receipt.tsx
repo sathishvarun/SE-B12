@@ -32,6 +32,7 @@ export default function ReceiptPage() {
         <header className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-jasmine-2 pb-5">
           <div className="flex items-center gap-3"><LogoMark className="h-10 w-10" /><div>
             <p className="font-display text-xl font-bold">{r.seller.name || "Virundhu"}</p>
+            {r.seller.parent ? <p className="text-sm text-ink-soft">A product of {r.seller.parent}{r.seller.gstin ? `, GSTIN ${r.seller.gstin}` : ""}</p> : null}
             {r.seller.address ? <p className="text-sm text-ink-soft">{r.seller.address}</p> : null}
             {r.seller.email ? <p className="text-sm text-ink-soft">{r.seller.email}</p> : null}
           </div></div>

@@ -14,6 +14,8 @@ const SITE_LINKS = [
   { to: "/", label: "Home" },
   { to: "/how-it-works", label: "How it works" },
   { to: "/about", label: "Why Virundhu" },
+  { to: "/compare", label: "Compare" },
+  { to: "/whats-next", label: "What's next" },
   { to: "/pricing", label: "Pricing" },
   { to: "/contact", label: "Contact" },
 ] as const;
@@ -122,7 +124,10 @@ export function SiteLayout() {
             </ul>
           </div>
         </div>
-        <p className="mx-auto max-w-7xl border-t border-white/10 px-5 py-5 text-sm sm:px-8">© 2026 {company?.name ?? "Virundhu"}. All rights reserved.</p>
+        <p className="mx-auto max-w-7xl border-t border-white/10 px-5 py-5 text-sm sm:px-8">
+          © 2026 {company?.name ?? "Virundhu"}. All rights reserved.
+          {company?.parent ? <> {company.name ?? "Virundhu"} is a product of {company.parent}, our parent company. We make software for restaurants; we don't run restaurants.</> : null}
+        </p>
       </footer>
     </div>
   );

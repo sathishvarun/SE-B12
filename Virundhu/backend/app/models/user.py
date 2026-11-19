@@ -61,6 +61,7 @@ class Organization(TimestampMixin, Base):
     ask_after_bill: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     # WhatsApp alert numbers in international format, e.g. ["+919876543210"]
     whatsapp_numbers: Mapped[list | None] = mapped_column(JSONB)
+    ai_rules: Mapped[dict | None] = mapped_column(JSONB)  # AI staff rules: banned words, escalate, offer, order value
     # Outlets paid for in the current plan (sets the outlet and review limits)
     paid_outlets: Mapped[int | None] = mapped_column(Integer)
 

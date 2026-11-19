@@ -140,7 +140,7 @@ export interface Receipt {
   id: number; invoice_no: string | null; paid_at: string; restaurant: string; bill_name: string; bill_gstin: string | null;
   bill_address: string | null; bill_email: string | null; outlets: number | null; months: number | null; period_start: string | null;
   period_end: string | null; amount: number; currency: string; payment_id: string; status: string;
-  seller: { name: string; email: string; address: string };
+  seller: { name: string; email: string; address: string; parent?: string | null; gstin?: string | null };
 }
 export interface BillingStatus {
   billing?: { company_name: string; gstin: string | null; address: string | null };
@@ -303,3 +303,28 @@ export interface Mailbox {
   boxes: { key: string; label: string; address: string; purpose: string; total: number; new: number; week: number; gmail_url: string }[];
   recent: { at: string; box: string; who: string | null; title: string; detail: string | null; status: string }[];
 }
+
+export interface AiAgent { key: string; name: string; role: string; sample: string; job: string; status: "working" | "approval" | "setup" | "off"; done: number; unit: string; extra?: string; link: string }
+export interface AiMove { kind: string; title: string; why: string; link: string }
+export interface AiCrisis { outlet: string; topic: string; count: number; severity: "critical" | "high"; likely_cause: string; examples: string[]; action: string }
+export interface AiRecovery { review_id: number; guest: string; contact: string; rating: number; summary: string; outlet: string | null; date: string; status: "new" | "drafted" | "sent" | "returned"; code: string | null; message: string | null; whatsapp_url: string | null }
+export interface AiRules { banned_words: string[]; escalate: string[]; avg_order_value: number; comeback_offer: string }
+export interface AiStaff {
+  as_of: string;
+  agents: AiAgent[];
+  roi: { reviews_read: number; replies_written: number; hours_saved: number; value_saved: number; revenue_at_risk: number; revenue_won_back: number; assumptions: string };
+  moves: AiMove[];
+  crises: AiCrisis[];
+  recovery: AiRecovery[];
+  rules: AiRules;
+}
+
+export const aiStaffApi = {
+  get: () => api.get<AiStaff>("/api/v1/ai-staff").then((r) => r.data),
+  saveRules: (rules: AiRules) => api.put<AiRules>("/api/v1/ai-staff/rules", rules).then((r) => r.data),
+  draft: (reviewId: number) => api.post<{ code: string; message: string }>(`/api/v1/ai-staff/recovery/${reviewId}`).then((r) => r.data),
+  mark: (reviewId: number, status: "sent" | "returned") => api.post(`/api/v1/ai-staff/recovery/${reviewId}/status`, { status }).then((r) => r.data),
+};
+
+export interface AdminChore { key: string; name: string; title: string; chore: string; before: string; now: string; needs_you: number; needs_label: string; done: number; done_label: string; link: string }
+export const adminAutopilotApi = { get: () => api.get<{ as_of: string; chores: AdminChore[]; restaurants: number }>("/api/v1/admin/autopilot").then((r) => r.data) };

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-19: AI staff (AI-as-a-Service)
+
+- **Your AI staff** page (`/app/ai-staff`, `GET /api/v1/ai-staff`): seven named agents with work done in 30 days,
+  hours and rupees saved, revenue at risk and won back (assumptions shown).
+- **Today's 3 moves**, **Crisis radar** (same complaint 3x at one outlet in 72 h; hygiene 2x) and **Win-back**
+  (apology + comeback code in the guest's language, WhatsApp link, tracks returns; table `guest_recoveries`, migration 0017).
+- **Owner rules** (`organizations.ai_rules`): banned words and topics that always wait for a person, enforced before
+  Google auto-reply.
+- Website: Meet your AI staff on Home, `/compare` (what makes Virundhu different), `/whats-next` (live and coming soon).
+- Parent company: "Virundhu is a brand of SK Mini Mart" in footer, About, receipts and emails (`PARENT_COMPANY`, `PARENT_GSTIN`).
+
 ## 2026-11-18: Suspended accounts are locked until they pay
 
 - When a trial or paid plan ends unpaid, the owner can still sign in, but every menu is greyed out with a lock and

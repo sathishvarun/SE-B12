@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bell, CreditCard, Inbox, MessageCircleQuestion,
   UtensilsCrossed,
   LifeBuoy, Workflow, LogOut, MapPin, Menu, Plug, Settings, ShieldCheck, Upload,
-  LayoutDashboard, MailOpen, Lock, Building2, Users, ScrollText, Mail, LogIn, Quote, Database } from "lucide-react";
+  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -58,6 +58,7 @@ export function AppLayout() {
     ? [
         { title: "Overview", items: [
           { to: "/app/admin", label: "Today and money", icon: LayoutDashboard, end: true, short: "Today" },
+          { to: "/app/admin/autopilot", label: "Autopilot", icon: Workflow, hint: "Daily admin jobs, done for you" },
           { to: "/app/admin/mailbox", label: "Company mailbox", icon: MailOpen, short: "Mailbox" },
         ] },
         { title: "Customers", items: [
@@ -79,6 +80,7 @@ export function AppLayout() {
     : [
         { title: "Every day", items: [
           { to: "/app", label: "Dashboard", icon: BarChart3, end: true, hint: "Today at a glance", short: "Home" },
+          { to: "/app/ai-staff", label: "Your AI staff", icon: UsersRound, hint: "What your AI team did and today's 3 moves", short: "AI staff" },
           { to: "/app/inbox", label: "Reviews to reply", icon: Inbox, badge: urgent, hint: "Reply to guests", short: "Inbox" },
           { to: "/app/import", label: "Add reviews", icon: Upload, hint: "Zomato, Swiggy, screenshots" },
           { to: "/app/alerts", label: "Alerts", icon: Bell, hint: "Problems that need you" },
@@ -98,7 +100,7 @@ export function AppLayout() {
         ] },
       ];
   const items = groups.flatMap((g) => g.items);
-  const mobileMain = adminHome ? [0, 1, 2, 5].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
+  const mobileMain = adminHome ? [0, 1, 3, 6].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
   const bell = adminHome ? <AdminBell align="left" /> : <NotificationBell onDark align="left" />;
   const trialEnds = !viewing && user?.organization?.plan === "trial" && !user.organization.is_demo ? user.organization.trial_ends_at : null;
   // Unpaid: the account stays signed in, but only Plan and billing (and Help) open until the payment lands.

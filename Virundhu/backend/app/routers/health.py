@@ -53,6 +53,8 @@ def public_config() -> dict[str, object]:
             "email": settings.CONTACT_EMAIL or None,
             "phone": settings.CONTACT_PHONE or None,
             "address": settings.COMPANY_ADDRESS or None,
+            "parent": settings.PARENT_COMPANY or None,
+            "parent_gstin": settings.PARENT_GSTIN or None,
             "grievance_officer": settings.GRIEVANCE_OFFICER or settings.COMPANY_NAME,
         },
     }

@@ -78,6 +78,8 @@ class Settings(BaseSettings):
     CONTACT_EMAIL: str = ""
     CONTACT_PHONE: str = ""
     COMPANY_ADDRESS: str = ""
+    PARENT_COMPANY: str = "SK Mini Mart"  # Virundhu is a brand of this GST-registered business
+    PARENT_GSTIN: str = ""  # shown on the site and receipts when set
     GRIEVANCE_OFFICER: str = ""  # person who answers privacy requests; defaults to the company name
     # Launch offer shown on the Plan and billing page (the code itself lives in Dodo > Sales > Discounts)
     PROMO_CODE: str = ""
