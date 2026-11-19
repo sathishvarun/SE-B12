@@ -276,7 +276,9 @@ def nila_round(db: Session) -> int:
     """New requests get times; quiet ones get one nudge; booked ones get reminders and a follow-up."""
     n = 0
     now = datetime.now(UTC)
-    new = db.scalars(select(Lead).where(Lead.status == "new", ~Lead.id.in_(select(DemoMeeting.lead_id))).limit(20))
+    fresh = now - timedelta(days=7)  # never surprise someone who wrote weeks ago
+    new = db.scalars(select(Lead).where(
+        Lead.status == "new", Lead.created_at >= fresh, ~Lead.id.in_(select(DemoMeeting.lead_id))).limit(20))
     for lead in new:
         if offer_times(db, lead) is None:
             lead.status = "no_email" if not lead.email else lead.status
@@ -473,7 +475,8 @@ def tara_round(db: Session) -> int:
     waiting = db.scalars(
         select(SupportTicket).join(last, last.c.ticket_id == SupportTicket.id)
         .join(TicketMessage, TicketMessage.id == last.c.mid)
-        .where(TicketMessage.from_admin.is_(False), SupportTicket.status != "resolved")
+        .where(TicketMessage.from_admin.is_(False), SupportTicket.status != "resolved",
+               TicketMessage.created_at >= datetime.now(UTC) - timedelta(days=14))
         .order_by(SupportTicket.updated_at).limit(25)
     ).all()
     for t in waiting:
