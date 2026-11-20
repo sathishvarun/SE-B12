@@ -376,3 +376,16 @@ general-purpose agents using the matching skill file.
 - Dodo payments = merchant of record (no GST split, reconcile with Dodo payouts). Bank transfers (`bank_` ids) = direct
   sales: GST split from the inclusive price at `GST_RATE_PERCENT`; CGST+SGST when the customer GSTIN state = seller state
   (`PARENT_GSTIN[:2]` or `SELLER_STATE_CODE`), else IGST; no GSTIN = same state. `GST_SAC` printed when set.
+
+### Books (migration 0022, `services/books.py`, `services/invoice_pdf.py`)
+- PDFs with fpdf2 + bundled DejaVu Sans (`app/assets/fonts`, has ₹): tax invoice (bank transfer, GST split) / payment
+  receipt (Dodo, merchant of record), proforma invoice (PI-YYYYMM-NNNNN, `invoice_requests`, bank details from
+  `BANK_*` env), credit note (CN-YYYYMM-NNNNN on `refunds.credit_note_no`, every succeeded refund, emailed to owners).
+- Owners: `/billing/receipts/{id}/pdf`, `/billing/receipts.zip?fy=` (FY Apr-Mar, PDFs + summary.csv),
+  `/billing/credit-notes(/{id}/pdf)`, `/billing/invoice-requests(/{id}/pdf)`. Receipt emails carry the PDF.
+- Admin (Accounts and audit page): `/admin/accounts/settings`, `invoice-requests` (+ `/cancel`, `/pdf`), `bank-payments`,
+  `payments/{id}/pdf`, `payments/{id}/refund` (bank refunds, partial allowed, never above what's left, UTR once),
+  `credit-notes/{id}/pdf`, `dodo-sync` (payment tax + settlement, `dodo_payouts` with fees), `email-now`.
+- Cron `accounts_month_tick` (1st, 8:20 IST): Dodo sync, then last month's Excel to `ACCOUNTS_REPORT_EMAILS`.
+- Recording a bank payment closes matching open proforma requests. PDF routes end in `/pdf` (not `.pdf`) so they never
+  clash with `/receipts/{id}`.

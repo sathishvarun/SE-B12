@@ -5,6 +5,7 @@ from arq.connections import RedisSettings
 
 from app.config import settings
 from app.worker.jobs import (
+    accounts_month_tick,
     agent_tick,
     analyze_job,
     daily_digest_tick,
@@ -32,6 +33,7 @@ class WorkerSettings:
         cron(weekly_summary_tick, weekday=0, hour=3, minute=30),  # Monday 9:00 am India time
         cron(plan_reminder_tick, minute=25),  # trial/plan ending reminders
         cron(monthly_report_tick, day=1, hour=3, minute=0),  # 8:30 am India time on the 1st
+        cron(accounts_month_tick, day=1, hour=2, minute=50),  # 8:20 am India time: accounts Excel to the accountant
         cron(daily_digest_tick, hour=15, minute=30),  # 9 pm India time: admin's daily summary
         cron(retention_tick, hour=21, minute=40),  # 3:10 am India time: delete data past its retention period
     ]

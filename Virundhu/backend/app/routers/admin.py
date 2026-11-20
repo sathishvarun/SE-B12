@@ -241,6 +241,12 @@ def record_bank_payment(org_id: int, body: BankPaymentIn, db: Session = Depends(
             f"Not recorded: this reference was already used, or {pricing.inr(body.amount_inr)} is below the price "
             f"({pricing.inr(q.total)}).",
         )
+    from app.models import Payment
+    from app.services import books
+
+    pay = db.scalar(select(Payment).where(Payment.razorpay_payment_id == f"bank_{body.reference}"))
+    books.close_requests(db, org_id, body.outlets, body.months, pay)
+    db.commit()
     done = f"Recorded {pricing.inr(body.amount_inr)}. The plan is on and the receipt was emailed."
     return {"ok": True, "message": done}
 

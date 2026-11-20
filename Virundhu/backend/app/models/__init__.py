@@ -7,7 +7,9 @@ from app.models.ops import (
     AlertLog,
     AlertRule,
     DemoMeeting,
+    DodoPayout,
     GuestRecovery,
+    InvoiceRequest,
     Lead,
     Notification,
     Payment,
@@ -27,6 +29,8 @@ from app.models.review import AiUsage, ImportBatch, Outlet, Review, ReviewAnalys
 from app.models.user import Invitation, Membership, Organization, PasswordResetToken, RefreshToken, User
 
 __all__ = [
+    "DodoPayout",
+    "InvoiceRequest",
     "AiUsage",
     "AgentRun",
     "DemoMeeting",

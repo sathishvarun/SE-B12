@@ -94,6 +94,26 @@ async def places_tick(ctx: dict[str, Any]) -> None:
         logger.info("places_tick: %d new Google reviews", n)
 
 
+def _accounts_month() -> dict:
+    """1st of the month: refresh Dodo fees and payouts, then email last month's accounts Excel."""
+    from app.config import settings
+    from app.services import books
+
+    with SessionLocal() as db:
+        if settings.PAYMENT_PROVIDER == "dodo" and settings.DODO_PAYMENTS_API_KEY:
+            try:
+                books.sync_dodo(db)
+            except Exception:  # noqa: BLE001 - the email still goes with what we have
+                logger.exception("Dodo sync before the monthly accounts email failed")
+        return books.email_month(db)
+
+
+async def accounts_month_tick(ctx: dict[str, Any]) -> None:
+    """8:20 am India time on the 1st: last month's accounts to the accountant list."""
+    r = await asyncio.to_thread(_accounts_month)
+    logger.info("Monthly accounts sent: %s", r)
+
+
 async def google_sync_tick(ctx: dict[str, Any]) -> None:
     """Every 10 minutes: pull new Google reviews for every connected restaurant, read them, alert."""
     await asyncio.to_thread(_google_tick)

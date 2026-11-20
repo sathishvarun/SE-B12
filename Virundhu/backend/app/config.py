@@ -92,6 +92,14 @@ class Settings(BaseSettings):
     GST_RATE_PERCENT: int = 18
     GST_SAC: str = ""
     SELLER_STATE_CODE: str = "33"  # Tamil Nadu; the PARENT_GSTIN's first two digits win when it is set
+    # Printed on proforma invoices so big chains can pay by NEFT/RTGS. Kept in .env only, never in Git.
+    BANK_ACCOUNT_NAME: str = ""
+    BANK_NAME: str = ""
+    BANK_ACCOUNT_NUMBER: str = ""
+    BANK_IFSC: str = ""
+    BANK_BRANCH: str = ""
+    # Who gets the accounts Excel on the 1st of every month (comma separated). Empty = the admin notify email.
+    ACCOUNTS_REPORT_EMAILS: str = ""
     PROMO_TEXT: str = ""
 
     RAZORPAY_KEY_ID: str = ""

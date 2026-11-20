@@ -421,3 +421,35 @@ export const accountsApi = {
   summary: (period: string) => api.get<AccountsSummary>("/api/v1/admin/accounts/summary", { params: { period } }).then((r) => r.data),
   report: (period: string) => api.get<Blob>("/api/v1/admin/accounts/report.xlsx", { params: { period }, responseType: "blob" }).then((r) => r.data),
 };
+
+// ---------- Books: PDFs, credit notes, proforma invoices ----------
+export interface CreditNote { id: number; credit_note_no: string; amount: number; refunded_at: string; reason: string | null }
+export interface ProformaRow { id: number; number: string; outlets: number; months: number; amount: number; status: string; created_at: string }
+const blob = (url: string, params?: Record<string, unknown>) => api.get<Blob>(url, { params, responseType: "blob" }).then((r) => r.data);
+export function saveBlob(data: Blob, name: string) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(data); a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+export const booksApi = {
+  receiptPdf: (paymentId: number) => blob(`/api/v1/billing/receipts/${paymentId}/pdf`),
+  receiptsZip: (fy: number) => blob("/api/v1/billing/receipts.zip", { fy }),
+  creditNotes: () => api.get<CreditNote[]>("/api/v1/billing/credit-notes").then((r) => r.data),
+  creditNotePdf: (id: number) => blob(`/api/v1/billing/credit-notes/${id}/pdf`),
+  requests: () => api.get<ProformaRow[]>("/api/v1/billing/invoice-requests").then((r) => r.data),
+  requestPdf: (id: number) => blob(`/api/v1/billing/invoice-requests/${id}/pdf`),
+};
+export interface BooksSettings { seller: string; seller_gstin: string | null; sac: string | null; bank_ready: boolean; bank_last4: string | null; report_recipients: string[]; open_requests: number; payouts: number; last_payout: string | null }
+export interface AdminRequestRow { id: number; number: string | null; organization_id: number; restaurant: string; outlets: number; months: number; amount: number; bill_gstin: string | null; created_at: string; status: string }
+export interface BankPaymentRow { id: number; invoice_no: string | null; restaurant: string; amount: number; refunded: number; reference: string; paid_at: string }
+export const adminBooksApi = {
+  settings: () => api.get<BooksSettings>("/api/v1/admin/accounts/settings").then((r) => r.data),
+  requests: () => api.get<AdminRequestRow[]>("/api/v1/admin/accounts/invoice-requests").then((r) => r.data),
+  cancelRequest: (id: number) => api.post(`/api/v1/admin/accounts/invoice-requests/${id}/cancel`).then((r) => r.data),
+  requestPdf: (id: number) => blob(`/api/v1/admin/accounts/invoice-requests/${id}/pdf`),
+  bankPayments: () => api.get<BankPaymentRow[]>("/api/v1/admin/accounts/bank-payments").then((r) => r.data),
+  paymentPdf: (id: number) => blob(`/api/v1/admin/accounts/payments/${id}/pdf`),
+  refund: (id: number, body: { amount_inr: number; reference: string; reason?: string }) =>
+    api.post<{ ok: boolean; credit_note: string; refund_id: number; message: string }>(`/api/v1/admin/accounts/payments/${id}/refund`, body).then((r) => r.data),
+  creditNotePdf: (refundId: number) => blob(`/api/v1/admin/accounts/credit-notes/${refundId}/pdf`),
+  dodoSync: () => api.post<{ message: string }>("/api/v1/admin/accounts/dodo-sync").then((r) => r.data),
+  emailNow: (period?: string) => api.post<{ message: string }>("/api/v1/admin/accounts/email-now", { period }).then((r) => r.data),
+};

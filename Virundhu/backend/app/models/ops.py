@@ -81,6 +81,10 @@ class Payment(OrgScopedMixin, TimestampMixin, Base):
     bill_email: Mapped[str | None] = mapped_column(String(255))
     is_test: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # made in the provider's test mode
     refunded_paise: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # sum of succeeded refunds
+    # From Dodo after the sale (migration 0022): tax Dodo charged inside the amount and what Dodo settles to us.
+    provider_tax_paise: Mapped[int | None] = mapped_column(Integer)
+    settlement_paise: Mapped[int | None] = mapped_column(Integer)
+    settlement_currency: Mapped[str | None] = mapped_column(String(3))
 
 
 class WebhookEvent(TimestampMixin, Base):
@@ -179,6 +183,7 @@ class Refund(TimestampMixin, Base):
     reason: Mapped[str | None] = mapped_column(String(300))
     is_test: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     refunded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    credit_note_no: Mapped[str | None] = mapped_column(String(24), unique=True)  # CN-202611-00007 (migration 0022)
 
 
 class ProductFeedback(TimestampMixin, Base):
@@ -300,3 +305,39 @@ class GuestRecovery(OrgScopedMixin, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(16), default="drafted", nullable=False)  # drafted | sent | returned
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     returned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class DodoPayout(TimestampMixin, Base):
+    """A payout from Dodo to the bank account, with its fee and tax (Admin → Accounts → Sync Dodo). Migration 0022."""
+
+    __tablename__ = "dodo_payouts"
+
+    payout_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    amount_paise: Mapped[int] = mapped_column(Integer, nullable=False)
+    fee_paise: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    tax_paise: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    refunds_paise: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    chargebacks_paise: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), default="INR", nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    paid_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    remarks: Mapped[str | None] = mapped_column(String(300))
+    document_url: Mapped[str | None] = mapped_column(String(500))
+
+
+class InvoiceRequest(TimestampMixin, Base):
+    """A proforma invoice for a bank transfer (PI-202611-00003). Closed when the admin records the payment."""
+
+    __tablename__ = "invoice_requests"
+
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    number: Mapped[str | None] = mapped_column(String(24), unique=True)
+    outlets: Mapped[int] = mapped_column(Integer, nullable=False)
+    months: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_paise: Mapped[int] = mapped_column(Integer, nullable=False)
+    bill_name: Mapped[str | None] = mapped_column(String(160))
+    bill_gstin: Mapped[str | None] = mapped_column(String(15))
+    bill_address: Mapped[str | None] = mapped_column(String(300))
+    bill_email: Mapped[str | None] = mapped_column(String(254))
+    status: Mapped[str] = mapped_column(String(12), default="open", nullable=False)  # open | paid | cancelled
+    payment_id: Mapped[int | None] = mapped_column(ForeignKey("payments.id", ondelete="SET NULL"))

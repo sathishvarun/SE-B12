@@ -1,13 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CreditCard, Landmark, Lock } from "lucide-react";
+import { ArrowLeft, CreditCard, Download, FileArchive, Landmark, Lock } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { PriceCalculator, quoteFrom } from "@/components/site/PriceCalculator";
-import { Skeleton } from "@/components/ui/misc";
+import { Button } from "@/components/ui/button";
+import { Skeleton, Spinner } from "@/components/ui/misc";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { billingApi, errorMessage, type BillingDetails, type BillingStatus } from "@/services/api";
+import { billingApi, booksApi, errorMessage, saveBlob, type BillingDetails, type BillingStatus } from "@/services/api";
 
 interface RazorpayResponse { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }
 interface RazorpayInstance { open: () => void; on: (event: string, cb: (r: { error?: { description?: string } }) => void) => void }
@@ -74,7 +75,7 @@ export default function Billing() {
     try {
       const bill = details ?? { company_name: data?.billing?.company_name ?? "", gstin: data?.billing?.gstin ?? "", address: data?.billing?.address ?? "" };
       const r = await billingApi.bankTransfer(outlets, months, bill);
-      toast.success(r.message); setBankSent(true);
+      toast.success(r.message); setBankSent(true); void qc.invalidateQueries({ queryKey: ["proformas"] });
     } catch (err) { toast.error(errorMessage(err)); } finally { setPaying(false); }
   }
 
@@ -180,14 +181,81 @@ export default function Billing() {
                   <td className="px-4 py-3 font-mono text-sm">{p.invoice_no ?? p.id}</td>
                   <td className="px-4 py-3 text-sm">{p.outlets ? `${p.outlets} outlet${p.outlets > 1 ? "s" : ""}, ${p.months} mo` : "-"}</td>
                   <td className="tabular px-4 py-3 font-semibold">{inr(p.amount)}</td>
-                  <td className="px-4 py-3"><Link to={`/app/receipt/${p.receipt_id}`} className="font-semibold underline">View / print</Link></td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-3 text-sm">
+                      <Link to={`/app/receipt/${p.receipt_id}`} className="font-semibold underline">View / print</Link>
+                      <button type="button" onClick={() => download(() => booksApi.receiptPdf(p.receipt_id), `${p.invoice_no ?? p.id}.pdf`)} className="cursor-pointer font-semibold underline">PDF</button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : <p className="mt-2 text-ink-soft">No payments yet.</p>}
+      <BooksForOwner hasPayments={data.payments.length > 0} />
     </div>
+  );
+}
+
+async function download(get: () => Promise<Blob>, name: string) {
+  try { saveBlob(await get(), name); } catch (err) { toast.error(errorMessage(err)); }
+}
+
+/** Receipts for a whole financial year, credit notes and proforma invoices (for the owner's own GST books). */
+function BooksForOwner({ hasPayments }: { hasPayments: boolean }) {
+  const now = new Date();
+  const thisFy = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const years = Array.from({ length: thisFy - 2026 + 1 }, (_, i) => thisFy - i);
+  const [fy, setFy] = useState(thisFy);
+  const [busy, setBusy] = useState(false);
+  const notes = useQuery({ queryKey: ["credit-notes"], queryFn: booksApi.creditNotes });
+  const reqs = useQuery({ queryKey: ["proformas"], queryFn: booksApi.requests });
+  const label = (y: number) => `FY ${y}-${String(y + 1).slice(2)}`;
+  async function zip() {
+    setBusy(true);
+    await download(() => booksApi.receiptsZip(fy), `virundhu-receipts-${label(fy).replace(" ", "")}.zip`);
+    setBusy(false);
+  }
+  return (
+    <>
+      {hasPayments ? (
+        <section className="mt-5 flex flex-wrap items-center gap-3 rounded-[16px] border-2 border-line bg-white p-4">
+          <FileArchive className="h-5 w-5 text-night" />
+          <p className="min-w-[220px] flex-1 text-sm">All your invoices and credit notes for a financial year (April to March), as PDFs in one ZIP with a summary sheet, for your GST input credit.</p>
+          <select value={fy} onChange={(e) => setFy(Number(e.target.value))} aria-label="Financial year" className="h-10 rounded-[10px] border-2 border-line bg-white px-2">
+            {years.map((y) => <option key={y} value={y}>{label(y)}</option>)}
+          </select>
+          <Button variant="outline" onClick={zip} disabled={busy}>{busy ? <Spinner /> : <Download className="h-4 w-4" />} Download all receipts</Button>
+        </section>
+      ) : null}
+      {notes.data?.length ? (
+        <>
+          <h2 className="mt-9 font-display text-2xl font-bold">Credit notes</h2>
+          <ul className="mt-3 divide-y-2 divide-jasmine-2 rounded-[16px] border-2 border-line bg-white">
+            {notes.data.map((n) => (
+              <li key={n.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                <span><b className="font-mono">{n.credit_note_no}</b> · {longDate(n.refunded_at)} · refund of <b>{inr(n.amount)}</b>{n.reason ? ` · ${n.reason}` : ""}</span>
+                <button type="button" onClick={() => download(() => booksApi.creditNotePdf(n.id), `${n.credit_note_no}.pdf`)} className="cursor-pointer font-semibold underline">PDF</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {reqs.data?.length ? (
+        <>
+          <h2 className="mt-9 font-display text-2xl font-bold">Bank transfer invoices</h2>
+          <ul className="mt-3 divide-y-2 divide-jasmine-2 rounded-[16px] border-2 border-line bg-white">
+            {reqs.data.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                <span><b className="font-mono">{r.number}</b> · {r.outlets} outlets × {r.months} mo · <b>{inr(r.amount)}</b> · {r.status === "open" ? "waiting for the transfer" : r.status === "paid" ? "paid" : "cancelled"}</span>
+                <button type="button" onClick={() => download(() => booksApi.requestPdf(r.id), `${r.number}.pdf`)} className="cursor-pointer font-semibold underline">Proforma PDF</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </>
   );
 }
 

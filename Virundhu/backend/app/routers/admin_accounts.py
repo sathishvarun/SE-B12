@@ -23,14 +23,14 @@ from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
-from pydantic import BaseModel
-from sqlalchemy import select
+from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.auth.deps import require_superadmin
 from app.config import settings
 from app.database import get_db
-from app.models import ActivityLog, Organization, Payment, Refund
+from app.models import ActivityLog, DodoPayout, InvoiceRequest, Organization, Payment, Refund
 
 router = APIRouter(prefix="/api/v1/admin/accounts", tags=["admin"], dependencies=[Depends(require_superadmin)])
 IST = ZoneInfo("Asia/Kolkata")
@@ -81,6 +81,7 @@ AUDIT_KINDS = {
     "account_deleted",
     "account_suspended",
     "bank_transfer_request",
+    "accounts_report",
     "signup",
     "trial_ended",
     "password_changed",
@@ -166,6 +167,9 @@ class Line(BaseModel):
     refunded: float
     net: float
     b2b: bool
+    dodo_tax: float | None = None
+    settled: float | None = None
+    deductions: float | None = None
 
 
 def _lines(db: Session, start: date, end: date) -> tuple[list[Line], int]:
@@ -211,6 +215,11 @@ def _lines(db: Session, start: date, end: date) -> tuple[list[Line], int]:
                 refunded=float(refunded),
                 net=float(gross - refunded),
                 b2b=bool(p.bill_gstin),
+                dodo_tax=p.provider_tax_paise / 100 if p.provider_tax_paise is not None else None,
+                settled=p.settlement_paise / 100 if p.settlement_paise is not None else None,
+                deductions=(
+                    round(float(gross) - p.settlement_paise / 100, 2) if p.settlement_paise is not None else None
+                ),
             )
         )
     return out, tests
@@ -339,9 +348,8 @@ def _total_row(rows: list[list], cols: set[int], width: int) -> list:
     return t
 
 
-@router.get("/report.xlsx")
-def report(period: str, db: Session = Depends(get_db)) -> StreamingResponse:
-    """The audit file: summary, sales register, refunds, GST summary, monthly split, invoice check, audit trail."""
+def build_workbook(db: Session, period: str) -> bytes:
+    """The audit file as bytes: summary, sales register, refunds and credit notes, GST, payouts, months, trail."""
     s, lines, refunds, start, end = _summary(db, period)
     wb = Workbook()
     ws = wb.active
@@ -391,6 +399,10 @@ def report(period: str, db: Session = Depends(get_db)) -> StreamingResponse:
             "Test payments are left out.",
         ],
         ["4", "Audit trail sheet: every payment, refund, plan change and account event in the period, with time."],
+        [
+            "5",
+            "Each refund has a credit note (CN-...). Dodo payouts sheet shows what Dodo paid to the bank, with fees.",
+        ],
     ]
     for r in info:
         ws.append(r)
@@ -424,6 +436,9 @@ def report(period: str, db: Session = Depends(get_db)) -> StreamingResponse:
         "Refunded",
         "Net",
         "Type",
+        "Dodo tax",
+        "Dodo settled",
+        "Dodo fees and deductions",
     ]
     rows = [
         [
@@ -449,10 +464,13 @@ def report(period: str, db: Session = Depends(get_db)) -> StreamingResponse:
             x.refunded,
             x.net,
             "B2B" if x.b2b else "B2C",
+            x.dodo_tax,
+            x.settled,
+            x.deductions,
         ]
         for x in lines
     ]
-    money = {15, 16, 17, 18, 19, 20, 21}
+    money = {15, 16, 17, 18, 19, 20, 21, 23, 24, 25}
     _sheet(wb, "Sales register", head, rows + ([_total_row(rows, money, len(head))] if rows else []), money)
 
     by_pay = {
@@ -463,6 +481,7 @@ def report(period: str, db: Session = Depends(get_db)) -> StreamingResponse:
     }
     rrows = [
         [
+            r.credit_note_no,
             r.refund_id,
             r.refunded_at.astimezone(IST).replace(tzinfo=None),
             r.provider_payment_id,
@@ -477,9 +496,19 @@ def report(period: str, db: Session = Depends(get_db)) -> StreamingResponse:
     _sheet(
         wb,
         "Refunds",
-        ["Refund id", "When (IST)", "Payment reference", "Original invoice", "Customer", "Amount", "Status", "Reason"],
-        rrows + ([_total_row(rrows, {6}, 8)] if rrows else []),
-        {6},
+        [
+            "Credit note",
+            "Refund id",
+            "When (IST)",
+            "Payment reference",
+            "Original invoice",
+            "Customer",
+            "Amount",
+            "Status",
+            "Reason",
+        ],
+        rrows + ([_total_row(rrows, {7}, 9)] if rrows else []),
+        {7},
     )
 
     direct = [x for x in lines if x.channel.startswith("Bank")]
@@ -563,6 +592,45 @@ def report(period: str, db: Session = Depends(get_db)) -> StreamingResponse:
         {3, 4, 5, 6, 7, 8},
     )
 
+    payouts = db.scalars(
+        select(DodoPayout)
+        .where(DodoPayout.paid_at >= _utc(start), DodoPayout.paid_at < _utc(end))
+        .order_by(DodoPayout.paid_at)
+    ).all()
+    prow = [
+        [
+            po.payout_id,
+            po.paid_at.astimezone(IST).replace(tzinfo=None),
+            po.status,
+            po.currency,
+            po.amount_paise / 100,
+            po.fee_paise / 100,
+            po.tax_paise / 100,
+            po.refunds_paise / 100,
+            po.chargebacks_paise / 100,
+            po.remarks,
+        ]
+        for po in payouts
+    ]
+    _sheet(
+        wb,
+        "Dodo payouts",
+        [
+            "Payout id",
+            "When (IST)",
+            "Status",
+            "Currency",
+            "Paid to bank",
+            "Fee",
+            "Tax",
+            "Refunds",
+            "Chargebacks",
+            "Remarks",
+        ],
+        prow + ([_total_row(prow, {5, 6, 7, 8, 9}, 10)] if prow else []),
+        {5, 6, 7, 8, 9},
+    )
+
     _sheet(
         wb, "Invoice number check", ["Invoice no", "Payment id", "Issued (IST)", "Mode", "Check"], _invoice_check(db)
     )
@@ -592,10 +660,228 @@ def report(period: str, db: Session = Depends(get_db)) -> StreamingResponse:
 
     buf = io.BytesIO()
     wb.save(buf)
-    buf.seek(0)
+    return buf.getvalue()
+
+
+@router.get("/report.xlsx")
+def report(period: str, db: Session = Depends(get_db)) -> StreamingResponse:
+    """Download the audit file for a month, quarter or financial year."""
+    data = build_workbook(db, period)
     name = re.sub(r"[^A-Za-z0-9-]+", "-", period)
     return StreamingResponse(
-        buf,
+        io.BytesIO(data),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="virundhu-accounts-{name}.xlsx"'},
     )
+
+
+# ---------------------------------------------------------------- books tools
+
+
+class BooksSettings(BaseModel):
+    seller: str
+    seller_gstin: str | None
+    sac: str | None
+    bank_ready: bool
+    bank_last4: str | None
+    report_recipients: list[str]
+    open_requests: int
+    payouts: int
+    last_payout: datetime | None
+
+
+@router.get("/settings", response_model=BooksSettings)
+def books_settings(db: Session = Depends(get_db)) -> BooksSettings:
+    """What the books are set up with (bank details shown only as the last 4 digits)."""
+    from app.services import books
+
+    acc = settings.BANK_ACCOUNT_NUMBER
+    return BooksSettings(
+        seller=settings.PARENT_COMPANY or settings.COMPANY_NAME,
+        seller_gstin=settings.PARENT_GSTIN or None,
+        sac=settings.GST_SAC or None,
+        bank_ready=bool(acc and settings.BANK_IFSC and settings.BANK_ACCOUNT_NAME),
+        bank_last4=acc[-4:] if acc else None,
+        report_recipients=books.recipients(),
+        open_requests=db.scalar(select(func.count(InvoiceRequest.id)).where(InvoiceRequest.status == "open")) or 0,
+        payouts=db.scalar(select(func.count(DodoPayout.id))) or 0,
+        last_payout=db.scalar(select(func.max(DodoPayout.paid_at))),
+    )
+
+
+class RequestRow(BaseModel):
+    id: int
+    number: str | None
+    organization_id: int
+    restaurant: str
+    outlets: int
+    months: int
+    amount: float
+    bill_gstin: str | None
+    created_at: datetime
+    status: str
+
+
+@router.get("/invoice-requests", response_model=list[RequestRow])
+def invoice_requests(db: Session = Depends(get_db)) -> list[RequestRow]:
+    """Proforma invoices waiting for a bank transfer (and the last paid ones)."""
+    names = {o.id: o.name for o in db.scalars(select(Organization))}
+    rows = db.scalars(
+        select(InvoiceRequest).order_by(InvoiceRequest.status != "open", InvoiceRequest.id.desc()).limit(50)
+    ).all()
+    return [
+        RequestRow(
+            id=r.id,
+            number=r.number,
+            organization_id=r.organization_id,
+            restaurant=names.get(r.organization_id, "Deleted restaurant"),
+            outlets=r.outlets,
+            months=r.months,
+            amount=r.amount_paise / 100,
+            bill_gstin=r.bill_gstin,
+            created_at=r.created_at,
+            status=r.status,
+        )
+        for r in rows
+    ]
+
+
+@router.post("/invoice-requests/{req_id}/cancel")
+def cancel_request(req_id: int, db: Session = Depends(get_db)) -> dict:
+    r = db.get(InvoiceRequest, req_id)
+    if r is None:
+        raise HTTPException(404, "Request not found.")
+    r.status = "cancelled"
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/dodo-sync")
+def dodo_sync(db: Session = Depends(get_db)) -> dict:
+    """Pull Dodo's tax, settlement and payouts (with fees) so the Excel matches the bank."""
+    from app.services import books
+
+    if settings.PAYMENT_PROVIDER != "dodo" or not settings.DODO_PAYMENTS_API_KEY:
+        raise HTTPException(400, "Dodo isn't set up on this server.")
+    try:
+        r = books.sync_dodo(db)
+    except Exception as exc:
+        raise HTTPException(502, "Couldn't reach Dodo just now. Try again in a minute.") from exc
+    return {**r, "message": f"Updated {r['payments_updated']} payments and found {r['new_payouts']} new payouts."}
+
+
+class EmailIn(BaseModel):
+    period: str | None = None
+
+
+@router.post("/email-now")
+def email_now(body: EmailIn, db: Session = Depends(get_db)) -> dict:
+    """Send a month's accounts Excel to the accountant list now (default: last month)."""
+    from app.services import books
+
+    if body.period:
+        period_range(body.period)
+    r = books.email_month(db, body.period)
+    return {**r, "message": f"Sent {r['period']} to {', '.join(r['to'])}."}
+
+
+def _pdf(data: bytes, name: str) -> StreamingResponse:
+    return StreamingResponse(
+        io.BytesIO(data),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )
+
+
+@router.get("/payments/{payment_id}/pdf")
+def payment_pdf(payment_id: int, db: Session = Depends(get_db)) -> StreamingResponse:
+    from app.services import invoice_pdf
+
+    pay = db.get(Payment, payment_id)
+    org = db.get(Organization, pay.organization_id) if pay else None
+    if pay is None or org is None:
+        raise HTTPException(404, "Payment not found.")
+    return _pdf(invoice_pdf.invoice(pay, org), f"{pay.invoice_no or pay.id}.pdf")
+
+
+@router.get("/invoice-requests/{req_id}/pdf")
+def request_pdf(req_id: int, db: Session = Depends(get_db)) -> StreamingResponse:
+    from app.services import invoice_pdf
+
+    r = db.get(InvoiceRequest, req_id)
+    org = db.get(Organization, r.organization_id) if r else None
+    if r is None or org is None:
+        raise HTTPException(404, "Request not found.")
+    return _pdf(invoice_pdf.proforma(r, org), f"{r.number}.pdf")
+
+
+@router.get("/credit-notes/{refund_id}/pdf")
+def credit_note_pdf(refund_id: int, db: Session = Depends(get_db)) -> StreamingResponse:
+    from app.services import invoice_pdf
+
+    ref = db.get(Refund, refund_id)
+    if ref is None or not ref.credit_note_no:
+        raise HTTPException(404, "Credit note not found.")
+    pay = db.scalar(select(Payment).where(Payment.razorpay_payment_id == ref.provider_payment_id))
+    org = db.get(Organization, ref.organization_id) if ref.organization_id else None
+    return _pdf(invoice_pdf.credit_note(ref, pay, org), f"{ref.credit_note_no}.pdf")
+
+
+class BankPaymentRow(BaseModel):
+    id: int
+    invoice_no: str | None
+    restaurant: str
+    amount: float
+    refunded: float
+    reference: str
+    paid_at: datetime
+
+
+@router.get("/bank-payments", response_model=list[BankPaymentRow])
+def bank_payments(db: Session = Depends(get_db)) -> list[BankPaymentRow]:
+    """Bank-transfer payments (latest 50), for refunds and invoices."""
+    names = {o.id: o.name for o in db.scalars(select(Organization))}
+    rows = db.scalars(
+        select(Payment)
+        .where(Payment.razorpay_payment_id.like("bank_%"), Payment.status == "paid")
+        .order_by(Payment.id.desc())
+        .limit(50)
+    ).all()
+    return [
+        BankPaymentRow(
+            id=p.id,
+            invoice_no=p.invoice_no,
+            restaurant=names.get(p.organization_id, "-"),
+            amount=p.amount_paise / 100,
+            refunded=(p.refunded_paise or 0) / 100,
+            reference=p.razorpay_payment_id.removeprefix("bank_"),
+            paid_at=p.created_at,
+        )
+        for p in rows
+    ]
+
+
+class RefundIn(BaseModel):
+    amount_inr: int = Field(ge=1)
+    reference: str = Field(min_length=4, max_length=40, pattern=r"^[A-Za-z0-9/_-]+$")
+    reason: str | None = Field(default=None, max_length=300)
+
+
+@router.post("/payments/{payment_id}/refund")
+def bank_refund(payment_id: int, body: RefundIn, db: Session = Depends(get_db)) -> dict:
+    """Money sent back by bank for a bank payment: credit note issued and emailed, books updated."""
+    from app.services import books
+
+    pay = db.get(Payment, payment_id)
+    if pay is None:
+        raise HTTPException(404, "Payment not found.")
+    try:
+        ref = books.bank_refund(db, pay, body.amount_inr, body.reference, body.reason)
+    except books.RefundError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {
+        "ok": True,
+        "credit_note": ref.credit_note_no,
+        "refund_id": ref.id,
+        "message": f"Refund recorded. Credit note {ref.credit_note_no} emailed to the owner.",
+    }

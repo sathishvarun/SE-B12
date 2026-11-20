@@ -111,4 +111,11 @@ def email_receipt(db: Session, pay: Payment, org: Organization) -> None:
     for u in owners(db, org.id):
         first = (u.full_name or "").split(" ")[0] or "there"
         subject, text, details = receipt_email(pay, org, first)
-        send_email([u.email], subject, text, details=details)
+        try:
+            from app.services import invoice_pdf
+
+            files = [(f"{pay.invoice_no or pay.id}.pdf", invoice_pdf.invoice(pay, org), "application/pdf")]
+        except Exception:  # pragma: no cover - the email still goes without the PDF
+            logger.exception("Couldn't build the PDF for %s", pay.invoice_no)
+            files = None
+        send_email([u.email], subject, text, details=details, attachments=files)

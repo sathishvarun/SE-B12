@@ -84,3 +84,120 @@ def test_report_splits_gst_and_leaves_out_test_payments(client):
         db.execute(delete(Payment).where(Payment.razorpay_payment_id.like(f"%ACC{tag}%")))
         db.commit()
         db.close()
+
+
+def _owner(client, name):
+    tag = uuid.uuid4().hex[:6]
+    d = client.post("/api/v1/auth/register", json={"full_name": "Books Owner", "organization_name": name,
+                    "email": f"books-{tag}@example.com", "password": "Strong#Pass1", "accept_terms": True}).json()
+    return {"Authorization": f"Bearer {d['access_token']}"}, d["user"]["organization"]["id"]
+
+
+def test_proforma_bank_payment_partial_refund_credit_note_and_zip(client):
+    import zipfile
+
+    from app.models import InvoiceRequest
+
+    h, org = _owner(client, "Books Chain")
+    body = {"outlets": 700, "months": 12, "company_name": "Books Chain Pvt Ltd", "gstin": "33AAACB1234C1Z5",
+            "address": "1 Main Road, Coimbatore 641006"}
+    asked = client.post("/api/v1/billing/bank-transfer", json=body, headers=h).json()
+    assert asked["number"].startswith("PI-") and asked["total"] == 4633860
+    mine = client.get("/api/v1/billing/invoice-requests", headers=h).json()
+    assert mine[0]["status"] == "open"
+    pdf = client.get(f"/api/v1/billing/invoice-requests/{asked['request_id']}/pdf", headers=h)
+    assert pdf.status_code == 200 and pdf.content[:4] == b"%PDF"
+    other, _ = _owner(client, "Other Books")
+    assert client.get(f"/api/v1/billing/invoice-requests/{asked['request_id']}/pdf", headers=other).status_code == 404
+
+    admin = _admin(client)
+    ref = f"UTRBK{uuid.uuid4().hex[:6].upper()}"
+    ok = client.post(f"/api/v1/admin/organizations/{org}/bank-payment",
+                     json={"outlets": 700, "months": 12, "amount_inr": 4633860, "reference": ref}, headers=admin)
+    assert ok.status_code == 200, ok.text
+    with SessionLocal() as db:
+        assert db.get(InvoiceRequest, asked["request_id"]).status == "paid"
+        pay = db.scalar(select(Payment).where(Payment.razorpay_payment_id == f"bank_{ref}"))
+        pay.is_test = False  # the local Dodo key is a test key; treat this one as a live sale for the books
+        db.commit()
+        db.refresh(pay)
+    inv = client.get(f"/api/v1/billing/receipts/{pay.id}/pdf", headers=h)
+    assert inv.status_code == 200 and inv.content[:4] == b"%PDF"
+    assert client.get(f"/api/v1/admin/accounts/payments/{pay.id}/pdf", headers=admin).content[:4] == b"%PDF"
+
+    # partial refund by bank: credit note issued, cannot go over what's left, same reference refused
+    url = f"/api/v1/admin/accounts/payments/{pay.id}/refund"
+    r1 = client.post(url, json={"amount_inr": 100000, "reference": f"RF{ref}", "reason": "Two outlets closed"},
+                     headers=admin)
+    assert r1.status_code == 200 and r1.json()["credit_note"].startswith("CN-")
+    assert client.post(url, json={"amount_inr": 100000, "reference": f"RF{ref}"}, headers=admin).status_code == 400
+    assert client.post(url, json={"amount_inr": 9999999, "reference": f"RX{ref}"}, headers=admin).status_code == 400
+    notes = client.get("/api/v1/billing/credit-notes", headers=h).json()
+    assert notes[0]["amount"] == 100000
+    cn = client.get(f"/api/v1/billing/credit-notes/{notes[0]['id']}/pdf", headers=h)
+    assert cn.content[:4] == b"%PDF"
+    assert client.get(f"/api/v1/billing/credit-notes/{notes[0]['id']}/pdf", headers=other).status_code == 404
+    bank = client.get("/api/v1/admin/accounts/bank-payments", headers=admin).json()
+    assert next(b for b in bank if b["id"] == pay.id)["refunded"] == 100000
+
+    fy = 2026 if datetime.now(UTC).month >= 4 else 2025
+    z = client.get("/api/v1/billing/receipts.zip", params={"fy": fy}, headers=h)
+    assert z.status_code == 200
+    names = zipfile.ZipFile(io.BytesIO(z.content)).namelist()
+    assert "summary.csv" in names and any(n.startswith("invoices/") for n in names)
+    assert any(n.startswith("credit-notes/CN-") for n in names)
+    assert client.get("/api/v1/billing/receipts.zip", params={"fy": 2020}, headers=h).status_code == 404
+
+    wb = load_workbook(io.BytesIO(client.get("/api/v1/admin/accounts/report.xlsx", params={"period": f"FY{fy}"},
+                                              headers=admin).content))
+    assert "Dodo payouts" in wb.sheetnames
+    cns = [r[0] for r in wb["Refunds"].iter_rows(min_row=2, values_only=True)]
+    assert notes[0]["credit_note_no"] in cns
+    with SessionLocal() as db:
+        db.execute(delete(Refund).where(Refund.provider_payment_id == f"bank_{ref}"))
+        db.execute(delete(Payment).where(Payment.razorpay_payment_id == f"bank_{ref}"))
+        db.commit()
+
+
+def test_dodo_refund_gets_credit_note_and_sync_reads_fees(client, monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock, patch
+
+    from app.models import DodoPayout
+    from app.services import books, dodo_billing
+
+    tag = uuid.uuid4().hex[:6].upper()
+    db = SessionLocal()
+    org = db.scalar(select(Organization).where(Organization.is_demo.is_(True)))
+    pay = Payment(organization_id=org.id, razorpay_payment_id=f"pay_DS{tag}", amount_paise=299800, status="paid",
+                  outlets=2, months=1, invoice_no=f"VR-DS{tag}")
+    db.add(pay)
+    db.commit()
+    try:
+        r = SimpleNamespace(refund_id=f"ref_DS{tag}", payment_id=f"pay_DS{tag}", amount=50000, status="succeeded",
+                            created_at=datetime.now(UTC), reason="Partial")
+        dodo_billing.record_refund(db, r)
+        row = db.scalar(select(Refund).where(Refund.refund_id == f"ref_DS{tag}"))
+        assert row.credit_note_no and row.credit_note_no.startswith("CN-")
+        fake = MagicMock()
+        fake.payments.retrieve.return_value = SimpleNamespace(tax=45732, settlement_amount=280000,
+                                                              settlement_currency="INR")
+        fake.payouts.list.return_value = SimpleNamespace(items=[SimpleNamespace(
+            payout_id=f"pout_{tag}", amount=280000, fee=5000, tax=900, refunds=0, chargebacks=0, currency="INR",
+            status="success", created_at=datetime.now(UTC), remarks=None, payout_document_url=None)])
+        with patch.object(dodo_billing, "_client", return_value=fake):
+            out = books.sync_dodo(db)
+        db.refresh(pay)
+        assert pay.settlement_paise == 280000 and pay.provider_tax_paise == 45732 and out["new_payouts"] >= 1
+        assert db.scalar(select(DodoPayout).where(DodoPayout.payout_id == f"pout_{tag}")).fee_paise == 5000
+        h = _admin(client)
+        sent = client.post("/api/v1/admin/accounts/email-now", json={"period": "2026-11"}, headers=h).json()
+        assert sent["period"] == "2026-11" and sent["to"]
+        st = client.get("/api/v1/admin/accounts/settings", headers=h).json()
+        assert st["payouts"] >= 1 and "bank_ready" in st
+    finally:
+        db.execute(delete(Refund).where(Refund.refund_id == f"ref_DS{tag}"))
+        db.execute(delete(DodoPayout).where(DodoPayout.payout_id == f"pout_{tag}"))
+        db.execute(delete(Payment).where(Payment.razorpay_payment_id == f"pay_DS{tag}"))
+        db.commit()
+        db.close()

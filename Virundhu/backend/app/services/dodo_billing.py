@@ -154,7 +154,12 @@ def record_refund(db, refund) -> bool:
             Refund.provider_payment_id == pid, Refund.status == "succeeded")) or 0
     if is_new and row.status == "succeeded":
         activity.record(db, "refund", detail=f"Refund of Rs {amount / 100:,.0f} on payment {pid}")
+    from app.services import books
+
+    issued = books.ensure_credit_note(db, row)
     db.commit()
+    if issued and not row.is_test:
+        books.email_credit_note(db, row)
     return is_new
 
 
