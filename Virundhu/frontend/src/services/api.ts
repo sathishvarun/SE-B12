@@ -409,3 +409,15 @@ export const placesApi = {
   sync: (outletId: number) => api.post<PlaceSync>(`/api/v1/outlets/${outletId}/google-place/sync`).then((r) => r.data),
   unlink: (outletId: number) => api.delete(`/api/v1/outlets/${outletId}/google-place`).then((r) => r.data),
 };
+
+// ---------- Accounts and audit (admin) ----------
+export interface AccountsSummary {
+  label: string; start: string; end: string; invoices: number; gross: number; refunded: number; net: number;
+  test_payments_left_out: number; by_channel: Record<string, number>; direct_taxable: number; direct_cgst: number;
+  direct_sgst: number; direct_igst: number; b2b_invoices: number; b2c_invoices: number; refunds: number;
+  gst_rate: number; seller: string; seller_gstin: string | null;
+}
+export const accountsApi = {
+  summary: (period: string) => api.get<AccountsSummary>("/api/v1/admin/accounts/summary", { params: { period } }).then((r) => r.data),
+  report: (period: string) => api.get<Blob>("/api/v1/admin/accounts/report.xlsx", { params: { period }, responseType: "blob" }).then((r) => r.data),
+};

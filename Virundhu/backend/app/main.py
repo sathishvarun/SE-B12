@@ -12,6 +12,7 @@ from app.limiter import limiter
 from app.routers import (
     account,
     admin,
+    admin_accounts,
     admin_data,
     admin_money,
     ai_staff,
@@ -115,4 +116,5 @@ app.include_router(review_requests.router)
 app.include_router(extras.router)
 app.include_router(ai_staff.router)
 app.include_router(usage.router)
+app.include_router(admin_accounts.router)
 app.include_router(places.router)

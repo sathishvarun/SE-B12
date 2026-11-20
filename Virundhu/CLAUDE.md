@@ -367,3 +367,12 @@ general-purpose agents using the matching skill file.
   (`POST /billing/bank-transfer`, emails admin + owner, activity `bank_transfer_request`); the admin records the money
   in Admin → Restaurants → "Record bank payment" (`POST /admin/organizations/{id}/bank-payment`, reference = UTR, id
   `bank_<UTR>`), which goes through `billing.activate()` exactly like an online payment. `pricing.inr()` = Indian commas.
+
+### Accounts and audit (`routers/admin_accounts.py`, Admin → Accounts and audit)
+- `GET /admin/accounts/summary?period=` and `/admin/accounts/report.xlsx?period=`; period = `2026-11` (month),
+  `2026-Q3` (Indian FY quarter: Q1 Apr-Jun ... Q4 Jan-Mar of the next year) or `FY2026` (Apr 2026 - Mar 2027), India time.
+- Excel sheets: Summary (with auditor notes), Sales register, Refunds, GST summary (direct), B2B invoices (GSTR-1), Month
+  by month, Invoice number check, Audit trail (activity kinds in `AUDIT_KINDS`). Test payments always left out.
+- Dodo payments = merchant of record (no GST split, reconcile with Dodo payouts). Bank transfers (`bank_` ids) = direct
+  sales: GST split from the inclusive price at `GST_RATE_PERCENT`; CGST+SGST when the customer GSTIN state = seller state
+  (`PARENT_GSTIN[:2]` or `SELLER_STATE_CODE`), else IGST; no GSTIN = same state. `GST_SAC` printed when set.

@@ -88,6 +88,10 @@ class Settings(BaseSettings):
     # Largest single online payment the payment provider accepts (Dodo refused ₹3.5 lakh on 20 Nov 2026).
     # Bigger orders are paid by bank transfer against a GST invoice and recorded by the admin.
     ONLINE_PAYMENT_MAX_INR: int = 300000
+    # Accounts reports (Admin → Accounts). Prices include GST at this rate; SAC is confirmed by your accountant.
+    GST_RATE_PERCENT: int = 18
+    GST_SAC: str = ""
+    SELLER_STATE_CODE: str = "33"  # Tamil Nadu; the PARENT_GSTIN's first two digits win when it is set
     PROMO_TEXT: str = ""
 
     RAZORPAY_KEY_ID: str = ""

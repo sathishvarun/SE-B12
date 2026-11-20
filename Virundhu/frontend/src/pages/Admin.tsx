@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X, HeartHandshake, CalendarClock, RefreshCw, Gauge, Coins, Landmark } from "lucide-react";
+import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X, HeartHandshake, CalendarClock, RefreshCw, Gauge, Coins, Landmark, FileSpreadsheet } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SecretInput } from "@/components/ui/input";
 import { StatusPill, Thread, type Ticket } from "@/pages/Support";
 import { TokensByRestaurantPanel, TokensTotalPanel } from "@/pages/AdminTokens";
+import { AccountsPanel } from "@/pages/AdminAccounts";
 import { quoteFrom } from "@/components/site/PriceCalculator";
 import { Chip, Skeleton } from "@/components/ui/misc";
 import { useAuth } from "@/context/AuthContext";
@@ -465,10 +466,10 @@ function AdminPassword() {
   );
 }
 
-type Section = "overview" | "autopilot" | "money" | "renewals" | "tokens" | "tokens-by-restaurant" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "feedback" | "testimonials" | "data";
+type Section = "overview" | "autopilot" | "money" | "renewals" | "accounts" | "tokens" | "tokens-by-restaurant" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "feedback" | "testimonials" | "data";
 const SECTIONS: { group: string; items: [Section, string, typeof Users][] }[] = [
   { group: "Overview", items: [["overview", "Today", LayoutDashboard], ["autopilot", "Autopilot", Workflow]] },
-  { group: "Money", items: [["money", "Payments", IndianRupee], ["renewals", "Renewals", CalendarClock], ["tokens", "AI tokens", Gauge], ["tokens-by-restaurant", "Tokens by restaurant", Coins]] },
+  { group: "Money", items: [["money", "Payments", IndianRupee], ["renewals", "Renewals", CalendarClock], ["accounts", "Accounts and audit", FileSpreadsheet], ["tokens", "AI tokens", Gauge], ["tokens-by-restaurant", "Tokens by restaurant", Coins]] },
   { group: "Customers", items: [["restaurants", "Restaurants", Building2], ["users", "Users", Users], ["leads", "Demo requests", Inbox]] },
   { group: "Help desk", items: [["support", "Support", LifeBuoy], ["feedback", "Feedback", HeartHandshake], ["testimonials", "Testimonials", Quote], ["mailbox", "Mailbox", MailOpen]] },
   { group: "Logs", items: [["activity", "Activity", ScrollText], ["emails", "Emails sent", Mail], ["signins", "Sign-ins", LogIn]] },
@@ -1072,6 +1073,8 @@ function AdminPanel() {
         <SupportAdmin />
       ) : tab === "activity" ? (
         <ActivityTable intro="Everything recorded across all restaurants, newest first: sign-ups, sign-ins, emails, uploads, payments, passwords and support. Kept even after a restaurant deletes its account." />
+      ) : tab === "accounts" ? (
+        <AccountsPanel />
       ) : tab === "tokens" ? (
         <TokensTotalPanel />
       ) : tab === "tokens-by-restaurant" ? (
