@@ -1,3 +1,4 @@
+import { rememberNext } from "@/lib/next";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { LogoMark } from "@/components/layout/Logo";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +14,9 @@ export function ProtectedRoute() {
       </div>
     );
   }
-  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  if (!user) {
+    rememberNext(location.pathname + location.search);
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  }
   return <Outlet />;
 }

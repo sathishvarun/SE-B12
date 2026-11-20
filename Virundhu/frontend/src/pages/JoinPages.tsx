@@ -1,3 +1,4 @@
+import { takeNext } from "@/lib/next";
 import { useQuery } from "@tanstack/react-query";
 import { Lock, User } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
@@ -69,7 +70,7 @@ export function AuthCallbackPage() {
     window.history.replaceState(null, "", "/auth/callback");
     if (!access) return;
     acceptTokens({ access_token: access })
-      .then(() => navigate("/app", { replace: true }))
+      .then((u) => navigate(takeNext(null, u.is_superadmin), { replace: true }))
       .catch((e: unknown) => setErr(errorMessage(e)));
   }, [acceptTokens, navigate, parsed]);
   return (

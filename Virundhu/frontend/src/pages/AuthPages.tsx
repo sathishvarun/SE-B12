@@ -1,3 +1,4 @@
+import { takeNext } from "@/lib/next";
 import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react";
 import { Kolam } from "@/components/motion/Kolam";
 import { RiseWords } from "@/components/motion/Reveal";
@@ -157,9 +158,8 @@ function useAfterLogin() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from;
-  // The platform admin always lands on the Admin console; restaurant users land on their dashboard.
-  return (user?: { is_superadmin: boolean }) =>
-    navigate(user?.is_superadmin ? "/app/admin" : from && from.startsWith("/app") ? from : "/app", { replace: true });
+  // Back to the page they were trying to open; otherwise the Admin console (admin) or the dashboard (restaurants).
+  return (user?: { is_superadmin: boolean }) => navigate(takeNext(from, user?.is_superadmin), { replace: true });
 }
 
 export function LoginPage() {
