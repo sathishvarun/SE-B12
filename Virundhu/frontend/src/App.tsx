@@ -40,6 +40,7 @@ const Support = lazy(() => import("@/pages/Support"));
 const ShareFeedbackPage = lazy(() => import("@/pages/ShareFeedback"));
 const ShareFeedback = lazy(() => import("@/pages/site/ShareFeedback"));
 const Insights = lazy(() => import("@/pages/Insights"));
+const AiUsage = lazy(() => import("@/pages/AiUsage"));
 const Widget = lazy(() => import("@/pages/site/Widget"));
 const ReceiptPage = lazy(() => import("@/pages/Receipt"));
 const AiStaffPage = lazy(() => import("@/pages/AiStaff"));
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="receipt/:id" element={<ReceiptPage />} />
             <Route path="ask" element={<Ask />} />
             <Route path="insights" element={<Insights />} />
+            <Route path="usage" element={<AiUsage />} />
             <Route path="support" element={<Support />} />
             <Route path="feedback" element={<ShareFeedbackPage />} />
             <Route path="automation" element={<Automation />} />

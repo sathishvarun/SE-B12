@@ -127,7 +127,7 @@ def answer(db: Session, org: Organization, outlet_ids: list[int] | None, message
         text = str(turn.get("text", ""))[:2000]
         messages.append(AIMessage(text) if turn.get("role") == "assistant" else HumanMessage(text))
     messages.append(HumanMessage(message[:2000]))
-    result = chat_model("report").invoke(messages)
+    result = chat_model("report", "ask", org.id).invoke(messages)
     usage = getattr(result, "usage_metadata", None) or {}
     cost = (
         (

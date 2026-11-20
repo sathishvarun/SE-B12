@@ -423,7 +423,7 @@ def _ask_llm(t: SupportTicket, thread: list[tuple[bool, str]], facts: dict, note
         f"TICKET: [{t.category}] {t.subject}\n<conversation>\n{convo}\n</conversation>"
     )
     extra = {} if settings.LLM_PROVIDER == "anthropic" else {"method": "function_calling"}
-    model = chat_model("report").with_structured_output(TaraReply, **extra)
+    model = chat_model("report", "support_agent", t.organization_id).with_structured_output(TaraReply, **extra)
     return model.invoke([SystemMessage(content=SYSTEM.format(guide=guide())), HumanMessage(content=prompt)])
 
 
@@ -526,7 +526,7 @@ def _read_feedback(f: ProductFeedback) -> IsaiRead:
     from app.ai.llm import chat_model
 
     extra = {} if settings.LLM_PROVIDER == "anthropic" else {"method": "function_calling"}
-    model = chat_model("report").with_structured_output(IsaiRead, **extra)
+    model = chat_model("report", "feedback_agent", f.organization_id).with_structured_output(IsaiRead, **extra)
     out = model.invoke([
         SystemMessage(content="You are Isai, Virundhu's feedback agent. Virundhu is review care for restaurants. "
                       "Classify the feedback and write a 2-3 sentence reply signed '- Isai, Virundhu'. Never promise "

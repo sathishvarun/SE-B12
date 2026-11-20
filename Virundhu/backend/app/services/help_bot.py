@@ -78,7 +78,7 @@ def keyword_answer(question: str) -> HelpAnswer:
     return HelpAnswer(answer=f"{title}\n\n{body[:1200]}", covered=True, topic=topic)
 
 
-def ask(question: str, history: list[dict] | None = None) -> HelpAnswer:
+def ask(question: str, history: list[dict] | None = None, org_id: int | None = None) -> HelpAnswer:
     question = question.strip()[:1000]
     if not settings.llm_configured:
         return keyword_answer(question)
@@ -86,7 +86,7 @@ def ask(question: str, history: list[dict] | None = None) -> HelpAnswer:
         from app.ai.llm import chat_model
 
         extra = {} if settings.LLM_PROVIDER == "anthropic" else {"method": "function_calling"}
-        model = chat_model("tagging").with_structured_output(HelpAnswer, **extra)
+        model = chat_model("tagging", "help", org_id).with_structured_output(HelpAnswer, **extra)
         msgs = [SystemMessage(content=SYSTEM.format(guide=guide()))]
         for h in (history or [])[-6:]:
             text = str(h.get("text", ""))[:800]
@@ -100,7 +100,9 @@ def ask(question: str, history: list[dict] | None = None) -> HelpAnswer:
         return keyword_answer(question)
 
 
-def draft_reply(subject: str, thread: list[tuple[bool, str]], restaurant: str | None) -> str:
+def draft_reply(
+    subject: str, thread: list[tuple[bool, str]], restaurant: str | None, org_id: int | None = None
+) -> str:
     """A suggested support reply for the admin, from the guide and the conversation. The admin edits and sends it."""
     convo = "\n".join(("SUPPORT: " if admin else "CUSTOMER: ") + body[:1500] for admin, body in thread[-8:])
     if not settings.llm_configured:
@@ -113,7 +115,7 @@ def draft_reply(subject: str, thread: list[tuple[bool, str]], restaurant: str | 
         "('within 24 hours'). Warm, short, plain English, sign off '- Virundhu support'. No placeholders.\n\n"
         f"CONVERSATION:\n{convo}"
     )
-    res = chat_model("report").invoke(
+    res = chat_model("report", "support_draft", org_id).invoke(
         [SystemMessage(content=SYSTEM.format(guide=guide())), HumanMessage(content=prompt)]
     )
     return str(res.content).strip()

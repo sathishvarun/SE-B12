@@ -31,10 +31,10 @@ class ShotResult(BaseModel):
     reviews: list[ShotReview]
 
 
-def read_screenshot(image: bytes, mime: str) -> list[ShotReview]:
+def read_screenshot(image: bytes, mime: str, org_id: int | None = None) -> list[ShotReview]:
     data = base64.b64encode(image).decode()
     extra = {} if settings.LLM_PROVIDER == "anthropic" else {"method": "function_calling"}
-    model = chat_model("report").with_structured_output(ShotResult, **extra)
+    model = chat_model("report", "screenshot", org_id).with_structured_output(ShotResult, **extra)
     result = model.invoke(
         [
             SystemMessage(content=SYSTEM),

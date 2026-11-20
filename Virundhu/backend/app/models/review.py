@@ -59,6 +59,13 @@ class Outlet(OrgScopedMixin, TimestampMixin, Base):
     swiggy_url: Mapped[str | None] = mapped_column(String(500))
     competitors: Mapped[dict | None] = mapped_column(JSONB)  # nearby restaurants from Google Places (cached daily)
     competitors_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Google reviews through Places API (no Business Profile approval needed; latest 5 per check). Migration 0021.
+    google_place_id: Mapped[str | None] = mapped_column(String(300))
+    google_place_name: Mapped[str | None] = mapped_column(String(200))
+    google_rating: Mapped[Decimal | None] = mapped_column(Numeric(2, 1))
+    google_rating_count: Mapped[int | None] = mapped_column(Integer)
+    google_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    google_sync_error: Mapped[str | None] = mapped_column(String(300))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 
@@ -157,4 +164,22 @@ class UsageCounter(OrgScopedMixin, TimestampMixin, Base):
 
     period: Mapped[str] = mapped_column(String(7), nullable=False)  # YYYY-MM
     reviews_analyzed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cost_inr: Mapped[Decimal] = mapped_column(Numeric(12, 4), default=Decimal("0"), nullable=False)
+
+
+class AiUsage(TimestampMixin, Base):
+    """One row per AI call: who it was for, what it did and how many tokens it used (migration 0021).
+
+    organization_id is empty for Virundhu's own work (support drafts, product feedback without a restaurant).
+    """
+
+    __tablename__ = "ai_usage"
+
+    organization_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    feature: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    model: Mapped[str | None] = mapped_column(String(80))
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     cost_inr: Mapped[Decimal] = mapped_column(Numeric(12, 4), default=Decimal("0"), nullable=False)

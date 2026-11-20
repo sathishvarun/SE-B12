@@ -11,6 +11,7 @@ from app.worker.jobs import (
     google_sync_tick,
     holding_reply_tick,
     monthly_report_tick,
+    places_tick,
     plan_reminder_tick,
     retention_tick,
     retry_unread_tick,
@@ -26,6 +27,7 @@ class WorkerSettings:
         cron(agent_tick, second={0}, run_at_startup=True),  # AI agent team: demos and support, every minute
         cron(retry_unread_tick, minute=set(range(0, 60, 5)), run_at_startup=True),  # re-read failed reviews
         cron(google_sync_tick, minute={0, 10, 20, 30, 40, 50}),  # live Google reviews
+        cron(places_tick, minute=45),  # Google reviews by Maps listing (Places API), each outlet once a day
         cron(holding_reply_tick, minute={5, 20, 35, 50}),  # safe first reply to unanswered complaints (opt-in)
         cron(weekly_summary_tick, weekday=0, hour=3, minute=30),  # Monday 9:00 am India time
         cron(plan_reminder_tick, minute=25),  # trial/plan ending reminders

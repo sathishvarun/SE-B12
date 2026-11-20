@@ -28,12 +28,14 @@ from app.routers import (
     insights,
     intake,
     notifications,
+    places,
     product_feedback,
     public,
     review_requests,
     reviews,
     support,
     team,
+    usage,
 )
 
 _FMT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
@@ -112,3 +114,5 @@ app.include_router(reviews.router)
 app.include_router(review_requests.router)
 app.include_router(extras.router)
 app.include_router(ai_staff.router)
+app.include_router(usage.router)
+app.include_router(places.router)

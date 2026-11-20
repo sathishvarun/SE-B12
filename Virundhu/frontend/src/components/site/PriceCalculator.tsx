@@ -24,11 +24,13 @@ const FALLBACK: PricingTable = {
     { months: 9, discount_percent: 10, bonus_months: 1 },
     { months: 12, discount_percent: 15, bonus_months: 2 },
   ],
-  max_outlets: 500,
+  max_outlets: 1000,
   reviews_per_outlet: 500,
 };
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+const SLIDER_MAX = 50;
+const QUICK = [1, 3, 5, 10, 25, 50];
 
 export function quoteFrom(t: PricingTable, outlets: number, months: number) {
   const first = t.tiers[0] ?? { from_outlets: 1, per_outlet_month: 1499, name: "Single outlet" };
@@ -62,31 +64,64 @@ export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, payi
   const { data } = useQuery({ queryKey: ["pricing-table"], queryFn: billingApi.pricing, staleTime: 3_600_000 });
   const table = data ?? FALLBACK;
   const [outlets, setOutlets] = useState(Math.max(1, initialOutlets));
+  const [draft, setDraft] = useState(String(Math.max(1, initialOutlets)));
+  const [manual, setManual] = useState(initialOutlets > SLIDER_MAX);
   const [months, setMonths] = useState<number | null>(initialMonths);
   const q = useMemo(() => quoteFrom(table, outlets, months ?? 1), [table, outlets, months]);
   const dark = tone === "dark";
   const soft = dark ? "text-mist" : "text-ink-soft";
-  const clamp = (n: number) => Math.min(table.max_outlets, Math.max(1, Math.round(n) || 1));
+  const max = table.max_outlets;
+  const clamp = (n: number) => Math.min(max, Math.max(1, Math.round(n) || 1));
+  const typed = Number(draft);
+  const draftError = draft === "" ? "Type how many outlets you have." : !Number.isInteger(typed) || typed < 1 ? "Use a whole number, 1 or more."
+    : typed > max ? `Up to ${max.toLocaleString("en-IN")} outlets can be bought here. For more, talk to us.` : null;
+  const choose = (n: number) => { const v = clamp(n); setOutlets(v); setDraft(String(v)); };
+  // Typing updates the price as soon as the number is valid; nothing is clamped while the person is still typing.
+  const onType = (raw: string) => {
+    const v = raw.replace(/[^0-9]/g, "").slice(0, 5);
+    setDraft(v);
+    const num = Number(v);
+    if (v !== "" && num >= 1 && num <= max) setOutlets(num);
+    if (num > SLIDER_MAX) setManual(true);
+  };
 
   return (
     <div className={cn("grid gap-6 rounded-[24px] p-5 sm:p-7 lg:grid-cols-[1.15fr_1fr]", dark ? "bg-night-2 text-jasmine" : "border-2 border-line bg-white text-ink")}>
       <div>
         <label htmlFor="outlets" className="font-display text-xl font-bold">How many outlets?</label>
+        <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Quick pick">
+          {QUICK.map((n) => (
+            <button key={n} type="button" role="radio" aria-checked={!manual && outlets === n} onClick={() => { setManual(false); choose(n); }}
+              className={cn("tabular min-w-[3rem] rounded-full px-3 py-1.5 text-sm font-semibold cursor-pointer transition-colors",
+                !manual && outlets === n ? "bg-turmeric text-night" : dark ? "bg-white/10 hover:bg-white/20" : "bg-jasmine-2 hover:bg-line")}>{n}</button>
+          ))}
+          <button type="button" role="radio" aria-checked={manual} onClick={() => { setManual(true); if (outlets <= SLIDER_MAX) choose(SLIDER_MAX + 1); }}
+            className={cn("rounded-full px-3 py-1.5 text-sm font-semibold cursor-pointer transition-colors",
+              manual ? "bg-turmeric text-night" : dark ? "bg-white/10 hover:bg-white/20" : "bg-jasmine-2 hover:bg-line")}>More than {SLIDER_MAX}</button>
+        </div>
         <div className="mt-3 flex items-center gap-3">
-          <button type="button" aria-label="One fewer outlet" onClick={() => setOutlets((n) => clamp(n - 1))}
+          <button type="button" aria-label="One fewer outlet" onClick={() => choose(outlets - 1)}
             className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-full cursor-pointer", dark ? "bg-white/10 hover:bg-white/20" : "bg-jasmine-2 hover:bg-line")}>
             <Minus className="h-4 w-4" />
           </button>
-          <input id="outlets" type="number" inputMode="numeric" min={1} max={table.max_outlets} value={outlets}
-            onChange={(e) => setOutlets(clamp(Number(e.target.value)))}
-            className={cn("tabular h-12 w-24 rounded-[12px] border-2 text-center font-display text-2xl font-bold", dark ? "border-white/20 bg-night text-jasmine" : "border-line bg-white")} />
-          <button type="button" aria-label="One more outlet" onClick={() => setOutlets((n) => clamp(n + 1))}
+          <input id="outlets" type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="off" value={draft} aria-invalid={Boolean(draftError)}
+            aria-describedby="outlets-help"
+            onChange={(e) => onType(e.target.value)}
+            onBlur={() => { if (draftError) choose(draft === "" ? outlets : typed); }}
+            className={cn("tabular h-12 w-32 rounded-[12px] border-2 text-center font-display text-2xl font-bold",
+              draftError ? "border-chilli" : dark ? "border-white/20" : "border-line", dark ? "bg-night text-jasmine" : "bg-white")} />
+          <button type="button" aria-label="One more outlet" onClick={() => choose(outlets + 1)}
             className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-full cursor-pointer", dark ? "bg-white/10 hover:bg-white/20" : "bg-jasmine-2 hover:bg-line")}>
             <Plus className="h-4 w-4" />
           </button>
         </div>
-        <input type="range" min={1} max={150} value={Math.min(outlets, 150)} aria-label="Outlets slider"
-          onChange={(e) => setOutlets(clamp(Number(e.target.value)))} className="mt-3 h-8 w-full cursor-pointer accent-turmeric" />
+        <p id="outlets-help" className={cn("mt-2 text-sm", draftError ? "font-semibold text-chilli" : soft)}>
+          {draftError ?? (manual ? `Type your exact number of outlets, from ${SLIDER_MAX + 1} up to ${max.toLocaleString("en-IN")}. The price updates as you type.` : `Use the slider up to ${SLIDER_MAX}. Bigger chain? Pick "More than ${SLIDER_MAX}" and type the number.`)}
+        </p>
+        {!manual ? (
+          <input type="range" min={1} max={SLIDER_MAX} value={Math.min(outlets, SLIDER_MAX)} aria-label="Outlets slider"
+            onChange={(e) => choose(Number(e.target.value))} className="mt-2 h-8 w-full cursor-pointer accent-turmeric" />
+        ) : null}
 
         <ul className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
           {table.tiers.map((t, i) => {
@@ -122,7 +157,7 @@ export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, payi
             <p className={cn("mt-2", dark ? "text-ink-soft" : "text-mist")}>Pick 1, 3, 6, 9 or 12 months on the left. Your price for {outlets} outlet{outlets === 1 ? "" : "s"} appears here.</p>
           </div>
         ) : (<>
-        <p className={dark ? "text-ink-soft" : "text-mist"}>{q.tier.name} · {outlets} outlet{outlets === 1 ? "" : "s"} · {months} month{months === 1 ? "" : "s"}</p>
+        <p className={dark ? "text-ink-soft" : "text-mist"}>{q.tier.name} · {outlets.toLocaleString("en-IN")} outlet{outlets === 1 ? "" : "s"} · {months} month{months === 1 ? "" : "s"}</p>
         <p className="tabular mt-1 font-display text-[2.8rem] font-bold leading-none">{inr(q.total)}</p>
         <p className={cn("mt-1", dark ? "text-ink-soft" : "text-mist")}>one payment, GST included</p>
         {q.duration.bonus_months ? (
@@ -140,7 +175,7 @@ export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, payi
         <div className="mt-auto pt-6">
           {onPay ? (
             <>
-            <Button className="w-full" size="lg" variant={dark ? "dark" : "primary"} onClick={() => months !== null && onPay(outlets, months)} disabled={payDisabled || paying || months === null}>
+            <Button className="w-full" size="lg" variant={dark ? "dark" : "primary"} onClick={() => months !== null && !draftError && onPay(outlets, months)} disabled={payDisabled || paying || months === null || Boolean(draftError)}>
               {paying ? <><Spinner /> Opening payment page...</> : months === null ? "Choose the months first" : <><CreditCard className="h-4 w-4" /> Pay {inr(q.total)}</>}
             </Button>
             {payDisabled && payDisabledReason ? <p className={cn("mt-2 text-sm", dark ? "text-ink-soft" : "text-mist")}>{payDisabledReason}</p> : null}
@@ -148,7 +183,8 @@ export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, payi
           ) : (
             <Link to="/register" className={cn(buttonVariants({ variant: "dark", size: "lg" }), "w-full")}>Start 14-day free trial</Link>
           )}
-          {outlets >= table.max_outlets ? <p className={cn("mt-2 text-sm", soft)}>More than {table.max_outlets} outlets? <Link to="/contact" className="underline">Talk to us</Link>.</p> : null}
+          {months !== null && q.total > 100000 ? <p className={cn("mt-2 text-sm", soft)}>For amounts over ₹1 lakh, pay by card or net banking: UPI apps usually stop at ₹1 lakh a payment.</p> : null}
+          {outlets >= max || (draftError && typed > max) ? <p className={cn("mt-2 text-sm", soft)}>More than {max.toLocaleString("en-IN")} outlets? <Link to="/contact" className="underline">Talk to us</Link>.</p> : null}
         </div>
       </div>
     </div>

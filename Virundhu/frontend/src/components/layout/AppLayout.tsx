@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bell, CreditCard, Inbox, MessageCircleQuestion,
   UtensilsCrossed,
   LifeBuoy, Workflow, LogOut, MapPin, Menu, Plug, Settings, ShieldCheck, Upload,
-  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database, MessageSquareHeart, HeartHandshake, IndianRupee, CalendarClock } from "lucide-react";
+  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database, MessageSquareHeart, HeartHandshake, IndianRupee, CalendarClock, Gauge, Coins } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -65,6 +65,8 @@ export function AppLayout() {
         { title: "Money", items: [
           { to: "/app/admin/money", label: "Payments", icon: IndianRupee, hint: "Per day, per week, refunds" },
           { to: "/app/admin/renewals", label: "Renewals", icon: CalendarClock, hint: "Revenue and plans due" },
+          { to: "/app/admin/tokens", label: "AI tokens", icon: Gauge, hint: "Total tokens and AI cost" },
+          { to: "/app/admin/tokens-by-restaurant", label: "Tokens by restaurant", icon: Coins, hint: "Each restaurant's AI use and cost" },
         ] },
         { title: "Customers", items: [
           { to: "/app/admin/restaurants", label: "Restaurants", icon: Building2 },
@@ -102,13 +104,14 @@ export function AppLayout() {
         ] },
         { title: "Account", items: [
           ...(isOwner ? [{ to: "/app/billing", label: "Plan and billing", icon: CreditCard }] : []),
+          { to: "/app/usage", label: "AI usage", icon: Gauge, hint: "Tokens the AI used for you" },
           { to: "/app/settings", label: "Settings", icon: Settings },
           { to: "/app/support", label: "Help and support", icon: LifeBuoy },
           { to: "/app/feedback", label: "Share feedback", icon: MessageSquareHeart, hint: "Ideas, problems, how easy it is" },
         ] },
       ];
   const items = groups.flatMap((g) => g.items);
-  const mobileMain = adminHome ? [0, 2, 4, 7].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
+  const mobileMain = adminHome ? [0, 2, 6, 9].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
   const bell = adminHome ? <AdminBell align="left" /> : <NotificationBell onDark align="left" />;
   const trialEnds = !viewing && user?.organization?.plan === "trial" && !user.organization.is_demo ? user.organization.trial_ends_at : null;
   // Unpaid: the account stays signed in, but only Plan and billing (and Help) open until the payment lands.

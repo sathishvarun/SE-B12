@@ -347,3 +347,18 @@ general-purpose agents using the matching skill file.
   `services/ai_staff.py` and `services/agent_team.py` TEAM. Menu label = page heading = phone label (no `short` labels).
 - First page opened never animates in (`markPainted` runs on the first route change, in `PageTitle`); hero entrance
   delays stay under 250 ms; the first-screen fonts are preloaded by `scripts/prerender.mjs`.
+
+### AI tokens, Google Maps listing reviews, big chains (migration 0021)
+- `ai_usage` ledger: one row per AI call (org, feature, model, input/output tokens, cost_inr). Written by
+  `ai/usage.UsageRecorder`, a LangChain callback attached in `chat_model(purpose, feature, org_id)`; every call site
+  passes its feature (`review_reading`, `ask`, `screenshot`, `help`, `support_agent`, `support_draft`,
+  `feedback_agent`) and restaurant. Old `review_analyses` tokens were copied in by the migration.
+- `routers/usage.py`: owners `GET /usage/tokens` (tokens only, never rupee cost) → page `/app/usage` "AI usage";
+  admin `GET /admin/tokens` (totals, per day, per task) → Admin "AI tokens", and `GET /admin/tokens/restaurants`
+  (tokens + AI cost + paid, AI share %) → Admin "Tokens by restaurant".
+- Google reviews by Maps listing (`services/google_places.py`, `routers/places.py`, Places API (New), needs
+  `GOOGLE_PLACES_API_KEY`): owner searches and links each outlet (`outlets.google_place_id`), up to 5 newest reviews
+  per check, external_id `gp:<id>`, no `source_ref` (never auto-replied). Cron `places_tick` hourly checks outlets due
+  (once a day). Stops for a restaurant once its Business Profile connection is live. Card on Connections.
+- Outlets: 1 to 1,000 (`pricing.MAX_OUTLETS`). Calculator: quick picks up to 50 + slider, "More than 50" = typed number,
+  nothing clamped while typing; over ₹1 lakh it tells people to pay by card or net banking.

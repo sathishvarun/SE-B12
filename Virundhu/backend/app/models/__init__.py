@@ -23,10 +23,11 @@ from app.models.ops import (
     WebhookEvent,
     WeeklyReport,
 )
-from app.models.review import ImportBatch, Outlet, Review, ReviewAnalysis, ReviewCorrection, UsageCounter
+from app.models.review import AiUsage, ImportBatch, Outlet, Review, ReviewAnalysis, ReviewCorrection, UsageCounter
 from app.models.user import Invitation, Membership, Organization, PasswordResetToken, RefreshToken, User
 
 __all__ = [
+    "AiUsage",
     "AgentRun",
     "DemoMeeting",
     "GuestRecovery",

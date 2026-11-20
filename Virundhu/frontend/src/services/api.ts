@@ -368,3 +368,38 @@ export const adminMoneyApi = {
 };
 export const adminAgentsApi = { get: () => api.get<AgentFeed>("/api/v1/admin/agents").then((r) => r.data) };
 export const adminAutopilotApi = { get: () => api.get<{ as_of: string; chores: AdminChore[]; restaurants: number }>("/api/v1/admin/autopilot").then((r) => r.data) };
+
+// ---------- AI token usage (owner + admin) ----------
+export interface TokenTotals { input_tokens: number; output_tokens: number; tokens: number; calls: number; cost_inr: number }
+export interface TokenFeature extends TokenTotals { feature: string; label: string }
+export interface TokenDay { day: string; label: string; tokens: number; cost_inr: number }
+export interface OwnerTokens {
+  restaurant: string; this_month: TokenTotals; last_month: TokenTotals; all_time: TokenTotals;
+  by_feature: TokenFeature[]; daily: TokenDay[]; reviews_read_this_month: number; reviews_allowed_per_month: number;
+}
+export interface AdminTokens {
+  windows: Record<"today" | "this_month" | "last_30" | "all_time", TokenTotals>;
+  by_feature: TokenFeature[]; daily: TokenDay[]; platform_own: TokenTotals; restaurants_using_ai: number; price_note: string;
+}
+export interface RestaurantTokens {
+  id: number; name: string; plan: string; paid_outlets: number | null;
+  tokens_this_month: number; tokens_last_month: number; tokens_all_time: number; calls_all_time: number;
+  cost_this_month_inr: number; cost_all_time_inr: number; paid_all_time_inr: number; ai_share_percent: number | null;
+}
+export const usageApi = { mine: () => api.get<OwnerTokens>("/api/v1/usage/tokens").then((r) => r.data) };
+export const adminTokensApi = {
+  total: (days: number) => api.get<AdminTokens>("/api/v1/admin/tokens", { params: { days } }).then((r) => r.data),
+  restaurants: () => api.get<RestaurantTokens[]>("/api/v1/admin/tokens/restaurants").then((r) => r.data),
+};
+
+// ---------- Google reviews by Maps listing (Places API) ----------
+export interface OutletPlace { outlet_id: number; outlet: string; place_id: string | null; place_name: string | null; rating: number | null; rating_count: number | null; synced_at: string | null; error: string | null }
+export interface PlaceHit { place_id: string; name: string; address: string; rating: number | null; reviews: number }
+export interface PlaceSync { outlet: OutletPlace; new_reviews: number; message: string }
+export const placesApi = {
+  status: () => api.get<{ enabled: boolean; full_sync_connected: boolean; outlets: OutletPlace[] }>("/api/v1/places/status").then((r) => r.data),
+  search: (q: string) => api.get<PlaceHit[]>("/api/v1/places/search", { params: { q } }).then((r) => r.data),
+  link: (outletId: number, placeId: string) => api.put<PlaceSync>(`/api/v1/outlets/${outletId}/google-place`, { place_id: placeId }).then((r) => r.data),
+  sync: (outletId: number) => api.post<PlaceSync>(`/api/v1/outlets/${outletId}/google-place/sync`).then((r) => r.data),
+  unlink: (outletId: number) => api.delete(`/api/v1/outlets/${outletId}/google-place`).then((r) => r.data),
+};

@@ -26,12 +26,14 @@ def tag_review(
     tone: str = "warm",
     signature: str = "- Team Virundhu",
     attempts: int = 2,
+    org_id: int | None = None,
 ) -> dict[str, Any]:
     """Return analysis fields plus model name, token counts and safety flag. Retries invalid output."""
     prompt = ChatPromptTemplate.from_messages([("system", TAGGING_SYSTEM), ("human", TAGGING_HUMAN)])
     # OpenAI's strict JSON mode rejects some schema shapes; tool calling works for both providers.
     extra = {} if settings.LLM_PROVIDER == "anthropic" else {"method": "function_calling"}
-    chain = prompt | chat_model("tagging").with_structured_output(ReviewAnalysisOut, include_raw=True, **extra)
+    model = chat_model("tagging", "review_reading", org_id)
+    chain = prompt | model.with_structured_output(ReviewAnalysisOut, include_raw=True, **extra)
     inputs = {
         "review_text": text,
         "rating": rating if rating else "not given",

@@ -102,6 +102,7 @@ def analyze_reviews(db: Session, org_id: int, review_ids: list[int], batch_id: i
                 review.platform,
                 org.reply_tone,
                 org.reply_signature or f"- Team {org.name}",
+                org_id=org.id,
             )
         except TaggingError as exc:
             logger.warning("Review %s could not be read: %s", review.id, exc)

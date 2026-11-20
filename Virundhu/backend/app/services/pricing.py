@@ -26,7 +26,7 @@ DURATIONS: dict[int, tuple[int, int]] = {
     12: (15, 2),
 }
 
-MAX_OUTLETS = 500
+MAX_OUTLETS = 1000
 REVIEWS_PER_OUTLET = 500  # monthly AI reading allowance per paid outlet
 DAYS_PER_MONTH = 30.44
 

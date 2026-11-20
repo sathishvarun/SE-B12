@@ -27,7 +27,7 @@ def _new_owner(client):
     return res.json()
 
 
-def fake_tag(text, rating=None, platform="google", tone="warm", signature="", attempts=2):
+def fake_tag(text, rating=None, platform="google", tone="warm", signature="", attempts=2, org_id=None):
     urgent = "late" in text.lower() or "mudi" in text.lower()
     return {
         "sentiment": "negative" if urgent else "positive",

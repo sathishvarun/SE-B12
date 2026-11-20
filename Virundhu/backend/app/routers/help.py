@@ -132,7 +132,9 @@ def draft(ticket_id: int, db: Session = Depends(get_db)) -> dict:
         raise HTTPException(404, "Ticket not found.")
     msgs = db.scalars(select(TicketMessage).where(TicketMessage.ticket_id == t.id).order_by(TicketMessage.id))
     try:
-        text = help_bot.draft_reply(t.subject, [(m.from_admin, m.body) for m in msgs], t.restaurant)
+        text = help_bot.draft_reply(
+            t.subject, [(m.from_admin, m.body) for m in msgs], t.restaurant, t.organization_id
+        )
     except Exception as exc:  # AI down
         raise HTTPException(503, "The AI couldn't write a draft just now. Please write the reply yourself.") from exc
     return {"draft": text}

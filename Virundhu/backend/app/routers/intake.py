@@ -200,7 +200,7 @@ async def from_screenshot(
     if not settings.llm_configured:
         raise HTTPException(503, "Reading screenshots needs the AI key. Add it in .env first.")
     try:
-        found = await asyncio.to_thread(read_screenshot, content, mime)
+        found = await asyncio.to_thread(read_screenshot, content, mime, ctx.org.id)
     except Exception as exc:
         raise HTTPException(502, "Couldn't read this screenshot. Try a clearer one, or paste the review.") from exc
     outlet = _allowed_outlet(ctx, outlet_id)

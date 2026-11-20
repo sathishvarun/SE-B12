@@ -56,6 +56,44 @@ def _google_tick() -> None:
                 analyze_reviews(db, org_id, new_ids)
 
 
+def _places_tick() -> int:
+    """Daily Google check for outlets linked to a Maps listing (Places API). Paid or trial restaurants only."""
+    from app.models import Organization, Outlet
+    from app.services import google_places
+    from app.services.autopilot import plan_active
+
+    if not google_places.enabled():
+        return 0
+    with SessionLocal() as db:
+        due = google_places.due_outlets(db)
+    added = 0
+    skip: set[int] = set()
+    for org_id, outlet_id in due:
+        if org_id in skip:
+            continue
+        with SessionLocal() as db:
+            org = db.get(Organization, org_id)
+            paying = org is not None and (plan_active(db, org) or org.is_demo)
+            if not paying or google_places.full_sync_connected(db, org_id):
+                skip.add(org_id)
+                continue
+            outlet = db.get(Outlet, outlet_id)
+            if outlet is None:
+                continue
+            new_ids = google_places.sync_outlet(db, outlet)
+            if new_ids:
+                added += len(new_ids)
+                analyze_reviews(db, org_id, new_ids)
+    return added
+
+
+async def places_tick(ctx: dict[str, Any]) -> None:
+    """Hourly: outlets whose daily Google check is due (Places API)."""
+    n = await asyncio.to_thread(_places_tick)
+    if n:
+        logger.info("places_tick: %d new Google reviews", n)
+
+
 async def google_sync_tick(ctx: dict[str, Any]) -> None:
     """Every 10 minutes: pull new Google reviews for every connected restaurant, read them, alert."""
     await asyncio.to_thread(_google_tick)

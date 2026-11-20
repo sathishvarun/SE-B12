@@ -168,7 +168,7 @@ def test_pricing_rules():
     assert year.bonus_months == 2 and year.total == round(1499 * 12 * 0.85) and year.access_days > 400
     big = pricing.quote(120, 12)
     assert big.per_outlet_month == 649 and big.plan == "chain" and big.effective_per_outlet_month < 500
-    for bad in ((0, 1), (1, 2), (501, 1)):
+    for bad in ((0, 1), (1, 2), (1001, 1)):
         try:
             pricing.quote(*bad)
             raise AssertionError("should refuse")
