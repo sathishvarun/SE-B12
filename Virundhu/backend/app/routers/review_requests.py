@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.auth.deps import OrgContext, require_writable
+from app.auth.deps import OrgContext, get_org_context, require_writable
 from app.config import settings
 from app.database import get_db
 from app.limiter import limiter
@@ -54,7 +54,7 @@ def ask(request: Request, body: RequestIn, ctx: OrgContext = Depends(require_wri
 
 
 @router.get("/stats", response_model=StatsOut)
-def stats(ctx: OrgContext = Depends(require_writable), db: Session = Depends(get_db)) -> StatsOut:
+def stats(ctx: OrgContext = Depends(get_org_context), db: Session = Depends(get_db)) -> StatsOut:
     since = datetime.now(UTC) - timedelta(days=30)
     asked = db.scalar(
         select(func.count(ReviewRequest.id)).where(

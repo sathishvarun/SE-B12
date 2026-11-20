@@ -1,3 +1,4 @@
+import { IdleSignOut } from "@/components/layout/IdleSignOut";
 import { EasePrompt } from "@/components/feedback/EaseCheck";
 import { QuickHelp } from "@/components/help/QuickHelp";
 import { useQueryClient } from "@tanstack/react-query";
@@ -211,6 +212,7 @@ export function AppLayout() {
           <m.div key={pathname} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}>
             <Outlet />
+            <IdleSignOut />
             {!adminHome ? <EasePrompt /> : null}
             {!adminHome ? <QuickHelp signedIn /> : null}
           </m.div>

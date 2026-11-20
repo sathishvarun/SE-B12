@@ -334,3 +334,10 @@ general-purpose agents using the matching skill file.
   idempotent on refund_id) and by `POST /admin/money/sync`. Test payments never count as revenue (also in `/admin/revenue`).
 - `GET /admin/money?days=&include_test=`: windows (today, yesterday, this/last week, this month, last 30, all time),
   daily and weekly series, every payment and refund. Admin menu groups: Overview, Money, Customers, Help desk, Logs, System.
+
+### Idle sign-out (security)
+- `components/layout/IdleSignOut.tsx` + `lib/idle.ts`: admin signed out after 5 minutes without mouse/keyboard/touch/
+  scroll, restaurant users after 15; a "Still there?" warning shows for the last minute. Last activity is shared across
+  tabs in localStorage (`virundhu.lastActive`, a timestamp only) and checked on start-up in `AuthContext`, so a session
+  left idle with the tab closed is ended instead of restored. Login shows the reason (`/login?timeout=5|15`).
+- After sign-in people return to the page they opened (`lib/next.ts`), including through Google sign-in.

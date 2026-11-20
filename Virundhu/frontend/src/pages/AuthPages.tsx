@@ -171,6 +171,7 @@ export function LoginPage() {
   const [busy, setBusy] = useState<"login" | null>(null);
   const [params] = useSearchParams();
   const justReset = params.get("reset") === "1";
+  const timedOut = params.get("timeout");
   const confirmed = params.get("email_confirmed");
 
   async function onSubmit(e: FormEvent) {
@@ -186,6 +187,7 @@ export function LoginPage() {
       {confirmed === "1" ? <p className="mb-5 rounded-[12px] bg-leaf-soft px-4 py-3 font-medium text-[#16784a]">Email confirmed. Thank you. Sign in to continue.</p> : null}
       {confirmed === "0" ? <p className="mb-5 rounded-[12px] bg-chilli-soft px-4 py-3 font-medium text-[#b32f12]">That confirmation link didn't work. Sign in and contact us from the Contact page if you need a new one.</p> : null}
       {justReset ? <p className="mb-5 rounded-[12px] bg-leaf-soft px-4 py-3 font-medium text-[#16784a]">Password changed. Sign in with your new password.</p> : null}
+      {timedOut ? <p role="status" className="mb-5 rounded-[12px] bg-jasmine-2 px-4 py-3 font-medium">You were signed out after {timedOut === "5" ? "5" : "15"} minutes without activity, to keep your account safe. Sign in again to carry on.</p> : null}
       <GoogleButton />
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <Field id="email" label="Email" type="email" autoComplete="email" icon={<Mail className="h-[18px] w-[18px]" />}

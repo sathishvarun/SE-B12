@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { clearActive, idleExpired } from "@/lib/idle";
 import { authApi, tokens } from "@/services/api";
 import type { CurrentUser } from "@/types";
 
@@ -23,6 +24,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let alive = true;
     (async () => {
       if (!tokens.signedIn()) { setReady(true); return; }
+      if (idleExpired()) {
+        // Left idle past the limit (tab closed or computer asleep): end the session instead of restoring it.
+        tokens.clear();
+        clearActive();
+        await authApi.logout().catch(() => undefined);
+        if (alive) setReady(true);
+        return;
+      }
       try {
         if (!(await authApi.refresh())) throw new Error("signed out");
         const me = await authApi.me();
@@ -63,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     tokens.clear();
+    clearActive();
     setUser(null);
     await authApi.logout().catch(() => undefined);
   }, []);
