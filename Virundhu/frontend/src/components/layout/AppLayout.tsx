@@ -59,26 +59,26 @@ export function AppLayout() {
   const groups: NavGroup[] = adminHome
     ? [
         { title: "Overview", items: [
-          { to: "/app/admin", label: "Today", icon: LayoutDashboard, end: true, short: "Today" },
+          { to: "/app/admin", label: "Today", icon: LayoutDashboard, end: true },
           { to: "/app/admin/autopilot", label: "Autopilot", icon: Workflow, hint: "Your AI agents at work" },
         ] },
         { title: "Money", items: [
-          { to: "/app/admin/money", label: "Payments and refunds", icon: IndianRupee, short: "Money", hint: "Per day, per week, refunds" },
-          { to: "/app/admin/renewals", label: "Revenue and renewals", icon: CalendarClock, short: "Renewals" },
+          { to: "/app/admin/money", label: "Payments", icon: IndianRupee, hint: "Per day, per week, refunds" },
+          { to: "/app/admin/renewals", label: "Renewals", icon: CalendarClock, hint: "Revenue and plans due" },
         ] },
         { title: "Customers", items: [
           { to: "/app/admin/restaurants", label: "Restaurants", icon: Building2 },
           { to: "/app/admin/users", label: "Users", icon: Users },
-          { to: "/app/admin/leads", label: "Demo requests", icon: Inbox, short: "Demos" },
+          { to: "/app/admin/leads", label: "Demo requests", icon: Inbox },
         ] },
         { title: "Help desk", items: [
-          { to: "/app/admin/support", label: "Support tickets", icon: LifeBuoy },
-          { to: "/app/admin/feedback", label: "Feedback and ease", icon: HeartHandshake, short: "Feedback" },
+          { to: "/app/admin/support", label: "Support", icon: LifeBuoy },
+          { to: "/app/admin/feedback", label: "Feedback", icon: HeartHandshake, hint: "Ideas and ease of use" },
           { to: "/app/admin/testimonials", label: "Testimonials", icon: Quote },
-          { to: "/app/admin/mailbox", label: "Company mailbox", icon: MailOpen, short: "Mailbox" },
+          { to: "/app/admin/mailbox", label: "Mailbox", icon: MailOpen },
         ] },
         { title: "Logs", items: [
-          { to: "/app/admin/activity", label: "All activity", icon: ScrollText },
+          { to: "/app/admin/activity", label: "Activity", icon: ScrollText },
           { to: "/app/admin/emails", label: "Emails sent", icon: Mail },
           { to: "/app/admin/signins", label: "Sign-ins", icon: LogIn },
         ] },
@@ -86,9 +86,9 @@ export function AppLayout() {
       ]
     : [
         { title: "Every day", items: [
-          { to: "/app", label: "Dashboard", icon: BarChart3, end: true, hint: "Today at a glance", short: "Home" },
-          { to: "/app/ai-staff", label: "Your AI staff", icon: UsersRound, hint: "What your AI team did and today's 3 moves", short: "AI staff" },
-          { to: "/app/inbox", label: "Reviews to reply", icon: Inbox, badge: urgent, hint: "Reply to guests", short: "Inbox" },
+          { to: "/app", label: "Dashboard", icon: BarChart3, end: true, hint: "Today at a glance" },
+          { to: "/app/ai-staff", label: "Your AI staff", icon: UsersRound, hint: "What your AI team did and today's 3 moves" },
+          { to: "/app/inbox", label: "Inbox", icon: Inbox, badge: urgent, hint: "Reviews to reply" },
           { to: "/app/import", label: "Add reviews", icon: Upload, hint: "Zomato, Swiggy, screenshots" },
           { to: "/app/alerts", label: "Alerts", icon: Bell, hint: "Problems that need you" },
         ] },

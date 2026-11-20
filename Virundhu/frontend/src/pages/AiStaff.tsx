@@ -126,7 +126,7 @@ const CHORES = [
   { chore: "Noticing serious complaints", before: "Found days later, after it spread", now: "Meera alerts the branch manager within a minute", who: "guardian" },
   { chore: "Spotting a problem that keeps repeating", before: "Only when the rating drops", now: "Vikram flags 3 alike in 72 hours, with the likely cause", who: "radar" },
   { chore: "Calling back unhappy guests", before: "Rarely done", now: "Anbu writes the apology and comeback code; one tap on WhatsApp", who: "winback" },
-  { chore: "Asking happy guests for Google reviews", before: "Staff forget at the counter", now: "Priya invites them after the bill", who: "promoter" },
+  { chore: "Asking happy guests for Google reviews", before: "Staff forget at the counter", now: "Malar invites them after the bill", who: "promoter" },
   { chore: "Preparing the weekly team meeting", before: "Scroll reviews, guess what to fix", now: "Siva's Monday brief: fix, dish, who to thank", who: "analyst" },
 ];
 

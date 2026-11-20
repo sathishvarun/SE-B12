@@ -341,3 +341,9 @@ general-purpose agents using the matching skill file.
   tabs in localStorage (`virundhu.lastActive`, a timestamp only) and checked on start-up in `AuthContext`, so a session
   left idle with the tab closed is ended instead of restored. Login shows the reason (`/login?timeout=5|15`).
 - After sign-in people return to the page they opened (`lib/next.ts`), including through Google sign-in.
+
+### Naming and speed rules
+- Agent names live in `frontend/src/lib/agents.ts` (RESTAURANT_STAFF, SERVICE_AGENTS), mirrored in backend
+  `services/ai_staff.py` and `services/agent_team.py` TEAM. Menu label = page heading = phone label (no `short` labels).
+- First page opened never animates in (`markPainted` runs on the first route change, in `PageTitle`); hero entrance
+  delays stay under 250 ms; the first-screen fonts are preloaded by `scripts/prerender.mjs`.

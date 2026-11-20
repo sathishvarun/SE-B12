@@ -1,3 +1,4 @@
+import { RESTAURANT_STAFF, SERVICE_AGENTS } from "@/lib/agents";
 import { ArrowRight, PlayCircle } from "lucide-react";
 import { FeastLeaf } from "@/components/landing/FeastLeaf";
 import { Reveal, RiseWords } from "@/components/motion/Reveal";
@@ -22,15 +23,8 @@ function Stat({ value, prefix, suffix, label }: { value: number; prefix: string;
   );
 }
 
-const AI_TEAM = [
-  { name: "Kavya", role: "The Guest Whisperer", job: "Reads every review the moment it lands, in Tamil, Tanglish or English.", color: "bg-leaf text-white" },
-  { name: "Arjun", role: "The Reply Maestro", job: "Writes the reply in the guest's language; posts happy Google replies within your rules.", color: "bg-turmeric text-night" },
-  { name: "Meera", role: "The Kitchen Guardian", job: "Food-safety and hygiene complaints reach your branch manager within a minute.", color: "bg-chilli text-white" },
-  { name: "Vikram", role: "The Trouble Spotter", job: "Spots the same complaint repeating at one outlet before it hurts your rating.", color: "bg-night text-turmeric" },
-  { name: "Anbu", role: "The Comeback Captain", job: "Sends unhappy guests an apology and a comeback code, then tells you who returned.", color: "bg-lotus text-white" },
-  { name: "Priya", role: "The Star Builder", job: "Invites happy guests to post on Google, so your rating climbs.", color: "bg-sky text-white" },
-  { name: "Siva", role: "The Monday Strategist", job: "Monday brief: what to fix, which dish, who to thank, how each outlet moved.", color: "bg-[#7a4b2a] text-white" },
-];
+const COLORS = ["bg-leaf text-white", "bg-turmeric text-night", "bg-chilli text-white", "bg-night text-turmeric", "bg-lotus text-white", "bg-sky text-white", "bg-[#7a4b2a] text-white"];
+const AI_TEAM = RESTAURANT_STAFF.map((m, i) => ({ ...m, color: COLORS[i % COLORS.length] }));
 
 export default function Home() {
   return (
@@ -47,16 +41,16 @@ export default function Home() {
               <br />
               <RiseWords text="Every complaint, caught." delay={0.4} className="text-turmeric" />
             </h1>
-            <p className="type-lead mt-6 max-w-xl text-mist animate-rise [animation-delay:700ms]">
+            <p className="type-lead mt-6 max-w-xl text-mist animate-rise [animation-delay:120ms]">
               Google and QR-code reviews come in by themselves; Zomato and Swiggy with one paste or a screenshot. Virundhu reads them in Tamil, Tanglish and English, alerts you the minute something is serious, and writes the reply.
             </p>
-            <div className="mt-9 flex flex-wrap gap-3 animate-rise [animation-delay:900ms]">
+            <div className="mt-9 flex flex-wrap gap-3 animate-rise [animation-delay:160ms]">
               <Link to="/register" className={cn(buttonVariants({ size: "lg" }), "h-auto min-h-12 max-w-full whitespace-normal py-3 text-center")}>Start 14-day free trial</Link>
               <Link to="/how-it-works#demo" className={cn(buttonVariants({ variant: "outlineDark", size: "lg" }), "h-auto min-h-12 max-w-full whitespace-normal py-3 text-center")}><PlayCircle className="h-5 w-5" /> See how it works</Link>
             </div>
-            <p className="mt-5 text-sm text-mist animate-rise [animation-delay:1000ms]">Not software you operate: a team of AI agents that does the work. No card needed.</p>
+            <p className="mt-5 text-sm text-mist animate-rise [animation-delay:200ms]">Not software you operate: a team of AI agents that does the work. No card needed.</p>
           </div>
-          <div className="relative mx-auto w-full max-w-[560px] animate-rise [animation-delay:300ms]">
+          <div className="relative mx-auto w-full max-w-[560px] animate-rise [animation-delay:60ms]">
             <FeastLeaf className="hidden px-6 py-10 sm:block" />
             <FeastLeaf compact className="px-2 py-8 sm:hidden" />
           </div>
@@ -119,6 +113,21 @@ export default function Home() {
             <Link to="/whats-next" className="mt-3 text-sm font-semibold text-turmeric hover:underline">See what's coming next</Link>
           </li>
         </ul>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 pb-6 sm:px-8" aria-labelledby="service-agents">
+        <div className="rounded-[24px] bg-night p-6 text-jasmine sm:p-8">
+          <h2 id="service-agents" className="font-display text-2xl font-bold sm:text-3xl">And the team that runs Virundhu for you</h2>
+          <p className="mt-2 max-w-3xl text-mist">You'll meet them by name in emails and in the app: they book your demo, answer your questions and look after your account, around the clock.</p>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {SERVICE_AGENTS.map((a) => (
+              <li key={a.name} className="rounded-[16px] bg-white/[0.06] p-4">
+                <p className="font-display text-lg font-bold">{a.name} <span className="text-[0.95rem] font-semibold text-turmeric">· {a.role}</span></p>
+                <p className="mt-1 text-sm text-mist">{a.job}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       <AfterSignIn />

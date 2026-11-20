@@ -549,13 +549,14 @@ def mailbox(db: Session = Depends(get_db)) -> MailboxOut:
         ),
         MailboxBox(
             key="sent",
-            label="Sent to customers",
+            label="Emails Virundhu sent",
             address=sender,
-            purpose="Welcome, password, reminder, suspension and receipt emails go out from here",
+            purpose="Welcome, password, reminder, receipt and agent emails. They go out through the Google mail relay, "
+            "so Gmail's Sent folder doesn't keep copies: the full list is in Emails sent",
             total=n(sent_q),
             new=failed,
             week=n(sent_q.where(ActivityLog.created_at >= week)),
-            gmail_url=f"https://mail.google.com/mail/?authuser={account}#sent",
+            gmail_url="/app/admin/emails",
         ),
     ]
     recent = [
@@ -686,13 +687,27 @@ def autopilot(db: Session = Depends(get_db)) -> dict:
             "title": "The Money Keeper",
             "chore": "Tracking payments and invoices",
             "before": "Match payments to restaurants, make invoices, update a spreadsheet.",
-            "now": "Payments switch plans on by themselves, receipts and GST-ready invoices are emailed, and a "
-            "monthly audit Excel arrives in your inbox.",
+            "now": "Payments switch plans on by themselves, receipts and invoices are emailed, refunds are "
+            "recorded from Dodo, and a monthly audit Excel arrives in your inbox.",
             "needs_you": 0,
             "needs_label": "",
             "done": paid_today,
             "done_label": "collected today",
-            "link": "/app/admin",
+            "link": "/app/admin/money",
+        },
+        {
+            "key": "feedback",
+            "name": "Isai",
+            "title": "The Feedback Listener",
+            "chore": "Reading feedback about Virundhu",
+            "before": "Read every suggestion, reply, decide what to do with it.",
+            "now": "Isai reads every idea, problem and compliment within a minute: problems become tickets Tara "
+            "solves, ideas are counted, and praise goes on the website when the person allows it.",
+            "needs_you": 0,
+            "needs_label": "",
+            "done": runs("isai"),
+            "done_label": "handled today",
+            "link": "/app/admin/feedback",
         },
     ]
     return {"as_of": now.isoformat(), "chores": chores, "restaurants": len(orgs)}

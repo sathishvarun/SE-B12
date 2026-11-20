@@ -4,7 +4,6 @@ import { createRoot, hydrateRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "sonner";
 import App from "@/App";
-import { markPainted } from "@/components/motion/Reveal";
 import { AuthProvider } from "@/context/AuthContext";
 import { STATIC_CONFIG } from "@/lib/seo";
 // Fonts are bundled with the app (no Google CDN call): Tamil + Latin from Indian type foundries.
@@ -43,7 +42,6 @@ if (root.hasChildNodes()) {
 } else {
   createRoot(root).render(tree);
 }
-requestAnimationFrame(() => markPainted());
 
 // Lets owners add Virundhu to their phone's home screen (production builds only).
 if (import.meta.env.PROD && "serviceWorker" in navigator) {

@@ -466,10 +466,10 @@ function AdminPassword() {
 type Section = "overview" | "autopilot" | "money" | "renewals" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "feedback" | "testimonials" | "data";
 const SECTIONS: { group: string; items: [Section, string, typeof Users][] }[] = [
   { group: "Overview", items: [["overview", "Today", LayoutDashboard], ["autopilot", "Autopilot", Workflow]] },
-  { group: "Money", items: [["money", "Payments and refunds", IndianRupee], ["renewals", "Revenue and renewals", CalendarClock]] },
+  { group: "Money", items: [["money", "Payments", IndianRupee], ["renewals", "Renewals", CalendarClock]] },
   { group: "Customers", items: [["restaurants", "Restaurants", Building2], ["users", "Users", Users], ["leads", "Demo requests", Inbox]] },
-  { group: "Help desk", items: [["support", "Support tickets", LifeBuoy], ["feedback", "Feedback and ease", HeartHandshake], ["testimonials", "Testimonials", Quote], ["mailbox", "Company mailbox", MailOpen]] },
-  { group: "Logs", items: [["activity", "All activity", ScrollText], ["emails", "Emails sent", Mail], ["signins", "Sign-ins", LogIn]] },
+  { group: "Help desk", items: [["support", "Support", LifeBuoy], ["feedback", "Feedback", HeartHandshake], ["testimonials", "Testimonials", Quote], ["mailbox", "Mailbox", MailOpen]] },
+  { group: "Logs", items: [["activity", "Activity", ScrollText], ["emails", "Emails sent", Mail], ["signins", "Sign-ins", LogIn]] },
   { group: "System", items: [["data", "Data and backups", Database]] },
 ];
 const when = (d: string) => new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -812,9 +812,15 @@ function MailboxPanel() {
               <p className="text-sm text-ink-soft">{b.week} this week</p>
               {b.new ? <Chip tone={look[b.key]?.chip ?? "plain"}>{b.new} {look[b.key]?.badge}</Chip> : null}
             </div>
-            <a href={b.gmail_url} target="_blank" rel="noreferrer" className="mt-4 flex items-center justify-center gap-2 rounded-[12px] bg-night px-3 py-2.5 text-sm font-semibold text-jasmine hover:opacity-90">
-              Open in Gmail <ExternalLink className="h-4 w-4" />
-            </a>
+            {b.gmail_url.startsWith("/") ? (
+              <Link to={b.gmail_url} className="mt-4 flex items-center justify-center gap-2 rounded-[12px] bg-night px-3 py-2.5 text-sm font-semibold text-jasmine hover:opacity-90">
+                See every email sent <Mail className="h-4 w-4" />
+              </Link>
+            ) : (
+              <a href={b.gmail_url} target="_blank" rel="noreferrer" className="mt-4 flex items-center justify-center gap-2 rounded-[12px] bg-night px-3 py-2.5 text-sm font-semibold text-jasmine hover:opacity-90">
+                Open in Gmail <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
           </section>
         ))}
       </div>

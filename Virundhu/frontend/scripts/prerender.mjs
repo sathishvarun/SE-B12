@@ -21,8 +21,17 @@ const base = template
   .replace(/<meta name="description"[^>]*>\s*/, "")
   .replace(/<meta property="og:[^>]*>\s*/g, "");
 
+// Fetch the two fonts the first screen uses straight away, instead of after the CSS is read.
+import { readdirSync } from "node:fs";
+const assets = readdirSync(join(dist, "assets"));
+const fontLinks = [/^anek-tamil-latin-wdth-normal-.*\.woff2$/, /^hind-madurai-latin-400-normal-.*\.woff2$/]
+  .map((re) => assets.find((f) => re.test(f)))
+  .filter(Boolean)
+  .map((f) => `<link rel="preload" href="/assets/${f}" as="font" type="font/woff2" crossorigin />`)
+  .join("\n    ");
+
 const page = (head, body) =>
-  base.replace("</head>", `    ${head}\n  </head>`).replace('<div id="root"></div>', `<div id="root">${body}</div>`);
+  base.replace("</head>", `    ${fontLinks}\n    ${head}\n  </head>`).replace('<div id="root"></div>', `<div id="root">${body}</div>`);
 
 writeFileSync(join(dist, "app-shell.html"), page(headHtml("/app", { title: "Virundhu", description: SEO["/"].description }, true), ""));
 

@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { markPainted } from "@/components/motion/Reveal";
 import { SEO, SITE_URL } from "@/lib/seo";
 
 const TITLES: Record<string, string> = {
@@ -32,6 +33,11 @@ const TITLES: Record<string, string> = {
 /** Gives every page its own browser-tab title (helps people and Google tell the pages apart). */
 export function PageTitle() {
   const { pathname } = useLocation();
+  const firstPath = useRef(pathname);
+  useEffect(() => {
+    // Entrance animations only after the first page change: the page someone opens shows at once.
+    if (pathname !== firstPath.current) markPainted();
+  }, [pathname]);
   useEffect(() => {
     const path = pathname.replace(/\/$/, "") || "/";
     const seo = SEO[path];

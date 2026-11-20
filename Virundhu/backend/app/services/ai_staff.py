@@ -391,7 +391,7 @@ def command_center(db: Session, ctx: OrgContext) -> dict:
         {
             "key": "promoter",
             "sample": "Invited 40 happy dine-in guests to Google this week; 11 posted 5-star reviews.",
-            "name": "Priya",
+            "name": "Malar",
             "role": "The Star Builder",
             "job": "Invites happy guests to post on Google, so your rating climbs.",
             "status": "working" if org.ask_after_bill or asked else "setup",
