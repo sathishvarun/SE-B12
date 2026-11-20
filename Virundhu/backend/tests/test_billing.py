@@ -134,14 +134,14 @@ def test_dodo_checkout_and_confirm(client, monkeypatch):
         checkout_url="https://test.checkout.dodopayments.com/x"
     )
     with patch.object(dodo_billing, "_client", return_value=fake):
-        res = client.post("/api/v1/billing/checkout", json={"outlets": 60, "months": 12}, headers=h).json()
+        res = client.post("/api/v1/billing/checkout", json={"outlets": 30, "months": 12}, headers=h).json()
         assert res["checkout_url"].startswith("https://test.checkout")
         kwargs = fake.checkout_sessions.create.call_args.kwargs
         item = kwargs["product_cart"][0]
         assert item["product_id"] == "pdt_flex" and kwargs["metadata"]["org_id"] == str(org_id)
-        assert item["amount"] == round(649 * 60 * 12 * 0.85) * 100  # 60 outlets: chain tier, 12 months: 15% off
+        assert item["amount"] == round(799 * 30 * 12 * 0.85) * 100  # 30 outlets: 21-50 tier, 12 months: 15% off
 
-        meta = {"org_id": str(org_id), "outlets": "60", "months": "12"}
+        meta = {"org_id": str(org_id), "outlets": "30", "months": "12"}
         pid = f"pay_{uuid.uuid4().hex[:8]}"
         fake.payments.retrieve.return_value = SimpleNamespace(
             payment_id=pid, status="processing", metadata=meta, total_amount=item["amount"]

@@ -23,7 +23,10 @@ from app.models import (
     UsageCounter,
     User,
 )
-from app.services import activity  # noqa: E402
+from app.services import (
+    activity,  # noqa: E402
+    pricing,
+)
 from app.services.dates import today_local
 from app.services.pricing import tier_for  # noqa: E402
 
@@ -211,6 +214,35 @@ def update_org(org_id: int, body: OrgUpdate, db: Session = Depends(get_db)) -> O
         o.is_suspended = body.is_suspended
     db.commit()
     return next(r for r in organizations(db) if r.id == org_id)
+
+
+class BankPaymentIn(BaseModel):
+    outlets: int = Field(ge=1, le=pricing.MAX_OUTLETS)
+    months: int
+    amount_inr: int = Field(ge=1)
+    reference: str = Field(min_length=4, max_length=40, pattern=r"^[A-Za-z0-9/_-]+$")
+
+
+@router.post("/organizations/{org_id}/bank-payment")
+def record_bank_payment(org_id: int, body: BankPaymentIn, db: Session = Depends(get_db)) -> dict:
+    """A bank transfer arrived: record it like an online payment (plan on, GST receipt emailed, revenue counted)."""
+    from app.services import billing
+
+    if db.get(Organization, org_id) is None:
+        raise HTTPException(404, "Restaurant not found.")
+    try:
+        q = billing.quote_or_error(body.outlets, body.months)
+    except billing.BillingError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    ok = billing.activate(db, org_id, body.outlets, body.months, f"bank_{body.reference}", body.amount_inr * 100)
+    if not ok:
+        raise HTTPException(
+            409,
+            f"Not recorded: this reference was already used, or {pricing.inr(body.amount_inr)} is below the price "
+            f"({pricing.inr(q.total)}).",
+        )
+    done = f"Recorded {pricing.inr(body.amount_inr)}. The plan is on and the receipt was emailed."
+    return {"ok": True, "message": done}
 
 
 class UserRow(BaseModel):

@@ -153,7 +153,7 @@ export interface BillingStatus {
 export interface PricingTable {
   tiers: { from_outlets: number; per_outlet_month: number; name: string }[];
   durations: { months: number; discount_percent: number; bonus_months: number }[];
-  max_outlets: number; reviews_per_outlet: number;
+  max_outlets: number; reviews_per_outlet: number; online_max_inr?: number;
 }
 export interface RazorpayOrder { order_id: string; amount: number; currency: string; key_id: string; restaurant: string; email: string; name: string }
 
@@ -186,6 +186,12 @@ export const billingApi = {
   confirm: (payment_id: string) => api.post<{ status: string; plan: string }>("/api/v1/billing/confirm", { payment_id }).then((r) => r.data),
   verify: (body: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
     api.post("/api/v1/billing/verify", body).then((r) => r.data),
+  bankTransfer: (outlets: number, months: number, details?: BillingDetails) =>
+    api.post<{ ok: boolean; total: number; message: string }>("/api/v1/billing/bank-transfer", { outlets, months, ...details }).then((r) => r.data),
+};
+export const adminBankApi = {
+  record: (orgId: number, body: { outlets: number; months: number; amount_inr: number; reference: string }) =>
+    api.post<{ ok: boolean; message: string }>(`/api/v1/admin/organizations/${orgId}/bank-payment`, body).then((r) => r.data),
 };
 
 export const appApi = {

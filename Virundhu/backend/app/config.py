@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     # Launch offer shown on the Plan and billing page (the code itself lives in Dodo > Sales > Discounts)
     PROMO_CODE: str = ""
     PROMO_MAX_DISCOUNT_PCT: int = 20  # biggest discount code you create in Dodo (FIRST10 = 20%)
+    # Largest single online payment the payment provider accepts (Dodo refused ₹3.5 lakh on 20 Nov 2026).
+    # Bigger orders are paid by bank transfer against a GST invoice and recorded by the admin.
+    ONLINE_PAYMENT_MAX_INR: int = 300000
     PROMO_TEXT: str = ""
 
     RAZORPAY_KEY_ID: str = ""

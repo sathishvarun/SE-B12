@@ -147,3 +147,34 @@ def test_review_values_skip_bad_rows():
     assert google_places._review_values(1, 1, {"rating": 5}) is None
     v = google_places._review_values(1, 2, {"name": "places/x/reviews/abc", "rating": 4.6})
     assert v["rating"] == 5 and v["external_id"] == "gp:abc" and v["review_text"] == ""
+
+
+def test_big_chain_pays_by_bank_transfer(client):
+    h, org = _owner(client, "Big Chain Mess")
+    # 700 outlets for a year is far over one online payment: refused before Dodo is ever called
+    with patch("app.services.dodo_billing.start_checkout") as dodo:
+        res = client.post("/api/v1/billing/checkout", json={"outlets": 700, "months": 12}, headers=h)
+        assert res.status_code == 400 and "bank transfer" in res.json()["detail"]
+        assert not dodo.called
+    assert client.get("/api/v1/billing/pricing").json()["online_max_inr"] == settings.ONLINE_PAYMENT_MAX_INR
+    body = {"outlets": 700, "months": 12, "gstin": "33ABCDE1234F1Z5"}
+    asked = client.post("/api/v1/billing/bank-transfer", json=body, headers=h)
+    assert asked.status_code == 200 and asked.json()["total"] == 4633860
+    admin = _admin(client)
+    url = f"/api/v1/admin/organizations/{org}/bank-payment"
+    low = client.post(url, json={"outlets": 700, "months": 12, "amount_inr": 1000, "reference": "UTR0001TEST"},
+                      headers=admin)
+    assert low.status_code == 409  # below the price: never switches a plan on
+    paid = {"outlets": 700, "months": 12, "amount_inr": 4633860, "reference": "UTR0002TEST"}
+    ok = client.post(url, json=paid, headers=admin)
+    assert ok.status_code == 200, ok.text
+    again = client.post(url, json=paid, headers=admin)
+    assert again.status_code == 409  # same bank reference twice is counted once
+    status = client.get("/api/v1/billing", headers=h).json()
+    assert status["paid_outlets"] == 700 and status["limits"]["outlets"] == 700
+    assert client.post(f"/api/v1/admin/organizations/{org}/bank-payment", json={"outlets": 1, "months": 1,
+                       "amount_inr": 1499, "reference": "UTR0003TEST"}, headers=h).status_code == 403
+    with SessionLocal() as db:
+        from app.models import Payment
+        db.execute(delete(Payment).where(Payment.razorpay_payment_id.like("bank_UTR000%TEST")))
+        db.commit()

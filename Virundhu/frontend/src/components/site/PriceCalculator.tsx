@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Check, CreditCard, Gift, Minus, Plus } from "lucide-react";
+import { Check, CreditCard, Gift, Landmark, Minus, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -26,6 +26,7 @@ const FALLBACK: PricingTable = {
   ],
   max_outlets: 1000,
   reviews_per_outlet: 500,
+  online_max_inr: 300000,
 };
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
@@ -68,6 +69,7 @@ export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, payi
   const [manual, setManual] = useState(initialOutlets > SLIDER_MAX);
   const [months, setMonths] = useState<number | null>(initialMonths);
   const q = useMemo(() => quoteFrom(table, outlets, months ?? 1), [table, outlets, months]);
+  const bank = months !== null && q.total > (table.online_max_inr ?? Infinity);
   const dark = tone === "dark";
   const soft = dark ? "text-mist" : "text-ink-soft";
   const max = table.max_outlets;
@@ -176,14 +178,15 @@ export function PriceCalculator({ tone = "dark", initialOutlets = 1, onPay, payi
           {onPay ? (
             <>
             <Button className="w-full" size="lg" variant={dark ? "dark" : "primary"} onClick={() => months !== null && !draftError && onPay(outlets, months)} disabled={payDisabled || paying || months === null || Boolean(draftError)}>
-              {paying ? <><Spinner /> Opening payment page...</> : months === null ? "Choose the months first" : <><CreditCard className="h-4 w-4" /> Pay {inr(q.total)}</>}
+              {paying ? <><Spinner /> Opening payment page...</> : months === null ? "Choose the months first" : bank ? <><Landmark className="h-4 w-4" /> Pay {inr(q.total)} by bank transfer</> : <><CreditCard className="h-4 w-4" /> Pay {inr(q.total)}</>}
             </Button>
             {payDisabled && payDisabledReason ? <p className={cn("mt-2 text-sm", dark ? "text-ink-soft" : "text-mist")}>{payDisabledReason}</p> : null}
             </>
           ) : (
             <Link to="/register" className={cn(buttonVariants({ variant: "dark", size: "lg" }), "w-full")}>Start 14-day free trial</Link>
           )}
-          {months !== null && q.total > 100000 ? <p className={cn("mt-2 text-sm", soft)}>For amounts over ₹1 lakh, pay by card or net banking: UPI apps usually stop at ₹1 lakh a payment.</p> : null}
+          {bank ? <p className={cn("mt-2 text-sm", soft)}>Over {inr(table.online_max_inr ?? 0)}, payment is by bank transfer (NEFT/RTGS) against a GST invoice. The plan switches on when the money arrives.</p>
+            : months !== null && q.total > 100000 ? <p className={cn("mt-2 text-sm", soft)}>For amounts over ₹1 lakh, pay by card or net banking: UPI apps usually stop at ₹1 lakh a payment.</p> : null}
           {outlets >= max || (draftError && typed > max) ? <p className={cn("mt-2 text-sm", soft)}>More than {max.toLocaleString("en-IN")} outlets? <Link to="/contact" className="underline">Talk to us</Link>.</p> : null}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X, HeartHandshake, CalendarClock, RefreshCw, Gauge, Coins } from "lucide-react";
-import { useState } from "react";
+import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X, HeartHandshake, CalendarClock, RefreshCw, Gauge, Coins, Landmark } from "lucide-react";
+import { type FormEvent, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { SecretInput } from "@/components/ui/input";
 import { StatusPill, Thread, type Ticket } from "@/pages/Support";
 import { TokensByRestaurantPanel, TokensTotalPanel } from "@/pages/AdminTokens";
+import { quoteFrom } from "@/components/site/PriceCalculator";
 import { Chip, Skeleton } from "@/components/ui/misc";
 import { useAuth } from "@/context/AuthContext";
 import { shortDate } from "@/lib/copy";
 import { useCountUp } from "@/lib/useCountUp";
 import { cn } from "@/lib/utils";
-import { accountApi, adminApi, adminAgentsApi, adminAutopilotApi, adminFeedbackApi, adminMoneyApi, api, errorMessage, viewAs, type MoneyWindow } from "@/services/api";
+import { accountApi, adminApi, adminBankApi, billingApi, adminAgentsApi, adminAutopilotApi, adminFeedbackApi, adminMoneyApi, api, errorMessage, viewAs, type MoneyWindow } from "@/services/api";
 
 const PLATFORM_COLORS = { google: "#6cb8ff", zomato: "#ff5b3a", swiggy: "#f6b93b", direct: "#2bb673", other: "#a9acd0", tripadvisor: "#34a77b", instagram: "#f06ba8", facebook: "#4a6cf7" } as const;
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -882,6 +883,41 @@ function RestaurantLog({ org, onClose }: { org: { id: number; name: string }; on
   );
 }
 
+function BankPaymentForm({ org, onClose }: { org: { id: number; name: string }; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [f, setF] = useState({ outlets: "", months: "12", amount: "", reference: "" });
+  const [busy, setBusy] = useState(false);
+  const { data: table } = useQuery({ queryKey: ["pricing-table"], queryFn: billingApi.pricing, staleTime: 3_600_000 });
+  const outlets = Number(f.outlets) || 0;
+  const price = table && outlets >= 1 ? quoteFrom(table, outlets, Number(f.months)).total : null;
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const r = await adminBankApi.record(org.id, { outlets, months: Number(f.months), amount_inr: Number(f.amount), reference: f.reference.trim() });
+      toast.success(r.message); void qc.invalidateQueries({ queryKey: ["admin-orgs"] }); void qc.invalidateQueries({ queryKey: ["admin-money"] }); onClose();
+    } catch (err) { toast.error(errorMessage(err)); } finally { setBusy(false); }
+  }
+  const box = "mt-1 block h-10 w-full rounded-[10px] border-2 border-line bg-white px-2";
+  return (
+    <section className="mb-5 rounded-[20px] border-2 border-night bg-white p-5" aria-label={`Record bank payment for ${org.name}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-xl font-bold">Record bank payment: {org.name}</h2>
+        <button onClick={onClose} className="flex items-center gap-1 rounded-[10px] px-2 py-1 text-sm font-semibold text-ink-soft hover:bg-jasmine cursor-pointer"><X className="h-4 w-4" /> Close</button>
+      </div>
+      <p className="text-sm text-ink-soft">Only after the money is in your bank account. This switches the plan on, counts the revenue and emails the GST receipt, just like an online payment.</p>
+      <form onSubmit={save} className="mt-3 grid gap-3 sm:grid-cols-5">
+        <label className="text-sm font-semibold">Outlets<input inputMode="numeric" value={f.outlets} onChange={(e) => setF({ ...f, outlets: e.target.value.replace(/\D/g, "") })} className={box} required /></label>
+        <label className="text-sm font-semibold">Months<select value={f.months} onChange={(e) => setF({ ...f, months: e.target.value })} className={box}>{[1, 3, 6, 9, 12].map((m) => <option key={m} value={m}>{m}</option>)}</select></label>
+        <label className="text-sm font-semibold">Amount received (₹)<input inputMode="numeric" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value.replace(/\D/g, "") })} className={box} required /></label>
+        <label className="text-sm font-semibold">UTR / bank reference<input value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} className={box} required minLength={4} maxLength={40} /></label>
+        <div className="flex items-end"><Button type="submit" disabled={busy} className="w-full">{busy ? "Saving..." : "Record payment"}</Button></div>
+      </form>
+      {price !== null ? <p className="mt-2 text-sm text-ink-soft">Price for {outlets.toLocaleString("en-IN")} outlets, {f.months} months: <b className="text-ink">₹{price.toLocaleString("en-IN")}</b>. A smaller amount is refused.</p> : null}
+    </section>
+  );
+}
+
 function AdminPanel() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -889,6 +925,7 @@ function AdminPanel() {
   const tab = (SECTIONS.some((g) => g.items.some(([k]) => k === section)) ? section : "overview") as Section;
   const title = SECTIONS.flatMap((g) => g.items).find(([k]) => k === tab)?.[1] ?? "Admin console";
   const [logOrg, setLogOrg] = useState<{ id: number; name: string } | null>(null);
+  const [bankOrg, setBankOrg] = useState<{ id: number; name: string } | null>(null);
   const stats = useQuery({ queryKey: ["admin-stats"], queryFn: adminApi.stats, refetchInterval: 30_000 });
   const orgs = useQuery({ queryKey: ["admin-orgs"], queryFn: adminApi.orgs, refetchInterval: 30_000 });
   const users = useQuery({ queryKey: ["admin-users"], queryFn: adminApi.users, enabled: tab === "users" });
@@ -986,6 +1023,7 @@ function AdminPanel() {
 
       </>) : tab === "restaurants" ? (<>
         {logOrg ? <RestaurantLog org={logOrg} onClose={() => setLogOrg(null)} /> : null}
+        {bankOrg ? <BankPaymentForm org={bankOrg} onClose={() => setBankOrg(null)} /> : null}
         <div className="overflow-x-auto rounded-[20px] border-2 border-line bg-white">
           <table className="w-full min-w-[980px] text-left text-sm">
             <thead className="bg-jasmine text-ink-soft"><tr>
@@ -1016,6 +1054,7 @@ function AdminPanel() {
                     <div className="flex justify-end gap-1.5">
                       <button onClick={() => open(o.id, o.name)} className="flex items-center gap-1 rounded-[10px] bg-night px-2.5 py-1.5 font-semibold text-jasmine cursor-pointer"><Eye className="h-3.5 w-3.5" />Open</button>
                       <button onClick={() => { setLogOrg({ id: o.id, name: o.name }); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center gap-1 rounded-[10px] border-2 border-line px-2.5 py-1 font-semibold cursor-pointer hover:border-night"><ScrollText className="h-3.5 w-3.5" />Logs</button>
+                      {!o.is_demo ? <button onClick={() => { setBankOrg({ id: o.id, name: o.name }); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center gap-1 rounded-[10px] border-2 border-line px-2.5 py-1 font-semibold cursor-pointer hover:border-night"><Landmark className="h-3.5 w-3.5" />Record bank payment</button> : null}
                       {!o.is_demo ? <button onClick={() => act(() => adminApi.updateOrg(o.id, { is_suspended: !o.is_suspended }), o.is_suspended ? "Restaurant restored" : "Restaurant suspended")}
                         className="rounded-[10px] px-2.5 py-1.5 font-semibold text-chilli hover:bg-chilli-soft cursor-pointer">{o.is_suspended ? "Restore" : "Suspend"}</button> : null}
                     </div>

@@ -362,3 +362,8 @@ general-purpose agents using the matching skill file.
   (once a day). Stops for a restaurant once its Business Profile connection is live. Card on Connections.
 - Outlets: 1 to 1,000 (`pricing.MAX_OUTLETS`). Calculator: quick picks up to 50 + slider, "More than 50" = typed number,
   nothing clamped while typing; over ₹1 lakh it tells people to pay by card or net banking.
+- Online payments stop at `ONLINE_PAYMENT_MAX_INR` (₹3,00,000: Dodo refused ₹3.5 lakh, CART_AMOUNT_EXCEEDS_LIMIT).
+  Bigger orders: `/billing/checkout` and `/billing/order` refuse with the way forward; the owner presses "Get GST invoice"
+  (`POST /billing/bank-transfer`, emails admin + owner, activity `bank_transfer_request`); the admin records the money
+  in Admin → Restaurants → "Record bank payment" (`POST /admin/organizations/{id}/bank-payment`, reference = UTR, id
+  `bank_<UTR>`), which goes through `billing.activate()` exactly like an online payment. `pricing.inr()` = Indian commas.

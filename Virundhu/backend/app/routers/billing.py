@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, object_session
 from app.auth.deps import OrgContext, get_current_user, get_org_context
 from app.config import settings
 from app.database import get_db
+from app.limiter import limiter
 from app.models import Membership, Organization, Outlet, Payment, Subscription, User, WebhookEvent
 from app.services import billing, dodo_billing, pricing, receipts
 from app.services.plans import limits_for
@@ -89,8 +90,24 @@ def billing_status(ctx: OrgContext = Depends(owner_only), db: Session = Depends(
     }
 
 
+def _online_or_bank(outlets: int, months: int) -> None:
+    """Refuse online checkout above the provider's single-payment limit, with the way forward."""
+    try:
+        total = pricing.quote(outlets, months).total
+    except pricing.PricingError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    if total > settings.ONLINE_PAYMENT_MAX_INR:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"{pricing.inr(total)} is more than one online payment can take "
+            f"({pricing.inr(settings.ONLINE_PAYMENT_MAX_INR)}). "
+            "Choose Pay by bank transfer: we send a GST invoice and switch the plan on when the money arrives.",
+        )
+
+
 @router.post("/order")
 def create_order(body: OrderIn, ctx: OrgContext = Depends(owner_only)) -> dict:
+    _online_or_bank(body.outlets, body.months)
     try:
         order = billing.create_order(ctx.org, body.outlets, body.months)
     except billing.BillingError as exc:
@@ -117,6 +134,7 @@ class CheckoutIn(BaseModel):
 @router.post("/checkout")
 def dodo_checkout(body: CheckoutIn, ctx: OrgContext = Depends(owner_only)) -> dict:
     """Dodo Payments: returns the hosted checkout page to send the owner to."""
+    _online_or_bank(body.outlets, body.months)
     try:
         if body.company_name is not None:
             ctx.org.billing_name = body.company_name.strip() or None
@@ -248,3 +266,57 @@ def receipt(payment_id: int, user: User = Depends(get_current_user), db: Session
         if not owner:
             raise HTTPException(404, "Receipt not found.")
     return receipts.as_dict(pay, org)
+
+
+class BankTransferIn(CheckoutIn):
+    """Big orders (over the online limit): the owner asks for a GST invoice to pay by bank transfer."""
+
+
+@router.post("/bank-transfer")
+@limiter.limit("3/minute")
+def bank_transfer(
+    request: Request,  # noqa: ARG001
+    body: BankTransferIn,
+    ctx: OrgContext = Depends(owner_only),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Ask for an invoice. The admin is emailed straight away; the plan starts when the admin records the payment."""
+    from app.services import activity
+    from app.services.emailer import send_email
+
+    try:
+        q = pricing.quote(body.outlets, body.months)
+    except pricing.PricingError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    org = ctx.org
+    if body.company_name is not None:
+        org.billing_name = body.company_name.strip() or None
+    if body.gstin is not None or body.company_name is not None:
+        org.gstin = body.gstin
+    if body.address is not None:
+        org.billing_address = body.address.strip() or None
+    what = f"{q.outlets} outlets × {q.months} months" + (f" + {q.bonus_months} free" if q.bonus_months else "")
+    detail = (
+        f"{org.name} asks to pay {pricing.inr(q.total)} by bank transfer for {what}.\n"
+        f"Bill to: {org.billing_name or org.name}; GSTIN: {org.gstin or 'none'}; "
+        f"address: {org.billing_address or '-'}\n"
+        f"Owner: {ctx.user.full_name} <{ctx.user.email}>"
+    )
+    activity.record(db, "bank_transfer_request", org_id=org.id, restaurant=org.name, email=ctx.user.email,
+                    detail=detail)
+    send_email(
+        [settings.notify_email],
+        f"Bank transfer request: {org.name}, {pricing.inr(q.total)}",
+        detail + f"\n\nSend the GST invoice, then record the payment at {settings.APP_URL}/app/admin/restaurants "
+        "(Record bank payment).",
+    )
+    send_email(
+        [ctx.user.email],
+        "Your Virundhu invoice is on its way",
+        f"Thank you. We've got your request to pay {pricing.inr(q.total)} by bank transfer for {what}.\n\n"
+        "You'll get a GST invoice with our bank details within one working day. Your plan switches on as soon as the "
+        "money reaches us, and the receipt comes by email.",
+        details=[("Outlets", str(q.outlets)), ("Months", str(q.months)), ("Amount", f"{pricing.inr(q.total)}")],
+    )
+    msg = "Request sent. Your GST invoice arrives by email within one working day."
+    return {"ok": True, "total": q.total, "message": msg}

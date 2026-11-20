@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CreditCard, Lock } from "lucide-react";
+import { ArrowLeft, CreditCard, Landmark, Lock } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -48,6 +48,7 @@ export default function Billing() {
   const qc = useQueryClient();
   const { refreshUser } = useAuth();
   const [paying, setPaying] = useState(false);
+  const [bankSent, setBankSent] = useState(false);
   const [details, setDetails] = useState<BillingDetails | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ["billing"], queryFn: billingApi.status });
   const [params, setParams] = useSearchParams();
@@ -67,6 +68,15 @@ export default function Billing() {
       .catch((err) => toast.error(errorMessage(err)))
       .finally(() => { setParams({}, { replace: true }); void qc.invalidateQueries({ queryKey: ["billing"] }); });
   }, [params, setParams, qc, refreshUser]);
+
+  async function askInvoice(outlets: number, months: number) {
+    setPaying(true);
+    try {
+      const bill = details ?? { company_name: data?.billing?.company_name ?? "", gstin: data?.billing?.gstin ?? "", address: data?.billing?.address ?? "" };
+      const r = await billingApi.bankTransfer(outlets, months, bill);
+      toast.success(r.message); setBankSent(true);
+    } catch (err) { toast.error(errorMessage(err)); } finally { setPaying(false); }
+  }
 
   async function pay(outlets: number, months: number) {
     setPaying(true);
@@ -120,7 +130,8 @@ export default function Billing() {
     const months = Number(params.get("months")) || 1;
     const bill = details ?? { company_name: data.billing?.company_name ?? "", gstin: data.billing?.gstin ?? "", address: data.billing?.address ?? "" };
     return <Checkout data={data} outlets={outlets} months={months} bill={bill} paying={paying}
-      onBack={() => setParams({}, { replace: false })} onPay={() => pay(outlets, months)} />;
+      onBack={() => setParams({}, { replace: false })} onPay={() => pay(outlets, months)}
+      onBank={() => askInvoice(outlets, months)} bankSent={bankSent} />;
   }
   return (
     <div className="mx-auto max-w-5xl">
@@ -181,12 +192,14 @@ export default function Billing() {
 }
 
 /** Step 2 of paying: what they are buying, for whom, and the total. "Pay" opens the secure payment page. */
-function Checkout({ data, outlets, months, bill, paying, onBack, onPay }: {
+function Checkout({ data, outlets, months, bill, paying, onBack, onPay, onBank, bankSent }: {
   data: BillingStatus; outlets: number; months: number; bill: BillingDetails; paying: boolean; onBack: () => void; onPay: () => void;
+  onBank: () => void; bankSent: boolean;
 }) {
   const { data: table } = useQuery({ queryKey: ["pricing-table"], queryFn: billingApi.pricing, staleTime: 3_600_000 });
   if (!table) return <div className="mx-auto max-w-3xl"><Skeleton className="h-[420px]" /></div>;
   const q = quoteFrom(table, outlets, months);
+  const bank = q.total > (table.online_max_inr ?? Infinity);
   const totalMonths = months + q.duration.bonus_months;
   const start = data.expired || !data.ends_at ? new Date() : new Date(data.ends_at);
   const end = new Date(start); end.setMonth(end.getMonth() + totalMonths);
@@ -217,11 +230,19 @@ function Checkout({ data, outlets, months, bill, paying, onBack, onPay }: {
           {q.youSave > 0 ? <p className="rounded-[12px] bg-leaf/20 px-3 py-1.5 font-semibold">You save {inr(q.youSave)}</p> : null}
         </div>
       </section>
+      {bank ? (<>
+        <button type="button" onClick={onBank} disabled={paying || bankSent}
+          className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-night px-5 py-4 font-display text-lg font-bold text-jasmine hover:opacity-90 disabled:opacity-60">
+          <Landmark className="h-5 w-5" /> {bankSent ? "Invoice requested" : paying ? "Sending..." : `Get GST invoice to pay ${inr(q.total)} by bank transfer`}
+        </button>
+        <p className="mt-3 text-sm text-ink-soft">{inr(q.total)} is more than one online payment can take ({inr(table.online_max_inr ?? 0)}), so big chains pay by NEFT or RTGS. You'll get a GST invoice with our bank details by email within one working day; your plan starts as soon as the money arrives, and the receipt follows by email.</p>
+      </>) : (<>
       <button type="button" onClick={onPay} disabled={paying}
         className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-chilli px-5 py-4 font-display text-lg font-bold text-white hover:opacity-90 disabled:opacity-60">
         <CreditCard className="h-5 w-5" /> {paying ? "Opening the payment page..." : `Pay ${inr(q.total)} securely`}
       </button>
       <p className="mt-3 flex items-center gap-2 text-sm text-ink-soft"><Lock className="h-4 w-4" /> You'll go to {data.provider === "dodo" ? "Dodo Payments" : "Razorpay"} to pay by UPI or card. Your plan starts, and every menu unlocks, as soon as the payment succeeds.</p>
+      </>)}
     </div>
   );
 }

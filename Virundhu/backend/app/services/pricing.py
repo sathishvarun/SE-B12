@@ -8,6 +8,8 @@
 
 from dataclasses import asdict, dataclass
 
+from app.config import settings
+
 # (lowest outlet count in the tier, price per outlet per month in rupees, tier name)
 OUTLET_TIERS: list[tuple[int, int, str]] = [
     (1, 1499, "Single outlet"),
@@ -29,6 +31,19 @@ DURATIONS: dict[int, tuple[int, int]] = {
 MAX_OUTLETS = 1000
 REVIEWS_PER_OUTLET = 500  # monthly AI reading allowance per paid outlet
 DAYS_PER_MONTH = 30.44
+
+
+def inr(amount: int) -> str:
+    """Indian digit grouping: 4633860 -> ₹46,33,860."""
+    s = str(int(amount))
+    head, tail = s[:-3], s[-3:]
+    groups = []
+    while len(head) > 2:
+        groups.insert(0, head[-2:])
+        head = head[:-2]
+    if head:
+        groups.insert(0, head)
+    return "₹" + ",".join([*groups, tail]) if groups else "₹" + tail
 
 
 class PricingError(ValueError):
@@ -98,4 +113,5 @@ def table() -> dict:
         "durations": [{"months": m, "discount_percent": d, "bonus_months": b} for m, (d, b) in DURATIONS.items()],
         "max_outlets": MAX_OUTLETS,
         "reviews_per_outlet": REVIEWS_PER_OUTLET,
+        "online_max_inr": settings.ONLINE_PAYMENT_MAX_INR,
     }
