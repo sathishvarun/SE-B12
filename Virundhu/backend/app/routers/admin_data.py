@@ -368,7 +368,7 @@ def revenue(db: Session = Depends(get_db)) -> Revenue:
         db.execute(
             select(Payment, Organization.name)
             .join(Organization, Organization.id == Payment.organization_id)
-            .where(Payment.status == "paid")
+            .where(Payment.status == "paid", Payment.is_test.is_(False))
             .order_by(Payment.created_at.desc())
         )
     )

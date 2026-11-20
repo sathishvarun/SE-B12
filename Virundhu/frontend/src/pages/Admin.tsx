@@ -1,9 +1,10 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X, HeartHandshake } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X, HeartHandshake, CalendarClock, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { SecretInput } from "@/components/ui/input";
 import { StatusPill, Thread, type Ticket } from "@/pages/Support";
 import { Chip, Skeleton } from "@/components/ui/misc";
@@ -11,7 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { shortDate } from "@/lib/copy";
 import { useCountUp } from "@/lib/useCountUp";
 import { cn } from "@/lib/utils";
-import { accountApi, adminApi, adminAgentsApi, adminAutopilotApi, adminFeedbackApi, api, errorMessage, viewAs } from "@/services/api";
+import { accountApi, adminApi, adminAgentsApi, adminAutopilotApi, adminFeedbackApi, adminMoneyApi, api, errorMessage, viewAs, type MoneyWindow } from "@/services/api";
 
 const PLATFORM_COLORS = { google: "#6cb8ff", zomato: "#ff5b3a", swiggy: "#f6b93b", direct: "#2bb673", other: "#a9acd0", tripadvisor: "#34a77b", instagram: "#f06ba8", facebook: "#4a6cf7" } as const;
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -462,12 +463,13 @@ function AdminPassword() {
   );
 }
 
-type Section = "overview" | "autopilot" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "feedback" | "testimonials" | "data";
+type Section = "overview" | "autopilot" | "money" | "renewals" | "mailbox" | "restaurants" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "feedback" | "testimonials" | "data";
 const SECTIONS: { group: string; items: [Section, string, typeof Users][] }[] = [
-  { group: "Overview", items: [["overview", "Today and money", LayoutDashboard], ["autopilot", "Autopilot", Workflow], ["mailbox", "Company mailbox", MailOpen]] },
+  { group: "Overview", items: [["overview", "Today", LayoutDashboard], ["autopilot", "Autopilot", Workflow]] },
+  { group: "Money", items: [["money", "Payments and refunds", IndianRupee], ["renewals", "Revenue and renewals", CalendarClock]] },
   { group: "Customers", items: [["restaurants", "Restaurants", Building2], ["users", "Users", Users], ["leads", "Demo requests", Inbox]] },
+  { group: "Help desk", items: [["support", "Support tickets", LifeBuoy], ["feedback", "Feedback and ease", HeartHandshake], ["testimonials", "Testimonials", Quote], ["mailbox", "Company mailbox", MailOpen]] },
   { group: "Logs", items: [["activity", "All activity", ScrollText], ["emails", "Emails sent", Mail], ["signins", "Sign-ins", LogIn]] },
-  { group: "Help desk", items: [["support", "Support tickets", LifeBuoy], ["feedback", "Feedback and ease", HeartHandshake], ["testimonials", "Testimonials", Quote]] },
   { group: "System", items: [["data", "Data and backups", Database]] },
 ];
 const when = (d: string) => new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -657,6 +659,137 @@ function FeedbackPanel() {
   );
 }
 
+function MoneyPanel() {
+  const [days, setDays] = useState(30);
+  const [includeTest, setIncludeTest] = useState(false);
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["admin-money", days, includeTest], queryFn: () => adminMoneyApi.get(days, includeTest), refetchInterval: 60_000 });
+  const sync = useMutation({
+    mutationFn: adminMoneyApi.sync,
+    onSuccess: (r) => { toast.success(r.message); qc.invalidateQueries({ queryKey: ["admin-money"] }); },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+  const m = q.data;
+  if (!m) return <Skeleton className="h-[520px]" />;
+  const pick = (keys: string[]) => keys.map((k) => m.windows.find((x) => x.key === k)).filter((x): x is MoneyWindow => Boolean(x));
+  const big = pick(["today", "this_week", "this_month", "all_time"]);
+  const small = pick(["yesterday", "last_week", "last_30"]);
+  const chart = m.daily.map((d) => ({ label: d.label, Collected: Math.round(d.collected), Refunded: Math.round(d.refunded) }));
+  const tone = { paid: "leaf", "partly refunded": "turmeric", refunded: "chilli" } as const;
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="max-w-2xl text-ink-soft">Every rupee that came in through Dodo and every refund that went out, in India time. Refunds arrive by themselves within seconds of being made in Dodo.</p>
+        <Chip tone={m.mode === "live" ? "leaf" : "turmeric"} dot>{m.mode === "live" ? "Live payments" : "Test mode"}</Chip>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {big.map((x) => (
+          <div key={x.key} className="rounded-[20px] border-2 border-line bg-white p-5">
+            <p className="text-sm text-ink-soft">{x.label}</p>
+            <p className="mt-1 font-display text-3xl font-bold">{inr(x.net)}</p>
+            <p className="text-sm text-ink-soft">{inr(x.collected)} from {x.payments} payment{x.payments === 1 ? "" : "s"}</p>
+            <p className={cn("text-sm", x.refunded ? "font-semibold text-[#b32f12]" : "text-ink-soft")}>{x.refunded ? `− ${inr(x.refunded)} in ${x.refunds} refund${x.refunds === 1 ? "" : "s"}` : "No refunds"}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-soft">
+        {small.map((x) => <span key={x.key}>{x.label}: <b className="text-ink">{inr(x.net)}</b> net ({x.payments} paid{x.refunds ? `, ${x.refunds} refunded` : ""})</span>)}
+      </div>
+
+      <section className="rounded-[20px] border-2 border-line bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="font-display text-lg font-bold">Per day</h3>
+          <div className="flex gap-2" role="radiogroup" aria-label="How many days">
+            {[7, 30, 90].map((d) => (
+              <button key={d} type="button" role="radio" aria-checked={days === d} onClick={() => setDays(d)}
+                className={cn("rounded-full border-2 px-3 py-1 text-sm font-semibold", days === d ? "border-night bg-night text-jasmine" : "border-line bg-white hover:border-night")}>{d} days</button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-4 h-[240px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chart} margin={{ left: 0, right: 8, top: 8 }}>
+              <CartesianGrid vertical={false} stroke="#e8e2d0" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" minTickGap={16} />
+              <YAxis tick={{ fontSize: 11 }} width={56} tickFormatter={(v: number) => `₹${v.toLocaleString("en-IN")}`} />
+              <Tooltip formatter={(v) => inr(Number(v))} />
+              <Bar dataKey="Collected" fill="#1f7a4d" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Refunded" fill="#d2462a" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
+
+      <section className="rounded-[20px] border-2 border-line bg-white p-5">
+        <h3 className="font-display text-lg font-bold">Per week</h3>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead><tr className="text-left text-ink-soft"><th className="py-2 font-semibold">Week starting</th><th className="text-right font-semibold">Payments</th><th className="text-right font-semibold">Collected</th><th className="text-right font-semibold">Refunded</th><th className="text-right font-semibold">Net</th></tr></thead>
+            <tbody>
+              {[...m.weekly].reverse().map((b) => (
+                <tr key={b.start} className="border-t border-line">
+                  <td className="py-2">{b.label}</td><td className="text-right">{b.payments}</td><td className="text-right">{inr(b.collected)}</td>
+                  <td className={cn("text-right", b.refunded ? "text-[#b32f12]" : "")}>{b.refunded ? `− ${inr(b.refunded)}` : "₹0"}</td><td className="text-right font-semibold">{inr(b.net)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-[20px] border-2 border-line bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="font-display text-lg font-bold">Every payment</h3>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={includeTest} onChange={(e) => setIncludeTest(e.target.checked)} className="h-4 w-4 accent-[#0c3b2e]" />
+            Show test payments{m.hidden_test_payments ? ` (${m.hidden_test_payments} hidden)` : ""}
+          </label>
+        </div>
+        {m.payments.length === 0 ? <p className="mt-3 text-sm text-ink-soft">No payments yet. The first one will show here within seconds of being made.</p> : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead><tr className="text-left text-ink-soft"><th className="py-2 font-semibold">When</th><th className="font-semibold">Restaurant</th><th className="font-semibold">Plan</th><th className="font-semibold">Invoice</th><th className="text-right font-semibold">Amount</th><th className="pl-4 font-semibold">Status</th></tr></thead>
+              <tbody>
+                {m.payments.map((p) => (
+                  <tr key={p.id} className="border-t border-line">
+                    <td className="py-2">{when(p.paid_at)}</td>
+                    <td>{p.restaurant}{p.is_test ? <span className="ml-1.5 text-xs text-ink-soft">(test)</span> : null}</td>
+                    <td className="text-ink-soft">{p.outlets ? `${p.outlets} outlet${p.outlets === 1 ? "" : "s"}` : ""}{p.months ? ` × ${p.months} mo` : ""}</td>
+                    <td className="text-ink-soft">{p.invoice_no ?? "-"}</td>
+                    <td className="text-right font-semibold">{inr(p.amount)}{p.refunded ? <span className="block text-xs font-normal text-[#b32f12]">− {inr(p.refunded)}</span> : null}</td>
+                    <td className="pl-4"><Chip tone={tone[p.status]}>{p.status === "paid" ? "Paid" : p.status === "refunded" ? "Refunded" : "Partly refunded"}</Chip></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-[20px] border-2 border-line bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="font-display text-lg font-bold">Refunds</h3>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => sync.mutate()} disabled={sync.isPending}><RefreshCw className="h-4 w-4" /> {sync.isPending ? "Checking Dodo..." : "Check Dodo for refunds"}</Button>
+            <a href="https://app.dodopayments.com/transactions/payments" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full border-2 border-line px-3 py-1.5 text-sm font-semibold hover:border-night">Refund in Dodo <ExternalLink className="h-4 w-4" /></a>
+          </div>
+        </div>
+        <p className="mt-1 text-sm text-ink-soft">To give money back, open the payment in Dodo and press Refund. It shows here within seconds, and the restaurant keeps access until its paid period ends.</p>
+        {m.refunds.length === 0 ? <p className="mt-3 text-sm text-ink-soft">No refunds so far.</p> : (
+          <ul className="mt-3 divide-y divide-line">
+            {m.refunds.map((r) => (
+              <li key={r.refund_id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                <span><b>{inr(r.amount)}</b> to {r.restaurant ?? "a deleted restaurant"}{r.reason ? <span className="text-ink-soft"> · {r.reason}</span> : null}</span>
+                <span className="flex items-center gap-2 text-ink-soft">{when(r.refunded_at)} <Chip tone={r.status === "succeeded" ? "leaf" : r.status === "failed" ? "chilli" : "turmeric"}>{r.status === "succeeded" ? "Refunded" : r.status}</Chip></span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
 function MailboxPanel() {
   const q = useQuery({ queryKey: ["admin-mailbox"], queryFn: adminApi.mailbox, refetchInterval: 60_000 });
   const m = q.data;
@@ -808,7 +941,6 @@ function AdminPanel() {
         )}
       </section>
 
-      <RevenueBoard />
 
       <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[1.7fr_1fr]">
         <div className="rounded-[20px] border-2 border-line bg-white p-5 sm:p-6">
@@ -894,6 +1026,10 @@ function AdminPanel() {
         <SupportAdmin />
       ) : tab === "activity" ? (
         <ActivityTable intro="Everything recorded across all restaurants, newest first: sign-ups, sign-ins, emails, uploads, payments, passwords and support. Kept even after a restaurant deletes its account." />
+      ) : tab === "money" ? (
+        <MoneyPanel />
+      ) : tab === "renewals" ? (
+        <RevenueBoard />
       ) : tab === "feedback" ? (
         <FeedbackPanel />
       ) : tab === "autopilot" ? (

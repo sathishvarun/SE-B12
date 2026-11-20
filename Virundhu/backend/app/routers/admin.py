@@ -111,7 +111,8 @@ def stats(db: Session = Depends(get_db)) -> Stats:
         collected_month_inr=float(
             db.scalar(
                 select(func.coalesce(func.sum(Payment.amount_paise), 0)).where(
-                    Payment.created_at >= datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    Payment.created_at >= datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+                    Payment.is_test.is_(False),
                 )
             )
             or 0

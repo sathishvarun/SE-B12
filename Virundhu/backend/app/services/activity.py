@@ -29,6 +29,7 @@ LABELS = {
     "account_suspended": "Account suspended (trial or plan ended, not renewed)",
     "account_reactivated": "Account reactivated after payment",
     "demo_booked": "Demo booked by Nila",
+    "refund": "Refund sent to a customer",
     "agent_escalation": "An agent needs you",
 }
 QUIET = ("signup", "login", "login_failed", "ticket_reply", "help_question", "email_sent", "upload")

@@ -327,3 +327,10 @@ general-purpose agents using the matching skill file.
   shell. `main.tsx` hydrates prebuilt pages (`hydrateRoot`) and seeds `public-config` with `STATIC_CONFIG`.
 - Content in the first paint must be visible without JavaScript: `Reveal`/`RiseWords` skip their entrance on first
   paint (`markPainted`), and `useCountUp(..., true)` starts at the real number. New public page → add it to `SEO`.
+
+### Money (migration 0020, `routers/admin_money.py`)
+- `payments.is_test` (set by `billing.payments_in_test_mode()` at activation; all payments before live mode were test) and
+  `payments.refunded_paise`. `refunds` table filled by the Dodo webhook (`refund.*` → `dodo_billing.record_refund`,
+  idempotent on refund_id) and by `POST /admin/money/sync`. Test payments never count as revenue (also in `/admin/revenue`).
+- `GET /admin/money?days=&include_test=`: windows (today, yesterday, this/last week, this month, last 30, all time),
+  daily and weekly series, every payment and refund. Admin menu groups: Overview, Money, Customers, Help desk, Logs, System.

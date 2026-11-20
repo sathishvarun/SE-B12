@@ -354,5 +354,17 @@ export interface AdminFeedback {
   items: { id: number; at: string; source: string; kind: string; sentiment: string | null; rating: number | null; ease: number | null; nps: number | null; area: string; message: string | null; summary: string | null; who: string; restaurant: string | null; action: string | null; status: string }[];
 }
 export const adminFeedbackApi = { get: () => api.get<AdminFeedback>("/api/v1/admin/feedback").then((r) => r.data) };
+export interface MoneyWindow { key: string; label: string; collected: number; refunded: number; net: number; payments: number; refunds: number }
+export interface MoneyBucket { start: string; label: string; collected: number; refunded: number; net: number; payments: number; refunds: number }
+export interface AdminMoney {
+  mode: "live" | "test"; include_test: boolean; hidden_test_payments: number;
+  windows: MoneyWindow[]; daily: MoneyBucket[]; weekly: MoneyBucket[];
+  payments: { id: number; paid_at: string; restaurant: string; amount: number; refunded: number; status: "paid" | "partly refunded" | "refunded"; invoice_no: string | null; outlets: number | null; months: number | null; provider_id: string; is_test: boolean }[];
+  refunds: { refund_id: string; refunded_at: string; restaurant: string | null; amount: number; status: string; reason: string | null; is_test: boolean }[];
+}
+export const adminMoneyApi = {
+  get: (days: number, includeTest: boolean) => api.get<AdminMoney>("/api/v1/admin/money", { params: { days, include_test: includeTest } }).then((r) => r.data),
+  sync: () => api.post<{ new_refunds: number; message: string }>("/api/v1/admin/money/sync").then((r) => r.data),
+};
 export const adminAgentsApi = { get: () => api.get<AgentFeed>("/api/v1/admin/agents").then((r) => r.data) };
 export const adminAutopilotApi = { get: () => api.get<{ as_of: string; chores: AdminChore[]; restaurants: number }>("/api/v1/admin/autopilot").then((r) => r.data) };

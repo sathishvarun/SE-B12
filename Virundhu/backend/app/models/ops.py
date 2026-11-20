@@ -79,6 +79,8 @@ class Payment(OrgScopedMixin, TimestampMixin, Base):
     bill_gstin: Mapped[str | None] = mapped_column(String(15))
     bill_address: Mapped[str | None] = mapped_column(String(300))
     bill_email: Mapped[str | None] = mapped_column(String(255))
+    is_test: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # made in the provider's test mode
+    refunded_paise: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # sum of succeeded refunds
 
 
 class WebhookEvent(TimestampMixin, Base):
@@ -162,6 +164,21 @@ class AgentRun(TimestampMixin, Base):
     outcome: Mapped[str] = mapped_column(String(12), default="done", nullable=False)  # done | escalated | failed
     ref: Mapped[str | None] = mapped_column(String(40))  # lead:12, ticket:5, meeting:3
     detail: Mapped[str | None] = mapped_column(Text)
+
+
+class Refund(TimestampMixin, Base):
+    """Money returned to a customer, as reported by the payment provider (webhook or the admin's sync)."""
+
+    __tablename__ = "refunds"
+
+    refund_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    provider_payment_id: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    amount_paise: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)  # succeeded | pending | failed
+    reason: Mapped[str | None] = mapped_column(String(300))
+    is_test: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    refunded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class ProductFeedback(TimestampMixin, Base):

@@ -116,4 +116,51 @@ def handle_webhook(db, raw_body: bytes, headers: dict[str, str]) -> str:
     if event.type == "payment.succeeded":
         payment = _client().payments.retrieve(event.data.payment_id)  # read the full record, metadata included
         _activate_from_payment(db, payment)
+    elif event.type.startswith("refund."):
+        record_refund(db, event.data)
     return event.type
+
+
+def record_refund(db, refund) -> bool:
+    """Save (or update) one Dodo refund and keep the payment's refunded total right. Safe to call twice."""
+    from datetime import UTC, datetime
+
+    from sqlalchemy import func, select
+
+    from app.models import Payment, Refund
+    from app.services import activity
+    from app.services.billing import payments_in_test_mode
+
+    rid = getattr(refund, "refund_id", None)
+    pid = getattr(refund, "payment_id", None)
+    if not rid or not pid:
+        return False
+    status = str(getattr(getattr(refund, "status", ""), "value", getattr(refund, "status", ""))).lower()
+    amount = int(getattr(refund, "amount", 0) or 0)
+    when = getattr(refund, "created_at", None) or datetime.now(UTC)
+    pay = db.scalar(select(Payment).where(Payment.razorpay_payment_id == pid))
+    row = db.scalar(select(Refund).where(Refund.refund_id == rid))
+    is_new = row is None
+    if row is None:
+        row = Refund(refund_id=rid, provider_payment_id=pid, amount_paise=amount, status=status or "pending",
+                     refunded_at=when, organization_id=pay.organization_id if pay else None,
+                     is_test=pay.is_test if pay else payments_in_test_mode())
+        db.add(row)
+    row.status, row.amount_paise = status or row.status, amount or row.amount_paise
+    row.reason = (getattr(refund, "reason", None) or row.reason or None)
+    db.flush()
+    if pay:
+        pay.refunded_paise = db.scalar(select(func.coalesce(func.sum(Refund.amount_paise), 0)).where(
+            Refund.provider_payment_id == pid, Refund.status == "succeeded")) or 0
+    if is_new and row.status == "succeeded":
+        activity.record(db, "refund", detail=f"Refund of Rs {amount / 100:,.0f} on payment {pid}")
+    db.commit()
+    return is_new
+
+
+def sync_refunds(db) -> int:
+    """Pull every refund from Dodo (last 200) so the money page is right even if a webhook was missed."""
+    client = _client()
+    page = client.refunds.list(page_size=100)
+    items = list(getattr(page, "items", None) or page)
+    return sum(1 for r in items[:200] if record_refund(db, r))

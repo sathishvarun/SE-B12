@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bell, CreditCard, Inbox, MessageCircleQuestion,
   UtensilsCrossed,
   LifeBuoy, Workflow, LogOut, MapPin, Menu, Plug, Settings, ShieldCheck, Upload,
-  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database, MessageSquareHeart, HeartHandshake } from "lucide-react";
+  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database, MessageSquareHeart, HeartHandshake, IndianRupee, CalendarClock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -58,24 +58,28 @@ export function AppLayout() {
   const groups: NavGroup[] = adminHome
     ? [
         { title: "Overview", items: [
-          { to: "/app/admin", label: "Today and money", icon: LayoutDashboard, end: true, short: "Today" },
-          { to: "/app/admin/autopilot", label: "Autopilot", icon: Workflow, hint: "Daily admin jobs, done for you" },
-          { to: "/app/admin/mailbox", label: "Company mailbox", icon: MailOpen, short: "Mailbox" },
+          { to: "/app/admin", label: "Today", icon: LayoutDashboard, end: true, short: "Today" },
+          { to: "/app/admin/autopilot", label: "Autopilot", icon: Workflow, hint: "Your AI agents at work" },
+        ] },
+        { title: "Money", items: [
+          { to: "/app/admin/money", label: "Payments and refunds", icon: IndianRupee, short: "Money", hint: "Per day, per week, refunds" },
+          { to: "/app/admin/renewals", label: "Revenue and renewals", icon: CalendarClock, short: "Renewals" },
         ] },
         { title: "Customers", items: [
           { to: "/app/admin/restaurants", label: "Restaurants", icon: Building2 },
           { to: "/app/admin/users", label: "Users", icon: Users },
           { to: "/app/admin/leads", label: "Demo requests", icon: Inbox, short: "Demos" },
         ] },
-        { title: "Logs", items: [
-          { to: "/app/admin/activity", label: "All activity", icon: ScrollText },
-          { to: "/app/admin/emails", label: "Emails sent", icon: Mail },
-          { to: "/app/admin/signins", label: "Sign-ins", icon: LogIn },
-        ] },
         { title: "Help desk", items: [
           { to: "/app/admin/support", label: "Support tickets", icon: LifeBuoy },
           { to: "/app/admin/feedback", label: "Feedback and ease", icon: HeartHandshake, short: "Feedback" },
           { to: "/app/admin/testimonials", label: "Testimonials", icon: Quote },
+          { to: "/app/admin/mailbox", label: "Company mailbox", icon: MailOpen, short: "Mailbox" },
+        ] },
+        { title: "Logs", items: [
+          { to: "/app/admin/activity", label: "All activity", icon: ScrollText },
+          { to: "/app/admin/emails", label: "Emails sent", icon: Mail },
+          { to: "/app/admin/signins", label: "Sign-ins", icon: LogIn },
         ] },
         { title: "System", items: [{ to: "/app/admin/data", label: "Data and backups", icon: Database }] },
       ]
@@ -103,7 +107,7 @@ export function AppLayout() {
         ] },
       ];
   const items = groups.flatMap((g) => g.items);
-  const mobileMain = adminHome ? [0, 1, 3, 6].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
+  const mobileMain = adminHome ? [0, 2, 4, 7].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
   const bell = adminHome ? <AdminBell align="left" /> : <NotificationBell onDark align="left" />;
   const trialEnds = !viewing && user?.organization?.plan === "trial" && !user.organization.is_demo ? user.organization.trial_ends_at : null;
   // Unpaid: the account stays signed in, but only Plan and billing (and Help) open until the payment lands.

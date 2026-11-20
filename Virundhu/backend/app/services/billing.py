@@ -35,6 +35,13 @@ class BillingError(ValueError):
     """A payment problem the user can act on."""
 
 
+
+def payments_in_test_mode() -> bool:
+    """True while the payment provider is in test mode, so test money never counts as revenue."""
+    if settings.PAYMENT_PROVIDER == "dodo":
+        return settings.DODO_PAYMENTS_ENVIRONMENT != "live_mode"
+    return settings.RAZORPAY_KEY_ID.startswith("rzp_test")
+
 def quote_or_error(outlets: int, months: int) -> pricing.Quote:
     try:
         return pricing.quote(outlets, months)
@@ -113,6 +120,7 @@ def activate(db: Session, org_id: int, outlets: int, months: int, payment_id: st
             status="paid",
             outlets=outlets,
             months=months,
+            is_test=payments_in_test_mode(),
         )
         .on_conflict_do_nothing(index_elements=["razorpay_payment_id"])
     ).rowcount

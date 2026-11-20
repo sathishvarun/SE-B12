@@ -264,7 +264,8 @@ def test_admin_excel_and_test_account_cleanup(client):
     )
 
 
-def test_admin_revenue_dashboard(client):
+def test_admin_revenue_dashboard(client, monkeypatch):
+    monkeypatch.setattr("app.services.billing.payments_in_test_mode", lambda: False)  # count as real money
     """Money by month, active plans, renewals due, trials that may pay; admins only; every trial is 14 days."""
     import uuid
     from datetime import UTC, datetime, timedelta
@@ -396,7 +397,8 @@ def test_unpaid_accounts_pause_and_come_back_the_moment_payment_lands(client):
     assert client.post("/api/v1/reviews", headers=h, json=paste).status_code == 402
 
 
-def test_signup_to_receipt_to_monthly_report(client):
+def test_signup_to_receipt_to_monthly_report(client, monkeypatch):
+    monkeypatch.setattr("app.services.billing.payments_in_test_mode", lambda: False)  # count as real money
     """Welcome email with trial dates and links; billing details at checkout; numbered receipt emailed; trial reminders
     stop once paid; admin sees the receipt; monthly report and plan mix count it."""
     import io

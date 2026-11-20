@@ -13,6 +13,7 @@ from app.routers import (
     account,
     admin,
     admin_data,
+    admin_money,
     ai_staff,
     assistant,
     auth,
@@ -97,6 +98,7 @@ app.include_router(notifications.router)
 app.include_router(team.router)
 app.include_router(admin.router)
 app.include_router(admin_data.router)
+app.include_router(admin_money.router)
 app.include_router(insights.router)
 app.include_router(support.router)
 app.include_router(help.router)
