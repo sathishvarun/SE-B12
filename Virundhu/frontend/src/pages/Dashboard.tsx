@@ -16,6 +16,40 @@ import type { Overview } from "@/types";
 
 const PLATFORM_COLORS: Record<string, string> = { google: "#6cb8ff", zomato: "#ff5b3a", swiggy: "#f6b93b", direct: "#2bb673", other: "#a9acd0", tripadvisor: "#34a77b", instagram: "#f06ba8", facebook: "#4a6cf7" };
 
+function promiseTarget(min: number): string {
+  return min === 60 ? "1 hour" : min < 120 ? `${min} minutes` : `${min / 60} hours`;
+}
+
+/** The reply promise, front and centre: the one number an owner can repeat to their team. */
+function PromiseBand({ p }: { p: NonNullable<Overview["promise"]> }) {
+  const target = promiseTarget(p.target_minutes);
+  const pct = p.pct_within;
+  const good = pct !== null && pct >= 90;
+  return (
+    <section className="mt-8 grid gap-5 rounded-[22px] bg-night p-6 text-jasmine sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto]" aria-label="Reply promise">
+      <div>
+        <p className="text-sm font-semibold text-turmeric">Your promise: no bad review waits more than {target}</p>
+        {pct === null ? (
+          <p className="mt-2 font-display text-3xl font-bold leading-tight">No bad reviews in the last {p.days} days.</p>
+        ) : (
+          <p className="mt-2 font-display text-3xl font-bold leading-tight sm:text-4xl">
+            <span className={cn("tabular", good ? "text-[#7fe0a9]" : "text-turmeric")}>{Math.round(pct)}%</span> answered in time
+            <span className="block text-base font-normal text-mist sm:text-lg">{p.within} of {p.bad} bad reviews in the last {p.days} days{p.median_minutes !== null ? `, usual reply in ${p.median_minutes} min` : ""}.</span>
+          </p>
+        )}
+        {!p.reminders_on ? <p className="mt-2 text-sm text-mist">Reminders are off. <Link to="/app/automation#reply-promise" className="font-semibold text-turmeric underline-offset-4 hover:underline">Switch them on</Link></p> : null}
+      </div>
+      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+        <div className={cn("rounded-[16px] px-4 py-3", p.overdue ? "bg-chilli text-white" : "bg-white/10")}>
+          <p className="tabular font-display text-3xl font-bold">{p.waiting}</p>
+          <p className="text-sm">{p.overdue ? `waiting, ${p.overdue} past ${target}` : "waiting for a reply"}</p>
+        </div>
+        <Link to="/app/inbox?view=clock" className={cn(buttonVariants({ variant: "primary" }), "h-auto min-h-11 py-2.5")}>Answer them now</Link>
+      </div>
+    </section>
+  );
+}
+
 function Delta({ now, before, unit = "", invert = false }: { now: number | null; before: number | null; unit?: string; invert?: boolean }) {
   if (now === null || before === null || before === 0) return <span className="text-sm text-ink-soft">No data last week</span>;
   const diff = Math.round((now - before) * 10) / 10;
@@ -187,6 +221,7 @@ function RestaurantDashboard() {
         </section>
       ) : (
         <>
+          {data?.promise ? <PromiseBand p={data.promise} /> : null}
           <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="This week">
             {isLoading || !k ? Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[138px]" />) : (
               <>

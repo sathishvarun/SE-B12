@@ -657,7 +657,7 @@ def test_maps_dish_staff_insights_and_widget(client):
     w = client.get(f"/api/v1/public/widget/{token}").json()
     assert w["count"] == 3 and w["average"] == round((5 + 2 + 4) / 3, 1)  # true average includes the 2-star review
     assert all(x["rating"] >= 4 for x in w["reviews"]) and "4 and 5 star" in w["shown"]
-    assert [x["name"] for x in w["branches"]] == ["RS Puram"]
+    assert [x["name"] for x in w["branches"]] == ["RS Puram", "Peelamedu"]  # city alone is enough for a Maps search
     assert client.get("/api/v1/public/widget/not-a-token").status_code == 404
 
 

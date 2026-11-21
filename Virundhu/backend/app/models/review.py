@@ -12,6 +12,7 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
@@ -115,6 +116,8 @@ class Review(OrgScopedMixin, TimestampMixin, Base):
     source_ref: Mapped[str | None] = mapped_column(String(300))
     reply_posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     auto_replied: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    # Reply promise reminders sent: 0 none, 1 manager, 2 owner, 3 final (services/reply_promise.py)
+    promise_stage: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0", nullable=False)
     holding_reply_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # safe "please call us" reply
     guest_name: Mapped[str | None] = mapped_column(String(80))
     guest_contact: Mapped[str | None] = mapped_column(String(120))  # phone or email the guest chose to give
@@ -175,9 +178,7 @@ class AiUsage(TimestampMixin, Base):
 
     __tablename__ = "ai_usage"
 
-    organization_id: Mapped[int | None] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
-    )
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
     feature: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     model: Mapped[str | None] = mapped_column(String(80))
     input_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

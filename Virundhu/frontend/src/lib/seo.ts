@@ -60,9 +60,9 @@ const APP = {
 
 export const SEO: Record<string, PageSeo> = {
   "/": {
-    title: "Virundhu – AI review replies for Zomato, Swiggy & Google (Tamil)",
+    title: "Virundhu – No bad Zomato, Swiggy or Google review unanswered for over an hour",
     description:
-      "Virundhu reads every Google, Zomato and Swiggy review your restaurant gets, in Tamil, Tanglish or English, drafts the reply and alerts you within a minute. Free 14-day trial.",
+      "Every 1-3 star review gets a reply ready in seconds, in Tamil, Tanglish or English, and reminders to your branch manager and you until it's answered. Free 14-day trial.",
     schema: [ORG, APP],
   },
   "/how-it-works": {

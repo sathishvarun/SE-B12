@@ -4,6 +4,7 @@ import { Reveal } from "@/components/motion/Reveal";
 import { DemoVideos } from "@/components/site/DemoVideos";
 import { ReviewJourney } from "@/components/site/ReviewJourney";
 import { ClosingCta, PageHero } from "@/components/site/SiteLayout";
+import { RESTAURANT_STAFF, SERVICE_AGENTS } from "@/lib/agents";
 import { cn } from "@/lib/utils";
 
 const SOURCES = [
@@ -14,7 +15,7 @@ const SOURCES = [
 ];
 const OUTPUTS = [
   { icon: Bell, name: "Alerts", how: "Bell, email, WhatsApp" },
-  { icon: Inbox, name: "Inbox", how: "Urgent first, reply ready" },
+  { icon: Inbox, name: "Inbox", how: "Bad reviews first, with a countdown" },
   { icon: MessageSquareReply, name: "Replies", how: "Google: by itself or one click" },
   { icon: BarChart3, name: "Dashboard", how: "Trends per outlet, priorities" },
 ];
@@ -24,6 +25,7 @@ const MATRIX: { what: string; google: string; qr: string; aggregators: string }[
   { what: "Read, tagged, summarised", google: "Automatic", qr: "Automatic", aggregators: "Automatic" },
   { what: "Serious complaint alert", google: "Automatic", qr: "Automatic", aggregators: "Automatic" },
   { what: "Reply written", google: "Automatic", qr: "Automatic", aggregators: "Automatic" },
+  { what: "One-hour clock and reminders", google: "Automatic", qr: "Automatic", aggregators: "Automatic, from when you paste it" },
   { what: "Reply posted", google: "Automatic for happy reviews, one click for the rest", qr: "You call or message the guest", aggregators: "One click copies it and opens their site" },
 ];
 
@@ -41,7 +43,7 @@ function Cell({ text }: { text: string }) {
 export default function HowItWorks() {
   return (
     <>
-      <PageHero title="How Virundhu works" intro="Reviews come in from four places, get read in seconds, and turn into alerts, replies and a short list of what to fix." />
+      <PageHero title="How Virundhu works" intro="Reviews come in from four places. Every bad one gets a reply ready in seconds and a one-hour clock, with reminders until it is answered." />
 
       <section id="demo" className="kolam-dark scroll-mt-16 border-t border-white/10 text-jasmine">
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
@@ -129,7 +131,7 @@ export default function HowItWorks() {
               ["Sign up", "Restaurant name and city. 14 days free, no card."],
               ["Connect Google", "One click. Your Google reviews start flowing in."],
               ["Print your QR", "On the bill and the food packet. Guests rate you in seconds."],
-              ["Turn on auto-pilot", "Happy reviews get thanked by themselves. You handle the rest."],
+              ["Add your managers' numbers", "They get the 30-minute reminder for their branch. You get the 60-minute one."],
             ].map(([t, b], i) => (
               <li key={t} className="rounded-[20px] border-2 border-line bg-white p-5">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-night font-display text-lg font-bold text-turmeric">{i + 1}</span>
@@ -139,6 +141,33 @@ export default function HowItWorks() {
             ))}
           </ol>
         </div>
+      </section>
+
+      {/* For the demo: the technology behind the promise */}
+      <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24" aria-labelledby="inside">
+        <h2 id="inside" className="type-section max-w-3xl">Inside Virundhu: the team behind the promise</h2>
+        <p className="mt-3 max-w-3xl text-lg text-ink-soft">
+          For the curious. Each job is done by its own AI assistant with strict rules: replies never promise refunds or blame
+          staff, numbers are counted by the database (never guessed by the AI), and anything risky waits for a person.
+        </p>
+        <h3 className="mt-8 text-xl font-bold">Working in your restaurant</h3>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {RESTAURANT_STAFF.map((m) => (
+            <li key={m.name} className="rounded-[18px] border-2 border-line bg-white p-4">
+              <p className="font-display text-lg font-bold leading-tight">{m.name} <span className="text-[0.95rem] font-semibold text-[#b32f12]">· {m.role}</span></p>
+              <p className="mt-2 text-sm">{m.job}</p>
+            </li>
+          ))}
+        </ul>
+        <h3 className="mt-8 text-xl font-bold">Looking after your account</h3>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {SERVICE_AGENTS.map((a) => (
+            <li key={a.name} className="rounded-[18px] bg-night p-4 text-jasmine">
+              <p className="font-display text-lg font-bold">{a.name} <span className="text-[0.95rem] font-semibold text-turmeric">· {a.role}</span></p>
+              <p className="mt-1 text-sm text-mist">{a.job}</p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="mx-auto max-w-4xl px-5 py-20 sm:px-8 lg:py-24">

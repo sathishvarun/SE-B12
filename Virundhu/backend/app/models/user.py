@@ -56,6 +56,8 @@ class Organization(TimestampMixin, Base):
     head_office: Mapped[str | None] = mapped_column(String(300))
     outlets_declared: Mapped[int | None] = mapped_column(Integer)  # "how many outlets do you have" at sign-up
     holding_reply_hours: Mapped[int | None] = mapped_column(Integer)  # None = off
+    # Reply promise: minutes to answer a bad review (30/60/120); None = reminders off. Migration 0023.
+    reply_target_minutes: Mapped[int | None] = mapped_column(Integer, default=60, server_default="60")
     weekly_summary: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true", nullable=False)
     billing_key_hash: Mapped[str | None] = mapped_column(String(64), index=True)  # key for the billing-software hook
     ask_after_bill: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)

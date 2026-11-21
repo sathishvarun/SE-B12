@@ -11,16 +11,22 @@ from sqlalchemy.orm import Session, selectinload
 from app.ai.safety import has_food_safety_risk
 from app.auth.deps import OrgContext, get_org_context, require_writable
 from app.database import get_db
-from app.models import Outlet, Review, ReviewAnalysis
+from app.models import Organization, Outlet, Review, ReviewAnalysis
 from app.schemas.reviews import AnalysisOut, ReviewOut, ReviewPage, ReviewUpdate
-from app.services import google_reviews
+from app.services import google_reviews, reply_promise
 
 router = APIRouter(prefix="/api/v1/reviews", tags=["reviews"])
-View = Literal["all", "today", "week", "replied"]
+View = Literal["all", "clock", "today", "week", "replied"]
 PENDING = ("new", "in_progress")
 
 
 def _view_filter(view: View):  # noqa: ANN202
+    if view == "clock":  # bad reviews waiting for a reply (the reply promise); fresh ones only, see reply_promise
+        return and_(
+            reply_promise.bad_filter(),
+            Review.workflow_status.in_(PENDING),
+            Review.review_date >= func.date(Review.created_at) - reply_promise.FRESH_DAYS,
+        )
     if view == "today":
         return and_(ReviewAnalysis.urgency == "high", Review.workflow_status.in_(PENDING))
     if view == "week":
@@ -30,7 +36,7 @@ def _view_filter(view: View):  # noqa: ANN202
     return None
 
 
-def _to_out(r: Review, outlets: dict[int, str]) -> ReviewOut:
+def _to_out(r: Review, outlets: dict[int, str], org: Organization | None = None) -> ReviewOut:
     a = r.analysis
     return ReviewOut(
         id=r.id,
@@ -49,6 +55,8 @@ def _to_out(r: Review, outlets: dict[int, str]) -> ReviewOut:
         auto_replied=r.auto_replied,
         guest_name=r.guest_name,
         guest_contact=r.guest_contact,
+        reply_due_at=reply_promise.due_at(r, org),
+        replied_at=r.replied_at,
         analysis=AnalysisOut(
             sentiment=a.sentiment,
             category=a.category,
@@ -92,7 +100,7 @@ def list_reviews(
         base = base.where(or_(Review.review_text.ilike(f"%{q}%"), ReviewAnalysis.summary.ilike(f"%{q}%")))
 
     counts = {}
-    for name in ("all", "today", "week", "replied"):
+    for name in ("all", "clock", "today", "week", "replied"):
         f = _view_filter(name)  # type: ignore[arg-type]
         stmt = base.with_only_columns(func.count(Review.id))
         counts[name] = db.scalar(stmt.where(f) if f is not None else stmt) or 0
@@ -102,13 +110,15 @@ def list_reviews(
     urgency_rank = case((ReviewAnalysis.urgency == "high", 0), (ReviewAnalysis.urgency == "medium", 1), else_=2)
     pending_rank = case((Review.workflow_status.in_(PENDING), 0), else_=1)
     order = [pending_rank, urgency_rank, Review.review_date.desc(), Review.id.desc()]
+    if view == "clock":  # the one closest to (or furthest past) its deadline first
+        order = [Review.created_at.asc(), Review.id.asc()]
     total = db.scalar(stmt.with_only_columns(func.count(Review.id))) or 0
     rows = db.scalars(
         stmt.options(selectinload(Review.analysis)).order_by(*order).offset((page - 1) * page_size).limit(page_size)
     ).all()
     names = _outlet_names(db, ctx.org.id)
     return ReviewPage(
-        items=[_to_out(r, names) for r in rows], total=total, page=page, page_size=page_size, counts=counts
+        items=[_to_out(r, names, ctx.org) for r in rows], total=total, page=page, page_size=page_size, counts=counts
     )
 
 
@@ -126,7 +136,7 @@ def _get_owned(db: Session, org_id: int, review_id: int, ctx: OrgContext | None 
 @router.get("/{review_id}", response_model=ReviewOut)
 def get_review(review_id: int, ctx: OrgContext = Depends(get_org_context), db: Session = Depends(get_db)) -> ReviewOut:
     """One review with its analysis."""
-    return _to_out(_get_owned(db, ctx.org.id, review_id, ctx), _outlet_names(db, ctx.org.id))
+    return _to_out(_get_owned(db, ctx.org.id, review_id, ctx), _outlet_names(db, ctx.org.id), ctx.org)
 
 
 @router.patch("/{review_id}", response_model=ReviewOut)
@@ -141,7 +151,7 @@ def update_review(
         review.workflow_status = body.workflow_status
         review.replied_at = datetime.now(UTC) if body.workflow_status == "replied" else None
     db.commit()
-    return _to_out(review, _outlet_names(db, ctx.org.id))
+    return _to_out(review, _outlet_names(db, ctx.org.id), ctx.org)
 
 
 class PostReplyIn(BaseModel):
@@ -158,4 +168,4 @@ def post_reply(
         google_reviews.post_reply(db, ctx.org.id, review, body.text.strip())
     except google_reviews.GoogleError as exc:
         raise HTTPException(400, str(exc)) from exc
-    return _to_out(review, _outlet_names(db, ctx.org.id))
+    return _to_out(review, _outlet_names(db, ctx.org.id), ctx.org)

@@ -1,4 +1,3 @@
-import { RESTAURANT_STAFF, SERVICE_AGENTS } from "@/lib/agents";
 import { ArrowRight, PlayCircle } from "lucide-react";
 import { FeastLeaf } from "@/components/landing/FeastLeaf";
 import { Reveal, RiseWords } from "@/components/motion/Reveal";
@@ -23,8 +22,12 @@ function Stat({ value, prefix, suffix, label }: { value: number; prefix: string;
   );
 }
 
-const COLORS = ["bg-leaf text-white", "bg-turmeric text-night", "bg-chilli text-white", "bg-night text-turmeric", "bg-lotus text-white", "bg-sky text-white", "bg-[#7a4b2a] text-white"];
-const AI_TEAM = RESTAURANT_STAFF.map((m, i) => ({ ...m, color: COLORS[i % COLORS.length] }));
+const OUTCOMES: [string, string][] = [
+  ["No bad review left waiting", "Every 1 to 3 star or urgent review starts a clock. Reminders keep coming until it's answered."],
+  ["Replies already written", "In the guest's language and your tone. Never promises refunds, never blames your staff. Copy, post, done."],
+  ["Food-safety complaints in a minute", "Hygiene, a hair in the food, a guest who fell sick: you and that branch's manager hear at once."],
+  ["Every branch, one score", "Which outlet answers in time and which doesn't, and the dish guests keep complaining about."],
+];
 
 export default function Home() {
   return (
@@ -35,20 +38,21 @@ export default function Home() {
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-48 -left-32 h-[420px] w-[420px] rounded-full bg-lotus/15 blur-[120px]" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-12 sm:px-8 lg:grid-cols-[1fr_minmax(0,560px)] lg:gap-14 lg:pb-24 lg:pt-16">
           <div>
-            <p className="type-label text-turmeric animate-rise">AI review management for Zomato, Swiggy and Google, for restaurants in Tamil Nadu</p>
+            <p className="type-label text-turmeric animate-rise">For restaurants and cloud kitchens in Tamil Nadu: Zomato, Swiggy and Google reviews</p>
             <h1 className="type-hero mt-4">
-              <RiseWords text="Every guest, heard." delay={0.1} />
+              <RiseWords text="No bad review sits unanswered" delay={0.1} />
               <br />
-              <RiseWords text="Every complaint, caught." delay={0.4} className="text-turmeric" />
+              <RiseWords text="for more than an hour." delay={0.2} className="text-turmeric" />
             </h1>
             <p className="type-lead mt-6 max-w-xl text-mist animate-rise [animation-delay:120ms]">
-              Google and QR-code reviews come in by themselves; Zomato and Swiggy with one paste or a screenshot. Virundhu reads them in Tamil, Tanglish and English, alerts you the minute something is serious, and writes the reply.
+              Every 1 to 3 star review gets a reply ready in seconds, in Tamil, Tanglish or English. If nobody has answered it,
+              Virundhu reminds the branch manager at 30 minutes and you at 60, until someone does. Every Monday you see the score.
             </p>
             <div className="mt-9 flex flex-wrap gap-3 animate-rise [animation-delay:160ms]">
               <Link to="/register" className={cn(buttonVariants({ size: "lg" }), "h-auto min-h-12 max-w-full whitespace-normal py-3 text-center")}>Start 14-day free trial</Link>
               <Link to="/how-it-works#demo" className={cn(buttonVariants({ variant: "outlineDark", size: "lg" }), "h-auto min-h-12 max-w-full whitespace-normal py-3 text-center")}><PlayCircle className="h-5 w-5" /> See how it works</Link>
             </div>
-            <p className="mt-5 text-sm text-mist animate-rise [animation-delay:200ms]">Not software you operate: a team of AI agents that does the work. No card needed.</p>
+            <p className="mt-5 text-sm text-mist animate-rise [animation-delay:200ms]">14 days free, no card needed. Set up in 10 minutes.</p>
           </div>
           <div className="relative mx-auto w-full max-w-[560px] animate-rise [animation-delay:60ms]">
             <FeastLeaf className="hidden px-6 py-10 sm:block" />
@@ -59,9 +63,9 @@ export default function Home() {
         <div className="relative border-t border-white/10">
           <dl className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-5 py-8 sm:px-8 md:grid-cols-4">
             {[
-              [1, " min", "from a food-safety complaint to your phone"],
-              [3, "", "languages read: Tamil, Tanglish, English"],
-              [24, "×7", "every review read, day and night"],
+              [60, " min", "the longest a bad review should wait"],
+              [30, " min", "first reminder to the branch manager"],
+              [3, "", "languages for replies: Tamil, Tanglish, English"],
               [649, "", "₹ per outlet a month for big chains", "₹"],
             ].map(([n, suffix, label, prefix]) => (
               <Stat key={String(label)} value={Number(n)} prefix={String(prefix ?? "")} suffix={String(suffix)} label={String(label)} />
@@ -72,12 +76,12 @@ export default function Home() {
 
       {/* Three steps, short. The full story lives on How it works. */}
       <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
-        <Reveal><h2 className="type-section max-w-3xl">How it works, in three steps</h2></Reveal>
+        <Reveal><h2 className="type-section max-w-3xl">How the one-hour promise works</h2></Reveal>
         <ol className="mt-8 grid gap-4 md:grid-cols-3">
           {[
-            ["Reviews come in", "Google and your QR code by themselves. Zomato and Swiggy with one paste or a screenshot."],
-            ["Virundhu reads every one", "In Tamil, Tanglish or English. Food-safety complaints alert you and that branch's manager in a minute."],
-            ["Replies go out", "Happy guests are thanked by themselves. For complaints, the reply is ready for you to check."],
+            ["A bad review lands", "Google reviews arrive by themselves. Zomato and Swiggy: paste them or drop a screenshot, and the clock starts."],
+            ["The reply is ready in seconds", "A polite reply in the guest's own language, waiting in the inbox with a countdown: 52 min left."],
+            ["Nobody forgets it", "No reply at 30 minutes? The branch manager gets a reminder on their phone. At 60, you do. Tap Replied and the clock stops."],
           ].map(([title, body], i) => (
             <li key={title} className="h-full"><Reveal delay={i * 0.12} className="h-full"><div className="lift flex h-full gap-4 rounded-[20px] border-2 border-line bg-white p-5">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-night font-display text-lg font-bold text-jasmine">{i + 1}</span>
@@ -88,46 +92,28 @@ export default function Home() {
         <Link to="/how-it-works" className="mt-6 inline-flex items-center gap-1.5 font-semibold text-night hover:underline">Follow one review from start to finish <ArrowRight className="h-4 w-4" /></Link>
       </section>
 
-      {/* The product, live: reviews landing and being sorted */}
-      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
+      {/* What the owner gets: outcomes, not technology. The team behind it lives on How it works (for the demo). */}
+      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20" aria-labelledby="what-you-get">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-2xl">
-            <h2 className="type-section">Meet your AI staff</h2>
-            <p className="mt-2 text-lg text-ink-soft">Seven team members who work every shift: they read, reply, watch for trouble and win unhappy guests back. You set the rules; they do the work.</p>
+            <h2 id="what-you-get" className="type-section">What you get, in plain words</h2>
+            <p className="mt-2 text-lg text-ink-soft">No new software to learn. Reminders reach your managers on their phones, and Virundhu makes sure no unhappy guest is left waiting.</p>
           </div>
-          <Link to="/compare" className="inline-flex items-center gap-1 font-semibold text-night underline-offset-4 hover:underline">How this is different <ArrowRight className="h-4 w-4" /></Link>
+          <Link to="/how-it-works" className="inline-flex items-center gap-1 font-semibold text-night underline-offset-4 hover:underline">See it working <ArrowRight className="h-4 w-4" /></Link>
         </div>
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {AI_TEAM.map((m) => (
-            <li key={m.name} className="rounded-[18px] border-2 border-line bg-white p-4">
-              <div className="flex items-center gap-3">
-                <span className={cn("flex h-11 w-11 items-center justify-center rounded-full font-display text-lg font-bold", m.color)}>{m.name[0]}</span>
-                <div><p className="font-display text-lg font-bold leading-tight">{m.name}</p><p className="font-display text-[0.95rem] font-semibold text-[#b32f12]">{m.role}</p></div>
-              </div>
-              <p className="mt-3 text-sm">{m.job}</p>
+        <ul className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {OUTCOMES.map(([title, body], i) => (
+            <li key={title} className={cn("rounded-[20px] p-5", i === 0 ? "bg-night text-jasmine" : "border-2 border-line bg-white")}>
+              <p className="font-display text-xl font-bold leading-snug">{title}</p>
+              <p className={cn("mt-2", i === 0 ? "text-mist" : "text-ink-soft")}>{body}</p>
             </li>
           ))}
-          <li className="flex flex-col justify-center rounded-[18px] bg-night p-4 text-jasmine">
-            <p className="font-display text-lg font-bold">And every morning: today's 3 moves</p>
-            <p className="mt-1 text-sm text-mist">What to fix, which dish to check and who to thank, with money at risk shown in rupees.</p>
-            <Link to="/whats-next" className="mt-3 text-sm font-semibold text-turmeric hover:underline">See what's coming next</Link>
-          </li>
         </ul>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 pb-6 sm:px-8" aria-labelledby="service-agents">
-        <div className="rounded-[24px] bg-night p-6 text-jasmine sm:p-8">
-          <h2 id="service-agents" className="font-display text-2xl font-bold sm:text-3xl">And the team that runs Virundhu for you</h2>
-          <p className="mt-2 max-w-3xl text-mist">You'll meet them by name in emails and in the app: they book your demo, answer your questions and look after your account, around the clock.</p>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {SERVICE_AGENTS.map((a) => (
-              <li key={a.name} className="rounded-[16px] bg-white/[0.06] p-4">
-                <p className="font-display text-lg font-bold">{a.name} <span className="text-[0.95rem] font-semibold text-turmeric">· {a.role}</span></p>
-                <p className="mt-1 text-sm text-mist">{a.job}</p>
-              </li>
-            ))}
-          </ul>
+        <div className="mt-6 rounded-[20px] bg-jasmine p-5 sm:flex sm:items-center sm:justify-between sm:gap-6">
+          <p className="max-w-3xl"><b>Your dashboard, every day:</b> "Bad reviews answered within 1 hour: 94% this week. Usual reply: 18 minutes. 2 waiting." The same line comes to your phone every Monday.</p>
+          <Link to="/register" className={cn(buttonVariants({ variant: "dark" }), "mt-4 shrink-0 sm:mt-0")}>Start free</Link>
         </div>
+        <p className="mt-4 text-sm text-ink-soft">Zomato and Swiggy don't let any outside app read or post their reviews. Their clock starts when the review reaches Virundhu by paste, upload or screenshot, and you post the ready reply on their partner app with one copy.</p>
       </section>
 
       <AfterSignIn />

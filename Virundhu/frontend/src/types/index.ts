@@ -7,7 +7,7 @@ export type Category =
 export type Platform = "google" | "zomato" | "swiggy" | "direct" | "other" | "tripadvisor" | "instagram" | "facebook";
 export type Role = "owner" | "manager" | "agent";
 export type WorkflowStatus = "new" | "in_progress" | "replied" | "ignored";
-export type InboxView = "all" | "today" | "week" | "replied";
+export type InboxView = "all" | "clock" | "today" | "week" | "replied";
 
 export interface PublicConfig {
   company?: { name: string; email: string | null; phone: string | null; address: string | null; grievance_officer: string; parent?: string | null; demo_email?: string | null; founded?: string | null; parent_gstin?: string | null };
@@ -63,6 +63,22 @@ export interface Review {
   auto_replied?: boolean;
   guest_name?: string | null;
   guest_contact?: string | null;
+  reply_due_at?: string | null; // reply promise: bad reviews on the clock
+  replied_at?: string | null;
+}
+
+export interface ReplyPromise {
+  target_minutes: number;
+  reminders_on: boolean;
+  bad: number;
+  within: number;
+  late: number;
+  missed: number;
+  pct_within: number | null;
+  median_minutes: number | null;
+  waiting: number;
+  overdue: number;
+  days: number;
 }
 
 export interface ReviewPage {
@@ -85,6 +101,7 @@ export interface TryResult {
 }
 
 export interface Overview {
+  promise?: ReplyPromise | null;
   kpis: {
     reviews_week: number;
     reviews_prev_week: number;
@@ -127,13 +144,14 @@ export interface Outlet {
   phone?: string | null; manager_name?: string | null; manager_phone?: string | null; manager_email?: string | null;
   google_maps_url?: string | null; zomato_url?: string | null; swiggy_url?: string | null; feedback_url?: string | null;
   on_google_maps?: boolean; directions_url?: string | null; map_embed_url?: string | null;
+  google_rating?: number | null; google_rating_count?: number | null;
 }
 export type OutletInput = Omit<Outlet, "id" | "feedback_url">;
 export interface OrgSettings { name: string; city: string | null; reply_tone: "warm" | "professional" | "short"; reply_signature: string | null; alert_emails: string[]; plan: string; trial_ends_at: string | null;
   autopilot_enabled: boolean; autopilot_min_rating: number; google_connected: boolean; google_review_url: string | null;
   feedback_url: string; whatsapp_numbers: string[]; whatsapp_available: boolean;
   owner_phone?: string | null; business_type?: string | null; cuisine?: string | null; gstin?: string | null; head_office?: string | null;
-  outlets_declared?: number | null; holding_reply_hours?: number | null; weekly_summary?: boolean;
+  outlets_declared?: number | null; holding_reply_hours?: number | null; reply_target_minutes?: number | null; weekly_summary?: boolean;
   ask_after_bill?: boolean; has_billing_key?: boolean }
 export interface InviteInfo { email: string; role: Role; organization_name: string; has_account: boolean }
 

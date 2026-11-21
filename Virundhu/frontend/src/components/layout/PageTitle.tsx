@@ -4,7 +4,7 @@ import { markPainted } from "@/components/motion/Reveal";
 import { SEO, SITE_URL } from "@/lib/seo";
 
 const TITLES: Record<string, string> = {
-  "/": "Virundhu - Every guest, heard",
+  "/": "Virundhu - No bad review left unanswered",
   "/how-it-works": "How it works - Virundhu",
   "/about": "Why Virundhu",
   "/pricing": "Pricing per outlet - Virundhu",

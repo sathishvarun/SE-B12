@@ -95,7 +95,7 @@ export function SiteLayout() {
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <Logo onDark />
-            <p className="mt-3 max-w-sm">Every guest, heard. AI staff as a service for restaurants and cloud kitchens, made in Tamil Nadu.</p>
+            <p className="mt-3 max-w-sm">No bad review left unanswered for more than an hour. For restaurants and cloud kitchens, made in Tamil Nadu.</p>
             {company?.email ? <p className="mt-3"><a href={`mailto:${company.email}`} className="hover:text-white">{company.email}</a></p> : null}
             {company?.demo_email ? <p><a href={`mailto:${company.demo_email}`} className="hover:text-white">{company.demo_email}</a> (demos)</p> : null}
             {company?.address ? <p className="mt-2">{company.address}</p> : null}

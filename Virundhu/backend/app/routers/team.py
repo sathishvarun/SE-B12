@@ -277,6 +277,8 @@ class OutletOut(BaseModel):
     on_google_maps: bool = False
     directions_url: str | None = None
     map_embed_url: str | None = None
+    google_rating: float | None = None
+    google_rating_count: int | None = None
 
 
 class OutletIn(BaseModel):
@@ -309,6 +311,8 @@ def _outlet_out(o: Outlet, org: Organization) -> OutletOut:
         on_google_maps=maps.on_google_maps(o),
         directions_url=maps.directions_url(o),
         map_embed_url=maps.embed_url(o),
+        google_rating=float(o.google_rating) if o.google_rating is not None else None,
+        google_rating_count=o.google_rating_count,
         **data,
     )
 
@@ -474,6 +478,7 @@ class SettingsOut(BaseModel):
     head_office: str | None = None
     outlets_declared: int | None = None
     holding_reply_hours: int | None = None
+    reply_target_minutes: int | None = 60
     weekly_summary: bool = True
     ask_after_bill: bool = False
     has_billing_key: bool = False
@@ -494,6 +499,7 @@ class SettingsIn(BaseModel):
     head_office: str | None = Field(default=None, max_length=300)
     outlets_declared: int | None = Field(default=None, ge=1, le=5000)
     holding_reply_hours: int | None = Field(default=None, ge=0, le=72)  # 0 switches it off
+    reply_target_minutes: int | None = Field(default=None, ge=0, le=240)  # 0 = reminders off; else 30/60/120
     weekly_summary: bool | None = None
     ask_after_bill: bool | None = None
     google_review_url: str | None = Field(default=None, max_length=500, pattern=r"^(https://.+)?$")
@@ -553,6 +559,7 @@ def get_settings(ctx: OrgContext = Depends(get_org_context), db: Session = Depen
         head_office=o.head_office,
         outlets_declared=o.outlets_declared,
         holding_reply_hours=o.holding_reply_hours,
+        reply_target_minutes=o.reply_target_minutes,
         weekly_summary=o.weekly_summary,
         ask_after_bill=o.ask_after_bill,
         has_billing_key=bool(o.billing_key_hash),
@@ -580,6 +587,10 @@ def update_settings(
         o.weekly_summary = body.weekly_summary
     if body.holding_reply_hours is not None:
         o.holding_reply_hours = body.holding_reply_hours or None
+    if body.reply_target_minutes is not None:
+        if body.reply_target_minutes and body.reply_target_minutes not in (30, 60, 120):
+            raise HTTPException(422, "Choose 30, 60 or 120 minutes, or switch the reminders off.")
+        o.reply_target_minutes = body.reply_target_minutes or None
     if body.google_review_url is not None:
         o.google_review_url = body.google_review_url or None
     if body.whatsapp_numbers is not None:

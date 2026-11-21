@@ -15,6 +15,7 @@ from app.routers import (
     admin_accounts,
     admin_data,
     admin_money,
+    admin_promise,
     ai_staff,
     assistant,
     auth,
@@ -117,4 +118,5 @@ app.include_router(extras.router)
 app.include_router(ai_staff.router)
 app.include_router(usage.router)
 app.include_router(admin_accounts.router)
+app.include_router(admin_promise.router)
 app.include_router(places.router)

@@ -1,6 +1,8 @@
 /** Questions shown on the site; also sent to Google as FAQ structured data (see lib/seo.ts). */
 
 export const HOW_FAQS: [string, string][] = [
+  ["What exactly is the one-hour promise?", "Every 1 to 3 star review, and every urgent one, starts a clock when it reaches Virundhu. The reply is ready in seconds. If nobody answers, the branch manager is reminded at 30 minutes and you at 60, by WhatsApp, email and the app. You can choose 30 minutes, 1 hour or 2 hours. Your dashboard shows how many bad reviews were answered in time."],
+  ["Does the clock work for Zomato and Swiggy?", "Yes, from the moment their review reaches Virundhu. Zomato and Swiggy don't let any outside app read their reviews, so you paste them, upload a file or drop a screenshot. Google reviews arrive by themselves every 10 minutes."],
   ["Does it really understand Tanglish?", "Yes. Reviews like \"saapadu nalla irundhuchu but bill la extra charge\" are read correctly, summarised in English, and answered in Tanglish. Tamil script works the same way."],
   ["Where do the reviews come from?", "Google connects officially: reviews flow in automatically and replies go back to Google. Your own QR feedback link (on the bill or food packet) also arrives by itself. Zomato and Swiggy don't offer a public review API, so you paste their reviews or upload a file; the reply is copied for you with one click."],
   ["Will it post replies without us checking?", "Only if you switch on auto-pilot, and only for happy 4 or 5 star Google reviews. Anything unhappy, urgent or about hygiene always waits for a person."],

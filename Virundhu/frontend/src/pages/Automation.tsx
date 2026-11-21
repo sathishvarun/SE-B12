@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarCheck, Copy, Receipt, Download, MessageCircle, QrCode, Send, ShieldCheck, Star } from "lucide-react";
+import { Timer, CalendarCheck, Copy, Receipt, Download, MessageCircle, QrCode, Send, ShieldCheck, Star } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -136,6 +136,42 @@ function WhatsApp({ s }: { s: OrgSettings }) {
       </form>
       {!s.whatsapp_available ? <p className="mt-3 text-sm text-ink-soft">WhatsApp sending is being switched on by Virundhu. Your numbers are saved and will start getting alerts as soon as it's live.</p> : null}
     </Card>
+  );
+}
+
+/** The reply promise: how fast a bad review must be answered, and the reminders that chase it. */
+function ReplyPromiseCard({ s }: { s: OrgSettings }) {
+  const save = useSave();
+  const [busy, setBusy] = useState(false);
+  const target = s.reply_target_minutes ?? 0;
+  async function set(m: number) {
+    setBusy(true);
+    await save({ reply_target_minutes: m }, m ? `Every bad review now gets an answer within ${m < 120 ? `${m} minutes` : "2 hours"}` : "Reminders turned off");
+    setBusy(false);
+  }
+  return (
+    <section id="reply-promise" className="scroll-mt-24">
+      <Card icon={<Timer className="h-6 w-6" />} title="Reply promise: no bad review left waiting"
+        status={target ? <Chip tone="leaf">Within {target < 120 ? `${target} min` : "2 h"}</Chip> : <Chip>Off</Chip>}>
+        <p className="max-w-2xl text-ink-soft">
+          Every 1 to 3 star review, and every urgent one, starts a clock the moment it reaches Virundhu. The reply is ready in
+          seconds. If nobody has answered at half-time, that branch's manager gets a reminder; at the deadline, you do; at
+          double the time, both of you get a last nudge. Tap <b className="text-ink">Replied</b> once it's posted and the clock stops.
+        </p>
+        <p className="mt-2 max-w-2xl text-sm text-ink-soft">
+          Google reviews arrive by themselves. Zomato and Swiggy reviews start their clock when you paste or upload them, so add them as they come in.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold">Answer within</span>
+          {[30, 60, 120, 0].map((m) => (
+            <button key={m} type="button" disabled={busy} onClick={() => set(m)}
+              className={cn("rounded-full px-4 py-2 text-sm font-semibold cursor-pointer", target === m ? "bg-night text-jasmine" : "bg-jasmine-2 text-ink-soft")}>
+              {m === 0 ? "Reminders off" : m === 120 ? "2 hours" : `${m} minutes`}
+            </button>
+          ))}
+        </div>
+      </Card>
+    </section>
   );
 }
 
@@ -320,6 +356,7 @@ export default function Automation() {
       <p className="mt-1 max-w-2xl text-ink-soft">Let Virundhu do the routine work. You only step in when something needs you.</p>
       <div className="mt-6 grid grid-cols-1 gap-5">
         {isLoading || !data ? <Skeleton className="h-[300px]" /> : <>
+          <ReplyPromiseCard s={data} />
           <Autopilot s={data} />
           <HoldingReply s={data} />
           <AskGuests />

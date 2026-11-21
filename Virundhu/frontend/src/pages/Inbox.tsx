@@ -3,6 +3,7 @@ import { ArrowLeft, Check, CheckCheck, Copy, ExternalLink, Search, Send, ShieldA
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { ReplyClock } from "@/components/review/ReplyClock";
 import { CategoryChip, LanguageChip, SentimentChip, UrgencyChip } from "@/components/review/Tags";
 import { Button } from "@/components/ui/button";
 import { Chip, Skeleton, Spinner, Stars } from "@/components/ui/misc";
@@ -18,7 +19,8 @@ const PARTNER_URL: Record<string, string | undefined> = {
 };
 
 const VIEWS: { key: InboxView; label: string }[] = [
-  { key: "today", label: "Reply today" },
+  { key: "clock", label: "Waiting for a reply" },
+  { key: "today", label: "Urgent" },
   { key: "week", label: "This week" },
   { key: "all", label: "All reviews" },
   { key: "replied", label: "Replied" },
@@ -95,6 +97,7 @@ function ReviewDetail({ review, onBack, onNext }: { review: Review; onBack: () =
               {a.sentiment ? <SentimentChip sentiment={a.sentiment} /> : null}
               {a.category ? <CategoryChip category={a.category} /> : null}
               {a.language ? <LanguageChip language={a.language} /> : null}
+              <ReplyClock review={review} />
               {review.workflow_status === "replied" ? <Chip tone="dark" className="bg-night text-jasmine"><CheckCheck className="h-3.5 w-3.5" />Replied</Chip> : null}
               {review.reply_posted_at ? <Chip tone="sky">{review.auto_replied ? "Replied on Google automatically" : "Reply posted on Google"}</Chip> : null}
               {review.is_sample ? <Chip tone="turmeric">Sample data, not a real guest</Chip> : null}
@@ -140,7 +143,7 @@ function ReviewDetail({ review, onBack, onNext }: { review: Review; onBack: () =
 
 export default function Inbox() {
   const [params, setParams] = useSearchParams();
-  const view = (params.get("view") as InboxView | null) ?? "today";
+  const view = (params.get("view") as InboxView | null) ?? "clock";
   const selectedId = Number(params.get("id")) || null;
   const [q, setQ] = useState("");
   const [search, setSearch] = useState("");
@@ -192,7 +195,7 @@ export default function Inbox() {
     <div className="mx-auto max-w-[1400px]">
       <div className={cn(selected && "hidden lg:block")}>
         <h1 className="text-[2.3rem] font-bold">Inbox</h1>
-        <p className="mt-1 text-ink-soft">Urgent reviews come first. Each one has a reply ready to copy.</p>
+        <p className="mt-1 text-ink-soft">Bad reviews waiting for a reply come first, oldest on top. Each one has a reply ready to copy. Post it, then tap Replied to stop the clock.</p>
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap gap-1.5 rounded-full bg-jasmine-2 p-1" role="tablist" aria-label="Inbox views">
             {VIEWS.map((v) => (
@@ -201,7 +204,7 @@ export default function Inbox() {
                   view === v.key ? "bg-night text-jasmine" : "text-ink-soft hover:text-ink")}>
                 {v.label}
                 <span className={cn("tabular rounded-full px-1.5 text-xs leading-5",
-                  v.key === "today" && (data?.counts.today ?? 0) > 0 ? "bg-chilli text-white" : view === v.key ? "bg-white/15" : "bg-white")}>
+                  (v.key === "today" || v.key === "clock") && (data?.counts[v.key] ?? 0) > 0 ? "bg-chilli text-white" : view === v.key ? "bg-white/15" : "bg-white")}>
                   {data?.counts[v.key] ?? "-"}
                 </span>
               </button>
@@ -223,8 +226,8 @@ export default function Inbox() {
           {isLoading ? Array.from({ length: 6 }, (_, i) => <li key={i}><Skeleton className="h-[104px]" /></li>) : null}
           {!isLoading && items.length === 0 ? (
             <li className="rounded-[18px] border-2 border-dashed border-ink/15 bg-white p-8 text-center">
-              <p className="font-display text-xl font-bold">{view === "today" ? "Nothing urgent right now" : "No reviews here"}</p>
-              <p className="mt-1 text-ink-soft">{view === "today" ? "Every guest who needed a reply today has one." : "Try another tab or clear the search."}</p>
+              <p className="font-display text-xl font-bold">{view === "clock" ? "No bad review is waiting" : view === "today" ? "Nothing urgent right now" : "No reviews here"}</p>
+              <p className="mt-1 text-ink-soft">{view === "clock" || view === "today" ? "Every unhappy guest has an answer. Nice work." : "Try another tab or clear the search."}</p>
             </li>
           ) : null}
           {items.map((r) => (
@@ -241,6 +244,7 @@ export default function Inbox() {
                   <p className="mt-1 font-semibold leading-snug">{r.analysis?.summary ?? r.review_text}</p>
                   <p className="mt-0.5 truncate text-sm text-ink-soft">{r.review_text}</p>
                   <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold">
+                    <ReplyClock review={r} />
                     {r.workflow_status === "replied" ? <span className="flex items-center gap-1 text-[#16784a]"><CheckCheck className="h-3.5 w-3.5" />Replied</span> : null}
                     {r.is_sample ? <span className="rounded-full bg-[#fdefc9] px-2 text-[#8a5a00]">Sample</span> : null}
                   </div>

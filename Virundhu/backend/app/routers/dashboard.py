@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.auth.deps import OrgContext, get_org_context
 from app.database import get_db
 from app.models import Outlet, Review, ReviewAnalysis
+from app.services import reply_promise
 from app.services.dates import today_local
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
@@ -65,8 +66,25 @@ class UrgentItem(BaseModel):
     outlet_name: str | None
 
 
+class Promise(BaseModel):
+    """Reply promise: bad reviews (1-3 stars or urgent) answered within the target, last 7 days."""
+
+    target_minutes: int
+    reminders_on: bool
+    bad: int
+    within: int
+    late: int
+    missed: int
+    pct_within: float | None
+    median_minutes: int | None
+    waiting: int
+    overdue: int
+    days: int = 7
+
+
 class Overview(BaseModel):
     kpis: Kpis
+    promise: Promise | None = None
     trend: list[TrendPoint]
     categories: list[CategoryCount]
     outlets: list[OutletRow]
@@ -203,6 +221,7 @@ def overview(
             urgent_pending=urgent_pending,
             reply_rate_30d=_pct(r30[1], r30[0]),
         ),
+        promise=Promise(**vars(reply_promise.stats(db, ctx.org, 7, [outlet_id] if outlet_id else ctx.outlet_ids))),
         trend=trend,
         categories=[CategoryCount(category=c or "other", count=n) for c, n in cat_rows],
         outlets=[

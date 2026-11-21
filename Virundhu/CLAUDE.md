@@ -389,3 +389,20 @@ general-purpose agents using the matching skill file.
 - Cron `accounts_month_tick` (1st, 8:20 IST): Dodo sync, then last month's Excel to `ACCOUNTS_REPORT_EMAILS`.
 - Recording a bank payment closes matching open proforma requests. PDF routes end in `/pdf` (not `.pdf`) so they never
   clash with `/receipts/{id}`.
+
+### Reply promise (migration 0023, `services/reply_promise.py`)
+- The website leads with the outcome: "No bad review sits unanswered for more than an hour." The AI team is explained
+  lower, on How it works ("Inside Virundhu"), for demos. Keep the home page outcome-first.
+- Bad review = 1-3 stars or urgency high. Clock starts at `reviews.created_at` (when it reached Virundhu; Zomato/Swiggy by
+  paste/upload). Only "fresh" reviews count (`review_date` within 2 days of `created_at`), so bulk imports of old reviews
+  never start a clock. `organizations.reply_target_minutes` (30/60/120, default 60; NULL = reminders off).
+- Cron `reply_promise_tick` every 5 min: half-time → branch manager (outlet manager email/phone + managers), deadline →
+  owner, double → both. Once each via `reviews.promise_stage` (0-3; migration sets old reviews to 3). Bell notification is
+  upserted (refreshed + unread). Sample reviews never remind. Replied (or posted to Google) stops the clock.
+- `stats()` → dashboard `promise` (in time %, median minutes, waiting, overdue), weekly summary line, Admin → Reply promise
+  (`GET /admin/reply-promise`). Inbox view `clock` (default tab "Waiting for a reply", oldest first) and `ReplyClock` chip.
+
+### Google Maps (no key needed)
+- `services/maps.directions_url`: owner's own Maps link, else the linked listing (`query_place_id`), else a directions
+  search by address, else a search by name + city. `embed_url` (iframe) only with `GOOGLE_MAPS_EMBED_KEY` (free, unlimited).
+- Owner page `/app/branches` "Branches on the map"; Admin → All branches (`GET /admin/branches`, search + city filter).

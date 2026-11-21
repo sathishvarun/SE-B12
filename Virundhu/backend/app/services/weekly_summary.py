@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models import Membership, Organization, Outlet, Review, ReviewAnalysis, User
-from app.services import whatsapp
+from app.services import reply_promise, whatsapp
 from app.services.autopilot import plan_active
 from app.services.emailer import send_email
 from app.services.review_requests import normalise_phone
@@ -136,12 +136,16 @@ def send_all(db: Session, today: date | None = None) -> int:
                 .where(Membership.organization_id == org.id, Membership.role == "owner", User.is_active)
             )
         ]
-        body = render(org, list(weeks.values())) + f"\n\nOpen your dashboard: {link}\n\n- Virundhu"
+        promise = reply_promise.summary_line(reply_promise.stats(db, org, 7))
+        body = render(org, list(weeks.values())) + (f"\n\n{promise}" if promise else "")
+        body += f"\n\nOpen your dashboard: {link}\n\n- Virundhu"
         if send_email([u.email for u in owners], f"Your week at {org.name}", body):
             sent += 1
         owner_phone = normalise_phone(org.owner_phone or "")
         if owner_phone:
-            whatsapp.send_summary(owner_phone, org.name, short(org, list(weeks.values())), link)
+            whatsapp.send_summary(
+                owner_phone, org.name, short(org, list(weeks.values())) + (f" {promise}" if promise else ""), link
+            )
         for outlet in db.scalars(select(Outlet).where(Outlet.organization_id == org.id, Outlet.is_active)):
             week = weeks.get(outlet.id)
             if not week or not week.reviews:

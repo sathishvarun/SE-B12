@@ -163,6 +163,18 @@ async def holding_reply_tick(ctx: dict[str, Any]) -> None:
         logger.info("Sent %s holding replies", n)
 
 
+async def reply_promise_tick(ctx: dict[str, Any]) -> None:
+    """Every 5 minutes: remind the manager, then the owner, about bad reviews still waiting for a reply."""
+
+    def run() -> int:
+        from app.services.reply_promise import run_reminders
+
+        with SessionLocal() as db:
+            return run_reminders(db)
+
+    await asyncio.to_thread(run)
+
+
 async def weekly_summary_tick(ctx: dict[str, Any]) -> None:
     """Monday morning: last week's summary to owners and outlet managers."""
 

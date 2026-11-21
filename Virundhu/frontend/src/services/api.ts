@@ -398,6 +398,15 @@ export const adminTokensApi = {
   restaurants: () => api.get<RestaurantTokens[]>("/api/v1/admin/tokens/restaurants").then((r) => r.data),
 };
 
+// ---------- Reply promise and branches (admin) ----------
+export interface PromiseRow { org_id: number; name: string; plan: string; target_minutes: number; reminders_on: boolean; bad: number; within: number; pct_within: number | null; median_minutes: number | null; waiting: number; overdue: number }
+export interface BranchRow { id: number; org_id: number; restaurant: string; name: string; area: string | null; city: string | null; district: string | null; address: string | null; phone: string | null; google_rating: number | null; google_rating_count: number | null; on_google_maps: boolean; directions_url: string | null; map_embed_url: string | null }
+export interface BranchPage { items: BranchRow[]; total: number; with_map: number; cities: [string, number][] }
+export const adminPromiseApi = {
+  league: (days: number) => api.get<PromiseRow[]>("/api/v1/admin/reply-promise", { params: { days } }).then((r) => r.data),
+  branches: (q?: string, city?: string) => api.get<BranchPage>("/api/v1/admin/branches", { params: { q: q || undefined, city: city || undefined } }).then((r) => r.data),
+};
+
 // ---------- Google reviews by Maps listing (Places API) ----------
 export interface OutletPlace { outlet_id: number; outlet: string; place_id: string | null; place_name: string | null; rating: number | null; rating_count: number | null; synced_at: string | null; error: string | null }
 export interface PlaceHit { place_id: string; name: string; address: string; rating: number | null; reviews: number }

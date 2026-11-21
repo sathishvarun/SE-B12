@@ -33,6 +33,8 @@ class ReviewOut(BaseModel):
     auto_replied: bool = False
     guest_name: str | None = None
     guest_contact: str | None = None
+    reply_due_at: datetime | None = None  # reply promise: set for bad reviews on the clock
+    replied_at: datetime | None = None
     analysis: AnalysisOut | None
 
 

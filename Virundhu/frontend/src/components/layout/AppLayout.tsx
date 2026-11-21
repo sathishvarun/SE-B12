@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bell, CreditCard, Inbox, MessageCircleQuestion,
   UtensilsCrossed,
   LifeBuoy, Workflow, LogOut, MapPin, Menu, Plug, Settings, ShieldCheck, Upload,
-  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database, MessageSquareHeart, HeartHandshake, IndianRupee, CalendarClock, Gauge, Coins, FileSpreadsheet } from "lucide-react";
+  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database, MessageSquareHeart, HeartHandshake, IndianRupee, CalendarClock, Gauge, Coins, FileSpreadsheet, MapPinned, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -71,6 +71,8 @@ export function AppLayout() {
         ] },
         { title: "Customers", items: [
           { to: "/app/admin/restaurants", label: "Restaurants", icon: Building2 },
+          { to: "/app/admin/reply-promise", label: "Reply promise", icon: Timer, hint: "Who answers bad reviews in time" },
+          { to: "/app/admin/branches", label: "All branches", icon: MapPinned, hint: "Every branch on Google Maps" },
           { to: "/app/admin/users", label: "Users", icon: Users },
           { to: "/app/admin/leads", label: "Demo requests", icon: Inbox },
         ] },
@@ -101,6 +103,7 @@ export function AppLayout() {
         ] },
         { title: "Set up", items: [
           { to: "/app/connections", label: "Connections", icon: Plug, hint: "Google, QR codes, website" },
+          { to: "/app/branches", label: "Branches on the map", icon: MapPinned, hint: "Each branch on Google Maps" },
           ...(isOwner ? [{ to: "/app/automation", label: "Automation", icon: Workflow, hint: "Automatic replies and alerts" }] : []),
         ] },
         { title: "Account", items: [
@@ -112,7 +115,7 @@ export function AppLayout() {
         ] },
       ];
   const items = groups.flatMap((g) => g.items);
-  const mobileMain = adminHome ? [0, 2, 7, 10].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
+  const mobileMain = adminHome ? [0, 2, 7, 12].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
   const bell = adminHome ? <AdminBell align="left" /> : <NotificationBell onDark align="left" />;
   const trialEnds = !viewing && user?.organization?.plan === "trial" && !user.organization.is_demo ? user.organization.trial_ends_at : null;
   // Unpaid: the account stays signed in, but only Plan and billing (and Help) open until the payment lands.

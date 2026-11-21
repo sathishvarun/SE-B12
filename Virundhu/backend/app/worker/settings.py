@@ -14,6 +14,7 @@ from app.worker.jobs import (
     monthly_report_tick,
     places_tick,
     plan_reminder_tick,
+    reply_promise_tick,
     retention_tick,
     retry_unread_tick,
     weekly_summary_tick,
@@ -29,6 +30,7 @@ class WorkerSettings:
         cron(retry_unread_tick, minute=set(range(0, 60, 5)), run_at_startup=True),  # re-read failed reviews
         cron(google_sync_tick, minute={0, 10, 20, 30, 40, 50}),  # live Google reviews
         cron(places_tick, minute=45),  # Google reviews by Maps listing (Places API), each outlet once a day
+        cron(reply_promise_tick, minute=set(range(2, 60, 5))),  # 1-hour reply promise: reminders up the ladder
         cron(holding_reply_tick, minute={5, 20, 35, 50}),  # safe first reply to unanswered complaints (opt-in)
         cron(weekly_summary_tick, weekday=0, hour=3, minute=30),  # Monday 9:00 am India time
         cron(plan_reminder_tick, minute=25),  # trial/plan ending reminders
