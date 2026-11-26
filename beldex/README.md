@@ -18,7 +18,9 @@ People sign in and ask anything about **Beldex (BDX)** and crypto basics — by 
 | Ask in English or தமிழ் — by text or **voice** (speech-to-text in, spoken answer out) | **Users & sessions:** every person, every sign-in (IP, device, minutes), every question with its sources; suspend / reactivate / promote |
 | Short, clear answers: bold summary, key points, "why it matters", numbered sources with links and dates | **Questions log:** filter by user, language, text/voice, answered or not; download CSV |
 | Suggested follow-up questions and topic shortcuts (crypto, blockchain, Bitcoin, stablecoin, Nexus safety…) | **Unanswered questions** list — shows what to add to the knowledge base next |
-| **Beldex Academy** — short lessons from "what is crypto" to masternodes | **Knowledge base:** every source, one-click refresh (Playwright crawl + re-index + news digest) |
+| **Beldex Academy** — short lessons from "what is crypto" to masternodes | **Knowledge base:** every source, one-click refresh (Playwright crawl + re-index + news digest), **automatic refresh every 6 hours** |
+| | **Test AI key** button: tells you if the OpenAI key works, is wrong/expired, or has no credit |
+| | **WhatsApp group import:** upload a chat export; names and numbers removed; answers label it *unverified* |
 | News & updates written by an AI news crew | Feedback (👍/👎) on each answer |
 | **Forgot password?** on the sign-in page, a reset page, and **Change password** inside the app | **Password reset requests** banner + one-time reset link for any user (copy / WhatsApp / email) |
 | English / தமிழ் switch on every page, remembered for the account | Too many wrong passwords → the account waits 15 minutes (brute-force protection) |
@@ -91,6 +93,7 @@ beldex/
 │   ├── voice.py            # speech-to-text and text-to-speech (with cache)
 │   ├── mailer.py           # password-reset email (only if SMTP is set in .env)
 │   ├── translate.py        # Tamil titles for sources and news (cached)
+│   ├── community.py        # WhatsApp chat export import (names/numbers removed, marked unverified)
 │   ├── config.py           # reads .env
 │   ├── rag/
 │   │   ├── knowledge_pack.json   # curated crypto + Beldex + Nexus knowledge (EN + TA, with sources)
@@ -193,6 +196,24 @@ Open **http://localhost:8501** (API docs: http://localhost:8501/docs). Stop with
 **Useful commands on the VPS:** `docker logs -f beldex-ai` (live log) · `docker restart beldex-ai` · `docker ps` (is it running?)
 
 ---
+
+## Keeping the knowledge up to date
+
+- **Automatically:** every `KB_AUTO_REFRESH_HOURS` (default 6) the app re-reads beldex.io and the Beldex blog/news feed, re-indexes and rebuilds the news digest. The admin **Knowledge base** page shows the next run. Set `0` to turn it off.
+- **By hand:** Admin → Knowledge base → **Refresh knowledge**.
+- **Curated facts** live in `app/rag/knowledge_pack.json` (English + Tamil, each with a source link) — e.g. the 2026 MiCA white paper, funding, grants, Privacy Tokens. Add an entry, restart, done.
+- **WhatsApp group messages:** in WhatsApp open the group → ⋮ / group name → **More → Export chat → Without media**, then Admin → Knowledge base → **Upload chat**. Only Beldex/crypto messages are kept, sender names and phone numbers are removed, and the assistant always says these are *community messages, unverified*, preferring official sources when they disagree. Remove an import any time. WhatsApp has no official API for reading personal groups, so an export is the safe way.
+
+## Checking the AI key
+
+Admin → Knowledge base → **Test AI key**. It sends one tiny question (costs a fraction of a cent) and shows one of:
+`working` · `invalid` (wrong, revoked or expired key) · `no credit` (add credit in OpenAI Billing) · `rate limited` · `model` (model not available for this key).
+On the VPS you can also run:
+```bash
+cd ~/beldex-app/beldex
+K=$(grep '^OPENAI_API_KEY=' .env | cut -d= -f2-); curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $K" https://api.openai.com/v1/models; unset K
+```
+`200` = key accepted, `401` = wrong/revoked key. To change the key: edit `OPENAI_API_KEY` in `.env`, then `docker restart beldex-ai`.
 
 ## Accounts and passwords
 

@@ -53,7 +53,7 @@ def load_documents() -> list[Document]:
             docs.append(Document(page_content=row["text"], metadata={
                 "title": row.get("title") or row["url"], "url": row["url"],
                 "published": row.get("published", ""), "kind": row.get("kind", "official"),
-                "origin": "crawl", "fetched_at": row.get("fetched_at", "")}))
+                "lang": row.get("lang", "en"), "origin": "crawl", "fetched_at": row.get("fetched_at", "")}))
     return docs
 
 

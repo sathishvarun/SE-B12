@@ -110,8 +110,8 @@ const TOPICS = {
     { c: '#0E7490', i: 'M4 17l6-6 4 4 6-8', b: 'BDX வாங்க / trade', s: 'Exchanges பட்டியல்', q: 'BDX-ஐ எங்கே வாங்கலாம் அல்லது trade செய்யலாம்?' },
   ],
 };
-const QUICK = { en: ['What is cryptocurrency?', 'What is the purpose of a blockchain?', 'What is Bitcoin?', 'What is a stablecoin?', 'Bitcoin vs Beldex — what is different?', 'What is Nexus (nexus.vin) and is it safe?'],
-                ta: ['கிரிப்டோகரன்சி என்றால் என்ன?', 'பிளாக்செயினின் நோக்கம் என்ன?', 'Bitcoin என்றால் என்ன?', 'Stablecoin என்றால் என்ன?', 'Bitcoin-க்கும் Beldex-க்கும் என்ன வேறுபாடு?', 'Nexus (nexus.vin) என்றால் என்ன? பாதுகாப்பானதா?'] };
+const QUICK = { en: ['What are the latest Beldex updates in 2026?', 'Which European countries authorized Beldex (MiCA)?', 'What is cryptocurrency?', 'What is the purpose of a blockchain?', 'What is Bitcoin?', 'What is a stablecoin?', 'Bitcoin vs Beldex — what is different?', 'What is Nexus (nexus.vin) and is it safe?'],
+                ta: ['2026-இல் Beldex-இன் சமீபத்திய அப்டேட்ஸ் என்ன?', 'ஐரோப்பாவில் Beldex அங்கீகாரம் (MiCA) என்ன?', 'கிரிப்டோகரன்சி என்றால் என்ன?', 'பிளாக்செயினின் நோக்கம் என்ன?', 'Bitcoin என்றால் என்ன?', 'Stablecoin என்றால் என்ன?', 'Bitcoin-க்கும் Beldex-க்கும் என்ன வேறுபாடு?', 'Nexus (nexus.vin) என்றால் என்ன? பாதுகாப்பானதா?'] };
 
 function applyLang() {
   document.documentElement.lang = lang === 'ta' ? 'ta' : 'en';
@@ -221,7 +221,8 @@ async function addBot(r, { stream = true, speak = false } = {}) {
 
   const srcs = (r.sources || []).map(s => {
     const host = (() => { try { return new URL(s.url).hostname.replace('www.', ''); } catch { return ''; } })();
-    return `<a class="src" id="${uid}-${s.n}" href="${esc(s.url)}" target="_blank" rel="noopener"><span class="n">${s.n}</span><span><b>${esc(lang === 'ta' && s.title_ta || s.title)}</b><small>${esc(host)}${s.published ? ' · ' + esc(s.published) : ''}</small></span></a>`;
+    const comm = s.kind === 'community';
+    return `<a class="src" id="${uid}-${s.n}" href="${comm ? '#' : esc(s.url)}" ${comm ? 'onclick="return false"' : 'target="_blank" rel="noopener"'}><span class="n">${s.n}</span><span><b>${esc(lang === 'ta' && s.title_ta || s.title)}${s.kind === 'community' ? ` <span class="pill warn" style="font-size:10.5px">${lang === 'ta' ? 'சரிபார்க்கப்படாதது' : 'unverified'}</span>` : ''}</b><small>${comm ? 'WhatsApp' : esc(host)}${s.published ? ' · ' + esc(s.published) : ''}</small></span></a>`;
   }).join('');
   const after = d.querySelector('.after');
   after.innerHTML = `

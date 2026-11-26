@@ -354,5 +354,69 @@
   "published": "2026-07-15",
   "lang": "ta",
   "text": "Nexus (nexus.vin) தன்னை ஒரு crypto staking தளம் மற்றும் community என்று சொல்லிக்கொள்கிறது — பல நெட்வொர்க் staking, 'passive rewards' என்று கூறுகிறது; பனாமா நகரில் அலுவலகம் இருப்பதாக ஒரு blog கூறுகிறது. ஆனால் இது beldex.io அதிகாரப்பூர்வ தளத்தில் குறிப்பிடப்படவில்லை; Beldex திட்டத்தின் பகுதி அல்ல. பல scam-review தளங்கள் இதை FCA, SEC போன்ற எந்த ஒழுங்குமுறை அமைப்பிலும் பதிவு இல்லாத தளம் என்றும், பல security நிறுவனங்கள் blacklist செய்துள்ளன (trust score சுமார் 30/100) என்றும் கூறுகின்றன. பணம் எடுக்க 'release fee' கேட்கும் 'pig butchering' முறையுடன் தொடர்புபடுத்துகின்றன. 2026-இல் சென்னையிலிருந்து மக்கள் சாட்சி தளத்தில் ஒரு புகார்: தமிழ்நாட்டில் Beldex 'staking' திட்டங்கள் வாராந்திர Zoom கூட்டங்கள் மூலம் பணம் வசூலித்து nexus.vin என்ற shell நிறுவனத்துக்கு அனுப்புவதாக குற்றம் சாட்டுகிறது. இவை குற்றச்சாட்டுகள், நீதிமன்ற தீர்ப்பு அல்ல — ஆனால் கடுமையான எச்சரிக்கை அறிகுறிகள். அதிகாரப்பூர்வ Beldex staking: உங்கள் சொந்த Beldex wallet-இல் 10,000 BDX கொண்டு masternode இயக்குவது. எந்த தளத்திலும் பணம் எடுக்க கட்டணம் செலுத்தாதீர்கள், seed phrase-ஐ பகிராதீர்கள்."
+ },
+ {
+  "title": "Beldex in Europe — MiCA white paper (2026)",
+  "url": "https://beldex.io/BDX_MiCA_Whitepaper_V2.0.xhtml",
+  "kind": "official",
+  "published": "2026-07-23",
+  "lang": "en",
+  "text": "Which European countries authorized Beldex? Short answer: none of them authorized or approved it as such — BDX has a MiCA white paper that was notified with Ireland as home member state and lists 29 European host countries. Details: Beldex International Foundation (a Panama entity registered on 14 March 2023) published a crypto-asset white paper for BDX under the EU Markets in Crypto-Assets Regulation (MiCA). Notification date: 14 July 2026; publication date: 23 July 2026; the starting date of admission to trading is given as 4 April 2026. Home Member State: Ireland (the white paper is listed under the Central Bank of Ireland in ESMA's interim MiCA register; version 2.0 was added to the register in October 2026). Host Member States (29 EEA countries): Austria, Belgium, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Iceland, Italy, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Netherlands, Norway, Poland, Portugal, Romania, Slovakia, Slovenia, Spain and Sweden. Important: the white paper itself states it has NOT been approved by any competent authority in any EU Member State — under MiCA a white paper for a coin like BDX is notified, not licensed. It is not a licence for Beldex to operate in those countries, and it is not a guarantee. Beldex says it is seeking admission to EU trading platforms, including but not limited to Kraken, subject to each platform's own procedures. The paper's risk statements say BDX may lose its value in part or in full, may not always be transferable and may not be liquid; transactions are irreversible and there is no statutory compensation for holders."
+ },
+ {
+  "title": "BDX facts from the MiCA white paper (supply, consensus, bridge)",
+  "url": "https://beldex.io/BDX_MiCA_Whitepaper_V2.0.xhtml",
+  "kind": "official",
+  "published": "2026-07-23",
+  "lang": "en",
+  "text": "Facts stated in the BDX MiCA white paper (v2.0, July 2026): ticker BDX; the BEP-20 version on BNB Smart Chain is BDX-BSC. Allocated supply is 9.9 billion BDX, excluding validator rewards after the move to proof-of-stake, so it is not described as a fixed cap. Block reward is 10 BDX per block, and more than 11 million BDX had been burned as of 23 June 2026. The native chain uses the Bucephalus proof-of-stake mechanism with 10,000 BDX masternode collateral and 12-node quorums. In June 2026 the BDX-BSC bridge was exploited, allowing unauthorised minting of BDX-BSC tokens; the bridge is being rebuilt. The retired BDX-BSC contract can still technically transfer tokens, and using it could mean total loss — only use the contract and bridge listed on beldex.io."
+ },
+ {
+  "title": "Beldex raises $8 million (August 2026)",
+  "url": "https://chainwire.org/2026/08/20/beldex-raises-8-million-to-expand-privacy-infrastructure-for-web3-and-ai/",
+  "kind": "news",
+  "published": "2026-08-20",
+  "lang": "en",
+  "text": "On 20 August 2026 Beldex announced an $8 million funding round, bringing its total capital raised to $36 million. The round was led by Sigma Capital, with NTC, Nxgen, Digital Consensus Fund and EAK Ventures taking part. The money is meant to move research into usable infrastructure: the Beldex Extension Wallet, SDKs, account-based addresses and other developer tools, privacy for AI agents, interoperability (Beldex already connects with BNB Smart Chain) and network security research. Chairman Afanddy Bin Hushni said privacy is becoming an infrastructure requirement, not a feature added at the end."
+ },
+ {
+  "title": "Beldex $1 million Grants Program (September 2026)",
+  "url": "https://cryptobriefing.com/beldex-launches-1-million-grants-program-for-privacy-innovation/",
+  "kind": "news",
+  "published": "2026-09-29",
+  "lang": "en",
+  "text": "On 29 September 2026 Beldex launched the Beldex Grants Program with $1 million to support developers building privacy-preserving applications, infrastructure and tooling on the Beldex network. It was introduced at Korea Blockchain Week 2026 in Seoul and is open globally to developers, startups and teams. Focus areas include infrastructure, research and tooling (protocol work, SDKs, middleware) and integration and interoperability (wallets, developer integrations, links to other ecosystems). Approved teams can also get documentation, technical guidance and integration support. Builders can use Privacy Tokens, the Beldex Extension Wallet and the Beldex Web3.js SDK. Applications go through the official Beldex Grants Portal."
+ },
+ {
+  "title": "Privacy Tokens (Confidential Assets) on testnet (October 2026)",
+  "url": "https://altfins.com/crypto-news/article/beldex-introduces-confidential-assets-for-privacy-preserving-tokens-on-testnet",
+  "kind": "news",
+  "published": "2026-10-06",
+  "lang": "en",
+  "text": "On 6 October 2026 Beldex introduced Confidential Assets, also called Privacy Tokens, on its testnet. They let people create tokens on Beldex whose transfers keep the same privacy as BDX. Alongside them Beldex is building the Beldex Extension Wallet and a Web JS SDK, so that web applications can connect to users' Beldex wallets and work with Privacy Tokens. This is a testnet launch — not yet live on mainnet."
+ },
+ {
+  "title": "Beldex 2026 timeline so far",
+  "url": "https://coinstats.app/ai/a/fundamental-analysis-beldex",
+  "kind": "news",
+  "published": "2026-11-01",
+  "lang": "en",
+  "text": "Key Beldex events in 2026: BloFin listed BDX/USDT on 21 January and Kraken listed BDX on 22 January. In February Beldex integrated with BTCPay Server so merchants can accept BDX. On 16 April Beldex Research Labs published zero-knowledge age verification research. BelNet Android 1.4.0 arrived on 20 April. The BNS Marketplace for buying and selling BNS names launched on 30 May. On 12 June unauthorised minting of BDX-BSC tokens was found after a bridge issue; the bridge is being rebuilt. In July the MiCA white paper was notified with Ireland as home member state. On 20 August an $8M funding round was announced, on 29 September a $1M grants program, and on 6 October Privacy Tokens arrived on testnet. Active masternodes grew from about 2,200 to about 2,680 in Q1 2026. Planned items include the VRF consensus upgrade and a merchant point-of-sale dashboard."
+ },
+ {
+  "title": "Beldex ஐரோப்பாவில் — MiCA white paper (2026)",
+  "url": "https://beldex.io/BDX_MiCA_Whitepaper_V2.0.xhtml",
+  "kind": "official",
+  "published": "2026-07-23",
+  "lang": "ta",
+  "text": "Beldex International Foundation, ஐரோப்பிய ஒன்றியத்தின் MiCA சட்டத்தின் கீழ் BDX-க்கான crypto-asset white paper-ஐ வெளியிட்டது. அறிவிப்பு தேதி 14 ஜூலை 2026, வெளியீட்டு தேதி 23 ஜூலை 2026. Home Member State: அயர்லாந்து (Central Bank of Ireland கீழ் ESMA பதிவேட்டில் உள்ளது). Host Member States 29 நாடுகள்: Austria, Belgium, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Iceland, Italy, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Netherlands, Norway, Poland, Portugal, Romania, Slovakia, Slovenia, Spain, Sweden. முக்கியம்: இந்த white paper எந்த EU நாட்டின் ஒழுங்குமுறை அமைப்பாலும் அங்கீகரிக்கப்படவில்லை (approved இல்லை) என்று அதுவே கூறுகிறது. இது அந்த நாடுகளில் செயல்பட உரிமம் (licence) அல்ல; உத்தரவாதமும் அல்ல. Kraken உள்ளிட்ட EU trading தளங்களில் சேர்க்க Beldex முயல்கிறது. BDX மதிப்பு பகுதியாகவோ முழுமையாகவோ இழக்கப்படலாம் என்றும் அதே ஆவணம் எச்சரிக்கிறது."
+ },
+ {
+  "title": "Beldex 2026 முக்கிய நிகழ்வுகள்",
+  "url": "https://chainwire.org/2026/08/20/beldex-raises-8-million-to-expand-privacy-infrastructure-for-web3-and-ai/",
+  "kind": "news",
+  "published": "2026-10-06",
+  "lang": "ta",
+  "text": "2026-இல் Beldex: ஜனவரியில் BloFin (21) மற்றும் Kraken (22) BDX-ஐ பட்டியலிட்டன. பிப்ரவரியில் BTCPay Server இணைப்பு. மே 30 அன்று BNS Marketplace. ஜூன் 12 அன்று BDX-BSC bridge பிரச்சனை (அனுமதியற்ற minting) — bridge மீண்டும் கட்டப்படுகிறது. ஜூலையில் MiCA white paper (அயர்லாந்து). ஆகஸ்ட் 20 அன்று 8 மில்லியன் டாலர் முதலீடு (மொத்தம் 36 மில்லியன் டாலர், Sigma Capital தலைமையில்). செப்டம்பர் 29 அன்று 1 மில்லியன் டாலர் Grants Program (டெவலப்பர்களுக்கு). அக்டோபர் 6 அன்று Privacy Tokens (Confidential Assets) testnet-இல் அறிமுகம் — இன்னும் mainnet-இல் இல்லை."
  }
 ]

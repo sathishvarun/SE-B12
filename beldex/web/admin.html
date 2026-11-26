@@ -45,9 +45,9 @@ Chart.defaults.plugins.tooltip.backgroundColor = '#121318';
 Chart.defaults.plugins.tooltip.padding = 10;
 Chart.defaults.plugins.tooltip.cornerRadius = 8;
 
-$('meBox').innerHTML = `${avatar(me.name, 30)}<div style="flex:1;min-width:0"><b style="color:#fff;font-size:13px;display:block">${esc(me.name)}</b><small>${esc(me.email)}</small></div>
-  <button class="icon-btn" style="color:#CFCCC3" aria-label="Change password" title="Change password" onclick="passwordDialog()">${ICON.key}</button>
-  <button class="icon-btn" style="color:#CFCCC3" aria-label="Sign out" title="Sign out" onclick="signOut()">${ICON.out}</button>`;
+$('meBox').innerHTML = `${avatar(me.name, 30)}<div style="flex:1;min-width:0;overflow:hidden"><b style="color:#fff;font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(me.name)}</b><small style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(me.email)}</small></div>
+  <button class="icon-btn" style="color:#CFCCC3;flex-shrink:0" aria-label="Change password" title="Change password" onclick="passwordDialog()">${ICON.key}</button>
+  <button class="icon-btn" style="color:#CFCCC3;flex-shrink:0" aria-label="Sign out" title="Sign out" onclick="signOut()">${ICON.out}</button>`;
 
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
 function go(v) {
@@ -65,7 +65,9 @@ const ACT = { sign_in: ['#11704A', '→', 'signed in'], sign_out: ['#5E5D57', '�
   voice_in: ['#E2531D', '🎙', 'asked by voice'], voice_out: ['#7C3AED', '♪', 'listened to an answer'],
   kb_refresh: ['#8A5A00', '↻', 'refreshed the knowledge base'], news_digest: ['#8A5A00', '✎', 'rebuilt the news digest'], admin_update_user: ['#7C3AED', '✓', 'updated a user'],
   password_reset_requested: ['#B7791F', '?', 'asked to reset the password'], password_reset: ['#11704A', '🔑', 'set a new password'],
-  password_changed: ['#11704A', '🔑', 'changed the password'], admin_reset_link: ['#7C3AED', '🔗', 'created a reset link for'] };
+  password_changed: ['#11704A', '🔑', 'changed the password'], admin_reset_link: ['#7C3AED', '🔗', 'created a reset link for'],
+  kb_auto_refresh: ['#8A5A00', '↻', 'automatic knowledge refresh'], ai_check: ['#0E7490', '✓', 'tested the AI key'],
+  community_import: ['#B7791F', '⇪', 'imported a WhatsApp chat'], community_delete: ['#B7791F', '✕', 'removed a WhatsApp chat'] };
 
 // One-time password link for a person: copy it, or open WhatsApp / email with it ready to send.
 async function resetLink(uid, name) {
@@ -345,6 +347,21 @@ async function knowledge() {
     <div style="display:flex;gap:8px"><button class="btn btn-sm" id="digest">Rebuild news digest</button><button class="btn btn-primary btn-sm" id="refresh">Refresh knowledge</button></div></div>
   <div id="running" class="card panel hidden" style="margin-bottom:14px"><h3>Refreshing… <small>reading beldex.io with Playwright, then re-indexing</small></h3><div class="progress"><i></i></div></div>
   <div class="kpis" id="kk"></div>
+  <div class="row r-1-1-1">
+    <div class="card panel"><h3>AI key <small id="aiModel"></small></h3>
+      <p class="muted" style="font-size:13.5px;margin:0 0 12px">Sends one tiny test question to the AI service and tells you if the key works and has credit.</p>
+      <div id="aiRes" class="muted" style="font-size:13.5px;margin-bottom:12px">Not tested yet.</div>
+      <button class="btn btn-sm btn-primary" id="aiTest">Test AI key</button></div>
+    <div class="card panel"><h3>Automatic updates</h3>
+      <div id="autoInfo" class="muted" style="font-size:13.5px"></div></div>
+    <div class="card panel"><h3>WhatsApp group <small>community messages</small></h3>
+      <p class="muted" style="font-size:13px;margin:0 0 10px">In WhatsApp: open the group → ⋮ / group name → <b>More → Export chat → Without media</b>. Upload the .txt or .zip here. Names and phone numbers are removed and answers will mark these messages as <b>unverified</b>.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input class="input" id="waGroup" value="Beldex WhatsApp group" style="flex:1;min-width:150px;padding:8px 10px" aria-label="Group name">
+        <label class="btn btn-sm btn-primary" style="cursor:pointer">Upload chat<input type="file" id="waFile" accept=".txt,.zip" hidden></label>
+      </div>
+      <div id="waList" style="margin-top:12px;font-size:13px"></div></div>
+  </div>
   <div class="row r-2-1">
     <div class="card panel"><h3>Sources</h3><div class="table-wrap"><table class="t"><thead><tr><th>Source</th><th>Type</th><th>Date</th><th class="num">Passages</th></tr></thead><tbody id="kb"></tbody></table></div></div>
     <div class="card panel"><h3>Refresh history</h3><div id="runs"></div></div>
@@ -353,7 +370,51 @@ async function knowledge() {
   $('digest').onclick = async () => { $('digest').disabled = true; $('digest').textContent = 'Writing digest…';
     try { const r = await api('/admin/news/run', { method: 'POST' }); toast('Digest ready (' + r.engine + ')'); } catch (e) { toast(e.message, true); }
     $('digest').disabled = false; $('digest').textContent = 'Rebuild news digest'; };
-  await drawKb(); pollRuns();
+  $('aiTest').onclick = async () => {
+    $('aiTest').disabled = true; $('aiRes').innerHTML = 'Testing…';
+    try {
+      const r = await api('/admin/ai-check', { method: 'POST' });
+      $('aiRes').innerHTML = `<span class="pill ${r.ok ? 'good' : 'bad'}">${r.ok ? 'working' : esc(r.status.replace('_', ' '))}</span> ${esc(r.message)}
+        <div class="mono" style="font-size:11.5px;margin-top:6px">key ${esc(r.key)} · model ${esc(r.model)}${r.ms != null ? ' · ' + r.ms + ' ms' : ''}</div>`;
+    } catch (e) { $('aiRes').textContent = e.message; }
+    $('aiTest').disabled = false;
+  };
+  $('waFile').onchange = async () => {
+    const f = $('waFile').files[0]; if (!f) return;
+    $('waList').innerHTML = 'Importing ' + esc(f.name) + '…';
+    try {
+      const res = await fetch('/admin/community/import?group=' + encodeURIComponent($('waGroup').value), {
+        method: 'POST', headers: { Authorization: 'Bearer ' + Auth.token }, body: f });
+      const r = await res.json(); if (!res.ok) throw new Error(r.detail || 'Import failed');
+      toast(`Imported ${r.messages} messages from ${r.days} days`);
+    } catch (e) { toast(e.message, true); }
+    $('waFile').value = ''; drawCommunity(); setTimeout(drawKb, 4000);
+  };
+  await Promise.all([drawKb(), drawSettings(), drawCommunity()]); pollRuns();
+}
+async function drawSettings() {
+  try {
+    const c = await api('/admin/settings');
+    $('aiModel').textContent = c.model;
+    $('autoInfo').innerHTML = c.auto_refresh_hours > 0
+      ? `<span class="pill good">on</span> Every <b>${c.auto_refresh_hours} hours</b> the assistant re-reads beldex.io and the Beldex blog/news and rebuilds the news digest — no clicks needed.
+         <div style="margin-top:8px">Next run: <b>${c.next_auto_refresh === 'soon' ? 'in a few minutes' : fmtDate(c.next_auto_refresh)}</b></div>
+         <div style="margin-top:8px;font-size:12.5px">Change with <span class="mono">KB_AUTO_REFRESH_HOURS</span> in .env (0 = off).</div>`
+      : `<span class="pill warn">off</span> Set <span class="mono">KB_AUTO_REFRESH_HOURS=6</span> in .env and restart to refresh automatically.`;
+  } catch {}
+}
+async function drawCommunity() {
+  try {
+    const list = await api('/admin/community');
+    $('waList').innerHTML = list.length ? list.map(x => `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)">
+      <div><b>${esc(x.group)}</b><br><span class="muted">${x.messages} messages · ${x.days} days · ${esc(x.from)} → ${esc(x.to)}</span></div>
+      <button class="btn btn-sm" data-del="${esc(x.file)}">Remove</button></div>`).join('')
+      : '<span class="muted">No chat imported yet.</span>';
+    $('waList').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+      if (!confirm('Remove this chat from the knowledge base?')) return;
+      try { await api('/admin/community?file=' + encodeURIComponent(b.dataset.del), { method: 'DELETE' }); toast('Removed'); drawCommunity(); setTimeout(drawKb, 3000); } catch (e) { toast(e.message, true); }
+    });
+  } catch {}
 }
 async function drawKb() {
   const k = await api('/kb/sources');
@@ -362,7 +423,7 @@ async function drawKb() {
     <div class="card kpi"><span class="lbl">Passages indexed</span><span class="val">${k.chunks}</span><span class="sub">searchable pieces of text</span></div>
     <div class="card kpi"><span class="lbl">Search engine</span><span class="val" style="font-size:22px">${k.backend === 'faiss' ? 'FAISS' : 'BM25'}</span><span class="sub">${k.backend === 'faiss' ? 'meaning-based (vector)' : 'keyword-based'}</span></div>
     <div class="card kpi"><span class="lbl">News items</span><span class="val">${k.sources.filter(s => s.published).length}</span><span class="sub">dated updates</span></div>`;
-  const kindPill = s => s === 'official' ? '<span class="pill accent">official</span>' : s === 'news' ? '<span class="pill good">news</span>' : s === 'guide' ? '<span class="pill" style="background:#EDE9FE;color:#5B21B6">crypto guide</span>' : s === 'caution' ? '<span class="pill bad">caution</span>' : '<span class="pill">reference</span>';
+  const kindPill = s => s === 'official' ? '<span class="pill accent">official</span>' : s === 'news' ? '<span class="pill good">news</span>' : s === 'guide' ? '<span class="pill" style="background:#EDE9FE;color:#5B21B6">crypto guide</span>' : s === 'caution' ? '<span class="pill bad">caution</span>' : s === 'community' ? '<span class="pill warn">community · unverified</span>' : '<span class="pill">reference</span>';
   $('kb').innerHTML = k.sources.map(s => `<tr><td><a href="${esc(s.url)}" target="_blank" rel="noopener" style="font-weight:600;color:var(--ink);text-decoration:none">${esc(s.title)}</a><br><small class="muted">${esc(s.url)}</small></td>
     <td>${kindPill(s.kind)}</td><td class="muted mono" style="font-size:12px">${esc(s.published || (s.fetched_at || '').slice(0, 10) || '—')}</td><td class="num">${s.chunks}</td></tr>`).join('');
 }

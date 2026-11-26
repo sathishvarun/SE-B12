@@ -34,6 +34,8 @@ class Settings:
     admin_email: str = os.getenv("ADMIN_EMAIL", "admin@example.com").strip().lower()
     admin_password: str = os.getenv("ADMIN_PASSWORD", "")
     allow_signup: bool = _bool("ALLOW_SIGNUP", True)
+    # Re-read beldex.io + news automatically every N hours (0 = only when the admin clicks Refresh)
+    kb_auto_refresh_hours: float = float(os.getenv("KB_AUTO_REFRESH_HOURS", "6"))
     # Public address of the site, used in password-reset links (e.g. https://demo.sathishsakthivel.tech)
     public_url: str = os.getenv("PUBLIC_URL", "").strip().rstrip("/")
 

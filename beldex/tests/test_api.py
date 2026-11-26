@@ -7,7 +7,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 os.environ.update({"DATABASE_URL": "sqlite:///" + str(ROOT / "data" / "test.db"), "OPENAI_API_KEY": "",
                    "SEARCH_MODE": "keyword", "JWT_SECRET": "test-secret-0123456789abcdef0123456789abcdef",
-                   "ADMIN_EMAIL": "admin@test.dev", "ADMIN_PASSWORD": "Admin@12345", "ALLOW_SIGNUP": "true"})
+                   "ADMIN_EMAIL": "admin@test.dev", "ADMIN_PASSWORD": "Admin@12345", "ALLOW_SIGNUP": "true",
+                   "KB_AUTO_REFRESH_HOURS": "0"})
 (ROOT / "data").mkdir(exist_ok=True)
 (ROOT / "data" / "test.db").unlink(missing_ok=True)
 
@@ -192,3 +193,43 @@ def test_forgot_password_sends_email_when_smtp_is_set(client, monkeypatch):
     assert sent["to"] == "mail.me@gmail.com" and "/reset.html?token=" in sent["link"]
     token = sent["link"].split("token=")[1]
     assert client.post("/auth/reset", json={"token": token, "password": "fresh1234"}).status_code == 200
+
+
+WA_SAMPLE = """12/11/2026, 21:05 - Messages and calls are end-to-end encrypted. No one outside of this chat can read them.
+12/11/2026, 21:06 - Ravi Kumar: Beldex MiCA white paper is now in the ESMA register, Ireland is the home member state
+12/11/2026, 21:07 - +91 98765 43210: <Media omitted>
+12/11/2026, 21:08 - Priya: good night
+13/11/2026, 09:15 - Arun: New BChat update is live, call me on +91 98765 43210 for help with the masternode setup
+continued line about staking rewards
+"""
+
+
+def test_whatsapp_import_strips_names_and_numbers(client):
+    adm = _admin(client)
+    r = client.post("/admin/community/import", params={"group": "Test BDX group"}, content=WA_SAMPLE.encode(), headers=adm)
+    assert r.status_code == 200, r.text
+    res = r.json()
+    assert res["messages"] == 2 and res["days"] == 2
+    from app.community import KDIR
+    body = (KDIR / res["file"]).read_text(encoding="utf-8")
+    assert "Ravi" not in body and "Arun" not in body and "98765" not in body
+    assert "[number hidden]" in body and "unverified" in body and "continued line" in body
+    assert any(x["file"] == res["file"] for x in client.get("/admin/community", headers=adm).json())
+    assert client.delete("/admin/community", params={"file": res["file"]}, headers=adm).status_code == 200
+    assert client.delete("/admin/community", params={"file": "../app.db"}, headers=adm).status_code == 404
+
+
+def test_whatsapp_import_rejects_other_files(client):
+    adm = _admin(client)
+    assert client.post("/admin/community/import", content=b"hello world", headers=adm).status_code == 422
+    assert client.post("/admin/community/import", content=WA_SAMPLE.encode()).status_code == 401  # admins only
+
+
+def test_ai_check_without_key(client):
+    r = client.post("/admin/ai-check", headers=_admin(client)).json()
+    assert r["ok"] is False and r["status"] == "missing"
+
+
+def test_admin_settings_shows_auto_refresh(client):
+    c = client.get("/admin/settings", headers=_admin(client)).json()
+    assert "auto_refresh_hours" in c and "next_auto_refresh" in c

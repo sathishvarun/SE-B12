@@ -48,6 +48,36 @@ def startup() -> None:
             db.commit()
             print(f"[startup] admin account created for {settings.admin_email}")
     threading.Thread(target=kb.ensure, daemon=True).start()  # warm the index
+    if settings.kb_auto_refresh_hours > 0:
+        threading.Thread(target=_auto_refresh_loop, daemon=True).start()
+
+
+def _last_refresh(db: Session) -> KnowledgeRun | None:
+    return db.scalar(select(KnowledgeRun).order_by(KnowledgeRun.id.desc()).limit(1))
+
+
+def _auto_refresh_loop() -> None:
+    """Keeps the knowledge fresh without anyone clicking: re-reads beldex.io and the news every N hours."""
+    time.sleep(120)  # let the app start first
+    while True:
+        try:
+            with SessionLocal() as db:
+                last = _last_refresh(db)
+                due = (last is None or (last.status != "running" and
+                       now() - last.started_at > timedelta(hours=settings.kb_auto_refresh_hours)))
+                if due:
+                    run = KnowledgeRun()
+                    db.add(run)
+                    _log(db, None, "kb_auto_refresh", f"every {settings.kb_auto_refresh_hours:g} h")
+                    db.commit()
+                    run_id = run.id
+                else:
+                    run_id = None
+            if run_id:
+                _refresh_job(run_id)
+        except Exception as e:  # never let the loop die
+            print(f"[auto-refresh] {e}")
+        time.sleep(15 * 60)
 
 
 def _client(request: Request) -> tuple[str, str]:
@@ -605,9 +635,14 @@ def admin_reset_requests(_: Caller = Depends(admin_only), db: Session = Depends(
 
 
 @app.get("/admin/settings")
-def admin_settings(_: Caller = Depends(admin_only)):
+def admin_settings(_: Caller = Depends(admin_only), db: Session = Depends(get_db)):
+    last = _last_refresh(db)
+    nxt = None
+    if settings.kb_auto_refresh_hours > 0:
+        nxt = (last.started_at + timedelta(hours=settings.kb_auto_refresh_hours)).isoformat() if last else "soon"
     return {"email_reset": mailer.enabled(), "allow_signup": settings.allow_signup,
-            "public_url": settings.public_url}
+            "public_url": settings.public_url, "auto_refresh_hours": settings.kb_auto_refresh_hours,
+            "next_auto_refresh": nxt, "model": settings.llm_model}
 
 
 @app.get("/admin/queries")
@@ -669,6 +704,76 @@ def admin_news(caller: Caller = Depends(admin_only), db: Session = Depends(get_d
     _log(db, caller.user.id, "news_digest")
     db.commit()
     return run_crew()
+
+
+# ---------------------------------------------------------------- AI key check + community chat import
+@app.post("/admin/ai-check")
+def admin_ai_check(caller: Caller = Depends(admin_only), db: Session = Depends(get_db)):
+    """Sends one tiny request to the AI provider and explains the result in plain words."""
+    from app.rag.llm import get_llm
+    key = settings.openai_api_key
+    masked = f"{key[:7]}…{key[-4:]}" if len(key) > 12 else ("not set" if not key else "set")
+    if not settings.has_llm:
+        return {"ok": False, "status": "missing", "key": masked, "model": settings.llm_model,
+                "message": "No AI key in .env. Add OPENAI_API_KEY and restart the app."}
+    t0 = time.time()
+    try:
+        get_llm().bind(max_tokens=1).invoke("Reply with OK")
+        res = {"ok": True, "status": "working", "message": "The AI key works and has credit."}
+    except Exception as e:
+        txt = str(e)
+        if "401" in txt or "invalid_api_key" in txt or "Incorrect API key" in txt:
+            res = {"ok": False, "status": "invalid", "message": "The key was rejected (wrong, revoked or expired). Create a new key and put it in .env."}
+        elif "insufficient_quota" in txt or "billing" in txt.lower():
+            res = {"ok": False, "status": "no_credit", "message": "The key is valid but the account has no credit left. Add credit in OpenAI Billing."}
+        elif "429" in txt or "rate" in txt.lower():
+            res = {"ok": False, "status": "rate_limited", "message": "Too many requests right now. Try again in a minute."}
+        elif "model" in txt.lower() and ("not found" in txt.lower() or "404" in txt):
+            res = {"ok": False, "status": "model", "message": f"The model '{settings.llm_model}' is not available for this key. Change LLM_MODEL in .env."}
+        else:
+            res = {"ok": False, "status": "error", "message": "Could not reach the AI service: " + txt[:200]}
+    res.update(key=masked, model=settings.llm_model, ms=int((time.time() - t0) * 1000))
+    _log(db, caller.user.id, "ai_check", res["status"])
+    db.commit()
+    return res
+
+
+@app.get("/admin/community")
+def admin_community(_: Caller = Depends(admin_only)):
+    from app import community
+    return community.list_imports()
+
+
+@app.post("/admin/community/import")
+async def admin_community_import(request: Request, group: str = "Beldex WhatsApp group",
+                                 caller: Caller = Depends(admin_only), db: Session = Depends(get_db)):
+    from app import community
+    raw = await request.body()
+    if not raw:
+        raise HTTPException(400, "Choose the exported chat file (.txt or .zip).")
+    if len(raw) > 20 * 1024 * 1024:
+        raise HTTPException(413, "The file is too big (max 20 MB). Export the chat 'Without media'.")
+    try:
+        res = community.import_chat(raw, group.strip()[:60] or "WhatsApp group")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    except Exception:
+        raise HTTPException(422, "This does not look like a WhatsApp chat export.")
+    threading.Thread(target=kb.ensure, daemon=True).start()  # re-index in the background
+    _log(db, caller.user.id, "community_import", f"{res['group']}: {res['messages']} messages, {res['days']} days")
+    db.commit()
+    return res
+
+
+@app.delete("/admin/community")
+def admin_community_delete(file: str, caller: Caller = Depends(admin_only), db: Session = Depends(get_db)):
+    from app import community
+    if not community.delete_import(file):
+        raise HTTPException(404, "No such import")
+    threading.Thread(target=kb.ensure, daemon=True).start()
+    _log(db, caller.user.id, "community_delete", file)
+    db.commit()
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------- web app (Beldex AI front end)
