@@ -13,13 +13,14 @@ import logging
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.auth import lockout
+from app.auth.cookies import clear_refresh_cookie, set_refresh_cookie
 from app.auth.deps import OrgContext, get_current_user, get_org_context
 from app.auth.passwords import weak_reason
 from app.auth.security import hash_password, hash_token, new_opaque_token, verify_password
@@ -28,6 +29,7 @@ from app.database import get_db
 from app.limiter import limiter
 from app.models import Membership, Organization, Outlet, PasswordResetToken, RefreshToken, Review, ReviewAnalysis, User
 from app.services import activity
+from app.services.auth_service import issue_tokens
 from app.services.emailer import send_email
 
 logger = logging.getLogger(__name__)
@@ -46,8 +48,10 @@ def _org_of(db: Session, user: User) -> dict:
 
 
 def _sign_out_everywhere(db: Session, user_id: int) -> None:
+    """Revoke every refresh token and refuse every access token issued until now."""
     now = datetime.now(UTC)
     db.execute(update(RefreshToken).where(RefreshToken.user_id == user_id).values(revoked=True, expires_at=now))
+    db.execute(update(User).where(User.id == user_id).values(sessions_valid_after=now))
 
 
 # ---------------- Forgot / reset password ----------------
@@ -120,7 +124,11 @@ class ChangeIn(BaseModel):
 @router.post("/account/password")
 @limiter.limit("5/minute")
 def change_password(
-    request: Request, body: ChangeIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    request: Request,
+    response: Response,
+    body: ChangeIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> dict:
     """Google-only accounts (no password yet) can set one without the current password."""
     if user.hashed_password and not verify_password(body.current_password, user.hashed_password):
@@ -135,7 +143,25 @@ def change_password(
     )
     db.commit()
     _password_changed_email(user, request)
-    return {"ok": True, "message": "Password changed. Other devices have been signed out."}
+    # This device stays signed in with a fresh session; every other device (and any stolen token) is out.
+    fresh = issue_tokens(db, user)
+    set_refresh_cookie(response, fresh.refresh_token or "")
+    return {"ok": True, "message": "Password changed. Other devices have been signed out.",
+            "access_token": fresh.access_token}
+
+
+@router.post("/account/sign-out-everywhere")
+@limiter.limit("5/minute")
+def sign_out_everywhere(
+    request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> dict:
+    """Lost a phone? Every device, this one included, has to sign in again."""
+    _sign_out_everywhere(db, user.id)
+    activity.record(db, "signed_out_everywhere", email=user.email, detail="From Settings", **_org_of(db, user),
+                    commit=False)
+    db.commit()
+    clear_refresh_cookie(response)
+    return {"ok": True}
 
 
 def _password_changed_email(user: User, request: Request) -> None:

@@ -14,7 +14,7 @@ from app.auth.passwords import weak_reason
 from app.auth.security import create_access_token, hash_password, hash_token, new_opaque_token, verify_password
 from app.config import settings
 from app.models import AlertRule, Membership, Organization, Outlet, RefreshToken, Subscription, User
-from app.schemas.auth import MeOut, OrgOut, RegisterIn, TokenOut
+from app.schemas.auth import MeOut, OrgChoice, OrgOut, RegisterIn, TokenOut
 from app.services import activity
 
 TRIAL_DAYS = 14
@@ -28,9 +28,20 @@ def _slugify(db: Session, name: str) -> str:
     return slug
 
 
-def build_me(db: Session, user: User) -> MeOut:
-    """Profile + organization + role + outlet access for the frontend. Admins have no restaurant."""
-    membership = db.scalar(select(Membership).where(Membership.user_id == user.id).order_by(Membership.id))
+def build_me(db: Session, user: User, org_id: int | None = None) -> MeOut:
+    """Profile + organization + role + outlet access for the frontend. Admins have no restaurant.
+
+    `org_id` picks which of the user's restaurants is open (agencies); one they don't belong to answers 404."""
+    from app.auth.deps import membership_for
+
+    membership = None if user.is_superadmin and org_id else membership_for(db, user, org_id)
+    choices = db.execute(
+        select(Organization.id, Organization.name, Organization.city, Membership.role, Organization.plan)
+        .join(Membership, Membership.organization_id == Organization.id)
+        .where(Membership.user_id == user.id, Organization.is_suspended.is_(False))
+        .order_by(Organization.name)
+        .limit(500)
+    ).all()
     org = db.get(Organization, membership.organization_id) if membership else None
     outlet_names = None
     if membership and membership.role != "owner" and membership.outlet_ids:
@@ -42,6 +53,7 @@ def build_me(db: Session, user: User) -> MeOut:
         is_superadmin=user.is_superadmin,
         role=membership.role if membership else None,
         outlet_names=outlet_names,
+        organizations=[OrgChoice(id=i, name=n, city=c, role=r, plan=p) for i, n, c, r, p in choices],
         organization=OrgOut(
             id=org.id,
             name=org.name,

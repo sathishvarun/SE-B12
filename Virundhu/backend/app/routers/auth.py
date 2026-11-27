@@ -1,6 +1,6 @@
 """Sign-up, sign-in, refresh, sign-out and profile."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -59,9 +59,11 @@ def logout(request: Request, response: Response, body: RefreshIn | None = None, 
 
 
 @router.get("/me", response_model=MeOut)
-def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> MeOut:
-    """The signed-in user's profile and restaurant."""
-    return auth_service.build_me(db, user)
+def me(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db), x_org_id: int | None = Header(default=None)
+) -> MeOut:
+    """The signed-in user's profile and the restaurant open now (X-Org-Id switches between their own restaurants)."""
+    return auth_service.build_me(db, user, x_org_id)
 
 
 @router.get("/verify-email", include_in_schema=False)

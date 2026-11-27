@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -139,6 +139,7 @@ class Lead(TimestampMixin, Base):
     message: Mapped[str | None] = mapped_column(String(2000))
     status: Mapped[str] = mapped_column(String(16), default="new", server_default="new", nullable=False)
     meet_mode: Mapped[str | None] = mapped_column(String(12))  # meet | zoom | teams | in_person | phone
+    maps_link: Mapped[str | None] = mapped_column(String(500))  # their Google Maps link, for demo prep (0024)
 
 
 class DemoMeeting(TimestampMixin, Base):
@@ -341,3 +342,23 @@ class InvoiceRequest(TimestampMixin, Base):
     bill_email: Mapped[str | None] = mapped_column(String(254))
     status: Mapped[str] = mapped_column(String(12), default="open", nullable=False)  # open | paid | cancelled
     payment_id: Mapped[int | None] = mapped_column(ForeignKey("payments.id", ondelete="SET NULL"))
+
+
+class DemoPrep(TimestampMixin, Base):
+    """Replies drafted to a prospect's own latest Google reviews, ready before the demo call (migration 0024)."""
+
+    __tablename__ = "demo_preps"
+
+    lead_id: Mapped[int | None] = mapped_column(ForeignKey("leads.id", ondelete="SET NULL"), index=True)
+    restaurant: Mapped[str] = mapped_column(String(160), nullable=False)
+    maps_link: Mapped[str | None] = mapped_column(String(500))
+    place_id: Mapped[str | None] = mapped_column(String(300))
+    place_name: Mapped[str | None] = mapped_column(String(200))
+    rating: Mapped[float | None] = mapped_column(Numeric(2, 1))
+    rating_count: Mapped[int | None] = mapped_column(Integer)
+    tone: Mapped[str] = mapped_column(String(16), default="warm", server_default="warm", nullable=False)
+    # [{author, rating, text, when, reply, language, summary, urgency}]
+    reviews: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]", nullable=False)
+    status: Mapped[str] = mapped_column(String(12), default="queued", server_default="queued", nullable=False)
+    error: Mapped[str | None] = mapped_column(String(300))
+    created_by: Mapped[str | None] = mapped_column(String(160))

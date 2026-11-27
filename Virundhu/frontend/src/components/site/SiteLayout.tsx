@@ -15,8 +15,8 @@ const SITE_LINKS = [
   { to: "/how-it-works", label: "How it works" },
   { to: "/about", label: "Why Virundhu" },
   { to: "/compare", label: "Compare" },
-  { to: "/whats-next", label: "What's next" },
   { to: "/pricing", label: "Pricing" },
+  { to: "/agencies", label: "For agencies" },
   { to: "/contact", label: "Contact" },
 ] as const;
 
@@ -114,6 +114,7 @@ export function SiteLayout() {
               <li><Link to="/login" className="hover:text-white">Sign in</Link></li>
               <li><Link to="/contact" className="hover:text-white">Book a 10-minute demo</Link></li>
               <li><Link to="/share-feedback" className="hover:text-white">Share feedback</Link></li>
+              <li><Link to="/whats-next" className="hover:text-white">What's next</Link></li>
             </ul>
           </div>
           <div>

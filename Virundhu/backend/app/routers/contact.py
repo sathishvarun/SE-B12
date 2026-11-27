@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.limiter import limiter
-from app.models import DemoMeeting, Lead
-from app.services import activity, agent_team
+from app.models import DemoMeeting, DemoPrep, Lead
+from app.services import activity, agent_team, demo_prep
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/public/contact", tags=["contact"])
@@ -25,6 +25,7 @@ class ContactIn(BaseModel):
     message: str = Field(default="", max_length=2000)
     website: str = Field(default="", max_length=200)  # honeypot
     meet_mode: str = Field(default="meet", pattern="^(meet|zoom|teams|in_person|phone)$")
+    maps_link: str = Field(default="", max_length=500)  # optional: we draft replies to their latest reviews
 
     @model_validator(mode="after")
     def _reachable(self) -> "ContactIn":
@@ -35,9 +36,12 @@ class ContactIn(BaseModel):
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 @limiter.limit("3/minute")
-def contact(request: Request, body: ContactIn, db: Session = Depends(get_db)) -> dict:
+async def contact(request: Request, body: ContactIn, db: Session = Depends(get_db)) -> dict:
     if body.website:
         return {"ok": True}
+    link = body.maps_link.strip()
+    if link and not demo_prep.is_maps_link(link):
+        raise HTTPException(422, "That doesn't look like a Google Maps link. Copy it from the Share button on Maps.")
     lead = Lead(
         name=body.name.strip(),
         restaurant=body.restaurant.strip(),
@@ -47,9 +51,15 @@ def contact(request: Request, body: ContactIn, db: Session = Depends(get_db)) ->
         outlets=body.outlets,
         message=body.message.strip() or None,
         meet_mode=body.meet_mode,
+        maps_link=link or None,
     )
     db.add(lead)
     db.commit()
+    if link:  # the demo opens with replies to their own three latest Google reviews
+        prep = DemoPrep(lead_id=lead.id, restaurant=lead.restaurant, maps_link=link, created_by="contact form")
+        db.add(prep)
+        db.commit()
+        await demo_prep.enqueue(prep.id)
     activity.record(
         db,
         "demo_request",

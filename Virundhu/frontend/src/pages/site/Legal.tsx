@@ -306,8 +306,8 @@ export function RefundsPage() {
 
 const SECURITY: { icon: typeof Lock; title: string; body: string }[] = [
   { icon: Lock, title: "Encrypted connections", body: "Every page and API call runs over HTTPS. Browser safety headers stop the app being framed or sniffed." },
-  { icon: KeyRound, title: "Passwords never stored", body: "Only a one-way bcrypt hash. Reset links work once, expire in an hour, and sign you out everywhere else." },
-  { icon: ShieldCheck, title: "Your restaurant, only yours", body: "Every request is checked against your restaurant. Automated tests prove one restaurant can't see another's reviews." },
+  { icon: KeyRound, title: "Passwords never stored", body: "Only a one-way bcrypt hash. Reset links work once and expire in 30 minutes. Changing your password signs out every other device at once." },
+  { icon: ShieldCheck, title: "Your restaurant, only yours", body: "Every request is checked against your restaurant, not just your login. Before each release, automated tests act as an attacker: they try every ID-based page and API call with another restaurant's IDs, every admin route with an owner's login, and every private route signed out." },
   { icon: Server, title: "Encrypted Google access", body: "Your Google connection is stored encrypted and used only for your reviews. Disconnect any time." },
   { icon: UserCheck, title: "Payments verified at the source", body: "Card and UPI details stay with Dodo Payments. A plan turns on only after we confirm the payment with them." },
   { icon: Trash2, title: "Export or delete, any time", body: "Download all your data as a spreadsheet, or delete your restaurant and everything in it, from Settings." },

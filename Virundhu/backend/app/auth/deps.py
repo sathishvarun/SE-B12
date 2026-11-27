@@ -29,6 +29,9 @@ def get_current_user(
     user = db.get(User, int(payload["sub"]))
     if user is None or not user.is_active:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "This account is not active.")
+    if user.sessions_valid_after and int(payload.get("iat", 0)) < int(user.sessions_valid_after.timestamp()):
+        # issued before a password change/reset or "sign out everywhere": a stolen copy stops working at once
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Your session has expired. Please sign in again.")
     return user
 
 
@@ -68,19 +71,37 @@ def plan_lock(db: Session, org: Organization) -> datetime | None:
     return sub.current_period_end if sub and sub.current_period_end and sub.current_period_end < now else None
 
 
+def membership_for(db: Session, user: User, org_id: int | None) -> Membership | None:
+    """The user's membership in `org_id`, or their first restaurant when no id is given.
+
+    Raises 404 when the id is not one of theirs (never 403: it must not reveal that the restaurant exists)."""
+    q = select(Membership).where(Membership.user_id == user.id)
+    if org_id:
+        found = db.scalar(q.where(Membership.organization_id == org_id))
+        if found is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Restaurant not found.")
+        return found
+    return db.scalar(q.order_by(Membership.id))
+
+
 def get_org_context(
     request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     x_org_id: int | None = Header(default=None),
 ) -> OrgContext:
-    """The restaurant the user works in. Super admins may open any restaurant with the X-Org-Id header."""
+    """The restaurant the user works in.
+
+    Super admins may open any restaurant with the X-Org-Id header. Everyone else may switch only between restaurants
+    they are a member of (agencies running several clients): a restaurant they don't belong to answers 404, exactly
+    like one that doesn't exist.
+    """
     if x_org_id and user.is_superadmin:
         org = db.get(Organization, x_org_id)
         if org is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Restaurant not found.")
         return OrgContext(user=user, org=org, role="owner")
-    membership = db.scalar(select(Membership).where(Membership.user_id == user.id).order_by(Membership.id))
+    membership = membership_for(db, user, x_org_id)
     if membership is None:
         if user.is_superadmin:
             raise HTTPException(

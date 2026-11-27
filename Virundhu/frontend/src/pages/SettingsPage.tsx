@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, KeyRound, MapPin, Plus, Trash2, Upload } from "lucide-react";
+import { Download, Handshake, KeyRound, MapPin, Plus, Trash2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useState, type FormEvent } from "react";
@@ -248,6 +248,61 @@ function OutletsTab() {
   );
 }
 
+/** Restaurants that use a PR or reputation agency: give the agency its own login to this restaurant. */
+function AgencyAccess() {
+  const qc = useQueryClient();
+  const { data } = useQuery({ queryKey: ["team"], queryFn: appApi.team });
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const people = (data?.members ?? []).filter((m) => !m.is_you);
+  async function invite(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const inv = await appApi.invite(email.trim(), "manager", null);
+      toast.success(`Invite sent to ${inv.email}. It works for 7 days.`);
+      setEmail("");
+      void qc.invalidateQueries({ queryKey: ["team"] });
+    } catch (err) { toast.error(errorMessage(err)); } finally { setBusy(false); }
+  }
+  async function remove(id: number) {
+    try { await appApi.removeMember(id); void qc.invalidateQueries({ queryKey: ["team"] }); toast.success("Access removed"); }
+    catch (err) { toast.error(errorMessage(err)); }
+  }
+  return (
+    <section className="rounded-[20px] border-2 border-line bg-white p-5 sm:p-6" aria-labelledby="agency-access">
+      <h2 id="agency-access" className="flex items-center gap-2 font-display text-xl font-bold"><Handshake className="h-5 w-5" /> Your agency or manager</h2>
+      <p className="mt-1 max-w-2xl text-sm text-ink-soft">
+        Does a PR agency or a manager reply to your reviews? Invite them by email. They reply and see the numbers for this
+        restaurant only; they can't change your plan, billing or these settings. Remove them here any time.
+      </p>
+      <form onSubmit={invite} className="mt-4 flex flex-wrap gap-3">
+        <label className="min-w-[240px] flex-1"><span className="sr-only">Their email</span>
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@agency.com" maxLength={160}
+            className="h-11 w-full rounded-full border-2 border-line px-4 focus:border-night focus:outline-none" />
+        </label>
+        <Button type="submit" variant="dark" disabled={busy || !email.includes("@")}>{busy ? <Spinner /> : null} Send invite</Button>
+      </form>
+      {people.length || data?.invitations.length ? (
+        <ul className="mt-4 divide-y divide-line text-sm">
+          {people.map((m) => (
+            <li key={m.membership_id} className="flex items-center justify-between gap-3 py-2">
+              <span><b>{m.full_name}</b> <span className="text-ink-soft">{m.email}</span></span>
+              <button type="button" onClick={() => void remove(m.membership_id)} className="cursor-pointer font-semibold text-[#b32f12] hover:underline">Remove</button>
+            </li>
+          ))}
+          {data?.invitations.map((i) => (
+            <li key={`i${i.id}`} className="flex items-center justify-between gap-3 py-2">
+              <span>{i.email} <span className="text-ink-soft">invited, not joined yet</span></span>
+              <button type="button" onClick={() => void appApi.cancelInvite(i.id).then(() => qc.invalidateQueries({ queryKey: ["team"] }))} className="cursor-pointer font-semibold text-ink-soft hover:underline">Cancel</button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
 function AccountTab() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -264,6 +319,12 @@ function AccountTab() {
     setBusy("pw");
     try { const r = await accountApi.changePassword(current, next); toast.success(r.message); setCurrent(""); setNext(""); }
     catch (err) { toast.error(errorMessage(err)); } finally { setBusy(null); }
+  }
+  async function signOutAll() {
+    if (!window.confirm("Sign out of Virundhu on every phone and computer, this one included?")) return;
+    try { await accountApi.signOutEverywhere(); } catch (err) { toast.error(errorMessage(err)); return; }
+    await logout();
+    navigate("/login", { replace: true });
   }
   async function exportAll() {
     setBusy("export");
@@ -293,9 +354,14 @@ function AccountTab() {
           <Field id="cur-pw" label="Current password" type="password" autoComplete="current-password" hint="Leave empty if you signed up with Google." value={current} onChange={(e) => setCurrent(e.target.value)} />
           <Field id="new-pw" label="New password" type="password" autoComplete="new-password" hint="At least 8 characters. Not a common password, and not your name or email." value={next} onChange={(e) => setNext(e.target.value)} />
         </div>
-        <p className="text-sm text-ink-soft">For safety, every other device is signed out when you change it.</p>
-        <Button type="submit" variant="dark" disabled={busy !== null}>{busy === "pw" ? <Spinner /> : null} Change password</Button>
+        <p className="text-sm text-ink-soft">For safety, every other device is signed out the moment you change it.</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" variant="dark" disabled={busy !== null}>{busy === "pw" ? <Spinner /> : null} Change password</Button>
+          <button type="button" onClick={() => void signOutAll()} className="cursor-pointer text-sm font-semibold text-[#b32f12] hover:underline">Lost a phone? Sign out of every device</button>
+        </div>
       </form>
+
+      {user?.role === "owner" ? <AgencyAccess /> : null}
 
       <section className="rounded-[20px] border-2 border-line bg-white p-5 sm:p-6">
         <h2 className="flex items-center gap-2 font-display text-xl font-bold"><Download className="h-5 w-5" /> Download all my data</h2>

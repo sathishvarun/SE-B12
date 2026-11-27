@@ -11,6 +11,7 @@ const About = lazy(() => import("@/pages/site/About"));
 const PricingPage = lazy(() => import("@/pages/site/PricingPage"));
 const Compare = lazy(() => import("@/pages/site/Compare"));
 const WhatsNext = lazy(() => import("@/pages/site/WhatsNext"));
+const Agencies = lazy(() => import("@/pages/site/Agencies"));
 const DemoBooking = lazy(() => import("@/pages/site/DemoBooking"));
 const Contact = lazy(() => import("@/pages/site/Contact"));
 const PrivacyPage = lazy(() => import("@/pages/site/Legal").then((m) => ({ default: m.PrivacyPage })));
@@ -42,6 +43,7 @@ const ShareFeedback = lazy(() => import("@/pages/site/ShareFeedback"));
 const Insights = lazy(() => import("@/pages/Insights"));
 const AiUsage = lazy(() => import("@/pages/AiUsage"));
 const Branches = lazy(() => import("@/pages/Branches"));
+const Agency = lazy(() => import("@/pages/Agency"));
 const Widget = lazy(() => import("@/pages/site/Widget"));
 const ReceiptPage = lazy(() => import("@/pages/Receipt"));
 const AiStaffPage = lazy(() => import("@/pages/AiStaff"));
@@ -60,6 +62,7 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/compare" element={<Compare />} />
           <Route path="/whats-next" element={<WhatsNext />} />
+          <Route path="/agencies" element={<Agencies />} />
           <Route path="/demo/:token" element={<DemoBooking />} />
           <Route path="/share-feedback" element={<ShareFeedback />} />
           <Route path="/pricing" element={<PricingPage />} />
@@ -93,6 +96,7 @@ export default function App() {
             <Route path="insights" element={<Insights />} />
             <Route path="usage" element={<AiUsage />} />
             <Route path="branches" element={<Branches />} />
+            <Route path="agency" element={<Agency />} />
             <Route path="support" element={<Support />} />
             <Route path="feedback" element={<ShareFeedbackPage />} />
             <Route path="automation" element={<Automation />} />

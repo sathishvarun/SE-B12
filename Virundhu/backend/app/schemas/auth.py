@@ -45,6 +45,14 @@ class OrgOut(BaseModel):
     locked_since: datetime | None = None  # set while unpaid: the app shows only Plan and billing
 
 
+class OrgChoice(BaseModel):
+    id: int
+    name: str
+    city: str | None = None
+    role: str
+    plan: str
+
+
 class MeOut(BaseModel):
     id: int
     email: str
@@ -53,6 +61,10 @@ class MeOut(BaseModel):
     role: str | None
     organization: OrgOut | None
     outlet_names: list[str] | None = None  # None = all outlets
+    # Every restaurant this login can open (agencies run several). The one above is the one open now.
+    organizations: list[OrgChoice] = []
+
+
 
 
 class TokenOut(BaseModel):

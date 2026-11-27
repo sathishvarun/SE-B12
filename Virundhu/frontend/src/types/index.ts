@@ -30,6 +30,7 @@ export interface CurrentUser {
   role: Role | null;
   organization: Organization | null;
   outlet_names?: string[] | null;
+  organizations?: { id: number; name: string; city: string | null; role: Role; plan: string }[];
 }
 
 export interface TokenResponse { access_token: string; user: CurrentUser }

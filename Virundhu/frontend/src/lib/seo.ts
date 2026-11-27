@@ -81,6 +81,11 @@ export const SEO: Record<string, PageSeo> = {
     description:
       "How Virundhu compares with Restaverse, Famepilot and plain review dashboards: Tamil and Tanglish replies, food-safety alerts, rupees at risk and per-outlet pricing.",
   },
+  "/agencies": {
+    title: "For PR and reputation agencies – Virundhu restaurant reviews",
+    description:
+      "Manage Google, Zomato and Swiggy reviews for all your restaurant clients from one login: ready replies, a one-hour clock on bad reviews and a score per client.",
+  },
   "/whats-next": {
     title: "What's next – Virundhu roadmap",
     description: "The features we're building next for restaurants and cloud kitchens, shaped by owners' feedback.",

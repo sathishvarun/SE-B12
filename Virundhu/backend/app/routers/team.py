@@ -141,9 +141,10 @@ def invite(body: InviteIn, ctx: OrgContext = Depends(require_owner), db: Session
 @router.delete("/team/invitations/{invite_id}", status_code=status.HTTP_204_NO_CONTENT)
 def cancel_invite(invite_id: int, ctx: OrgContext = Depends(require_owner), db: Session = Depends(get_db)) -> None:
     inv = db.scalar(select(Invitation).where(Invitation.id == invite_id, Invitation.organization_id == ctx.org.id))
-    if inv:
-        db.delete(inv)
-        db.commit()
+    if inv is None:  # another restaurant's invite looks exactly like one that doesn't exist
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Invitation not found.")
+    db.delete(inv)
+    db.commit()
 
 
 class InviteInfo(BaseModel):

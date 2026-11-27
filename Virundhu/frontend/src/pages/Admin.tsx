@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X, HeartHandshake, CalendarClock, RefreshCw, Gauge, Coins, Landmark, FileSpreadsheet, MapPinned, Timer } from "lucide-react";
+import { Building2, CheckCircle2, CircleAlert, Database, Eye, IndianRupee, Inbox, KeyRound, LayoutDashboard, LifeBuoy, LogIn, Mail, MailOpen, Workflow, MessageSquareText, ExternalLink, Quote, ScrollText, ShieldAlert, Users, X, HeartHandshake, CalendarClock, RefreshCw, Gauge, Coins, Landmark, FileSpreadsheet, MapPinned, Timer, Presentation } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -10,6 +10,7 @@ import { StatusPill, Thread, type Ticket } from "@/pages/Support";
 import { TokensByRestaurantPanel, TokensTotalPanel } from "@/pages/AdminTokens";
 import { AccountsPanel } from "@/pages/AdminAccounts";
 import { BranchesPanel, ReplyPromisePanel } from "@/pages/AdminPromise";
+import { DemoPrepPanel } from "@/pages/AdminDemoPrep";
 import { quoteFrom } from "@/components/site/PriceCalculator";
 import { Chip, Skeleton } from "@/components/ui/misc";
 import { useAuth } from "@/context/AuthContext";
@@ -467,11 +468,11 @@ function AdminPassword() {
   );
 }
 
-type Section = "overview" | "autopilot" | "money" | "renewals" | "accounts" | "tokens" | "tokens-by-restaurant" | "mailbox" | "restaurants" | "reply-promise" | "branches" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "feedback" | "testimonials" | "data";
+type Section = "overview" | "autopilot" | "money" | "renewals" | "accounts" | "tokens" | "tokens-by-restaurant" | "mailbox" | "restaurants" | "reply-promise" | "branches" | "demo-prep" | "users" | "leads" | "activity" | "emails" | "signins" | "support" | "feedback" | "testimonials" | "data";
 const SECTIONS: { group: string; items: [Section, string, typeof Users][] }[] = [
   { group: "Overview", items: [["overview", "Today", LayoutDashboard], ["autopilot", "Autopilot", Workflow]] },
   { group: "Money", items: [["money", "Payments", IndianRupee], ["renewals", "Renewals", CalendarClock], ["accounts", "Accounts and audit", FileSpreadsheet], ["tokens", "AI tokens", Gauge], ["tokens-by-restaurant", "Tokens by restaurant", Coins]] },
-  { group: "Customers", items: [["restaurants", "Restaurants", Building2], ["reply-promise", "Reply promise", Timer], ["branches", "All branches", MapPinned], ["users", "Users", Users], ["leads", "Demo requests", Inbox]] },
+  { group: "Customers", items: [["restaurants", "Restaurants", Building2], ["demo-prep", "Demo prep", Presentation], ["reply-promise", "Reply promise", Timer], ["branches", "All branches", MapPinned], ["users", "Users", Users], ["leads", "Demo requests", Inbox]] },
   { group: "Help desk", items: [["support", "Support", LifeBuoy], ["feedback", "Feedback", HeartHandshake], ["testimonials", "Testimonials", Quote], ["mailbox", "Mailbox", MailOpen]] },
   { group: "Logs", items: [["activity", "Activity", ScrollText], ["emails", "Emails sent", Mail], ["signins", "Sign-ins", LogIn]] },
   { group: "System", items: [["data", "Data and backups", Database]] },
@@ -1080,6 +1081,8 @@ function AdminPanel() {
         <TokensTotalPanel />
       ) : tab === "tokens-by-restaurant" ? (
         <TokensByRestaurantPanel />
+      ) : tab === "demo-prep" ? (
+        <DemoPrepPanel />
       ) : tab === "reply-promise" ? (
         <ReplyPromisePanel />
       ) : tab === "branches" ? (

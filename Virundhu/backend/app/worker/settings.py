@@ -9,6 +9,7 @@ from app.worker.jobs import (
     agent_tick,
     analyze_job,
     daily_digest_tick,
+    demo_prep_job,
     google_sync_tick,
     holding_reply_tick,
     monthly_report_tick,
@@ -24,7 +25,7 @@ from app.worker.jobs import (
 class WorkerSettings:
     """Functions the worker can run, plus scheduled jobs (times in UTC)."""
 
-    functions = [analyze_job]
+    functions = [analyze_job, demo_prep_job]
     cron_jobs = [
         cron(agent_tick, second={0}, run_at_startup=True),  # AI agent team: demos and support, every minute
         cron(retry_unread_tick, minute=set(range(0, 60, 5)), run_at_startup=True),  # re-read failed reviews

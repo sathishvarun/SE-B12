@@ -163,6 +163,18 @@ async def holding_reply_tick(ctx: dict[str, Any]) -> None:
         logger.info("Sent %s holding replies", n)
 
 
+async def demo_prep_job(ctx: dict[str, Any], prep_id: int) -> None:
+    """Draft replies to a prospect's latest reviews before their demo (Admin → Demo prep)."""
+
+    def run() -> None:
+        from app.services.demo_prep import run as run_prep
+
+        with SessionLocal() as db:
+            run_prep(db, prep_id)
+
+    await asyncio.to_thread(run)
+
+
 async def reply_promise_tick(ctx: dict[str, Any]) -> None:
     """Every 5 minutes: remind the manager, then the owner, about bad reviews still waiting for a reply."""
 

@@ -104,7 +104,8 @@ type Category =
 - Every business record has `organization_id`. Every query filters by the current user's organization.
 - A record from another organization returns **404**, never 403.
 - Role checks: owner (everything in their restaurant). The super admin views any restaurant with the `X-Org-Id`
-  header from the Admin console. (`manager`/`agent` and `outlet_ids` still exist in the database but aren't offered in
+  header from the Admin console. Anyone else may send `X-Org-Id` only for a restaurant they are a member of
+  (agencies, `auth.deps.membership_for`); any other id answers 404. (`manager`/`agent` and `outlet_ids` still exist in the database but aren't offered in
   the UI.)
 - Writes go through `require_writable`: an expired trial or expired paid plan returns 402. Billing endpoints don't.
 
@@ -406,3 +407,20 @@ general-purpose agents using the matching skill file.
 - `services/maps.directions_url`: owner's own Maps link, else the linked listing (`query_place_id`), else a directions
   search by address, else a search by name + city. `embed_url` (iframe) only with `GOOGLE_MAPS_EMBED_KEY` (free, unlimited).
 - Owner page `/app/branches` "Branches on the map"; Admin → All branches (`GET /admin/branches`, search + city filter).
+
+### Security tests, agencies, demo prep (migration 0024)
+- `tests/test_tenant_isolation.py` is the attacker's view and must stay green: it walks the OpenAPI route list, so a new
+  route is checked automatically. Signed out → 401 on every non-public route (`PUBLIC` regex lists the deliberate
+  exceptions); owner → 403 on every `/admin/` route; restaurant B with restaurant A's ids → 404 on every ID route
+  (`ID_PARAMS`; a new `{param}` fails `test_every_id_route_is_covered` until added), and foreign ids in query, body and
+  `X-Org-Id` change nothing. Another restaurant's record must look exactly like one that doesn't exist (404).
+- `users.sessions_valid_after`: access tokens issued before it are refused. Set by password change/reset and
+  `POST /account/sign-out-everywhere`; password change returns a fresh `access_token` + cookie for this device.
+- Agencies (`routers/agency.py`): one login, many restaurants via memberships. `GET /agency/restaurants` (worst first),
+  `POST /agency/restaurants` (own 14-day trial, max 200, 10/hour). `MeOut.organizations` feeds the sidebar switcher;
+  the browser keeps the chosen id in `clientOrg` (session storage) and sends `X-Org-Id`, also to `/auth/me`.
+  Owners invite their agency (role manager) from Settings → Account → "Your agency or manager". Public page `/agencies`.
+- Demo prep (`services/demo_prep.py`, `routers/demo_prep.py`, table `demo_preps`): Admin → Demo prep, or the contact
+  form's optional `maps_link`, drafts replies to the restaurant's 3 newest Google reviews (Places API) or to up to 3
+  pasted reviews, in the worker (`demo_prep_job`). Only https links on Google's own hosts are accepted, and short-link
+  redirects are followed by hand and must stay on those hosts (no SSRF).

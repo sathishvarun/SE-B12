@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bell, CreditCard, Inbox, MessageCircleQuestion,
   UtensilsCrossed,
   LifeBuoy, Workflow, LogOut, MapPin, Menu, Plug, Settings, ShieldCheck, Upload,
-  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database, MessageSquareHeart, HeartHandshake, IndianRupee, CalendarClock, Gauge, Coins, FileSpreadsheet, MapPinned, Timer } from "lucide-react";
+  LayoutDashboard, MailOpen, Lock, UsersRound, Building2, Users, ScrollText, Mail, LogIn, Quote, Database, MessageSquareHeart, HeartHandshake, IndianRupee, CalendarClock, Gauge, Coins, FileSpreadsheet, MapPinned, Timer, Store, Presentation } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -16,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useOverview } from "@/hooks/useOverview";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
-import { viewAs } from "@/services/api";
+import { clientOrg, viewAs } from "@/services/api";
 
 interface NavItem { to: string; label: string; icon: typeof Inbox; badge?: number; end?: boolean; hint?: string; short?: string }
 interface NavGroup { title: string; items: NavItem[] }
@@ -45,6 +45,15 @@ export function AppLayout() {
   const { data } = useOverview(undefined, !adminHome && !user?.organization?.locked_since);
   const urgent = data?.kpis.urgent_pending ?? 0;
 
+  async function switchTo(id: number) {
+    const o = user?.organizations?.find((x) => x.id === id);
+    if (!o) return;
+    clientOrg.set({ id: o.id, name: o.name });
+    qc.clear();
+    await refreshUser();
+    navigate("/app");
+  }
+
   function stopViewing() {
     viewAs.set(null);
     qc.clear();
@@ -71,6 +80,7 @@ export function AppLayout() {
         ] },
         { title: "Customers", items: [
           { to: "/app/admin/restaurants", label: "Restaurants", icon: Building2 },
+          { to: "/app/admin/demo-prep", label: "Demo prep", icon: Presentation, hint: "Replies to a prospect's own reviews, before the call" },
           { to: "/app/admin/reply-promise", label: "Reply promise", icon: Timer, hint: "Who answers bad reviews in time" },
           { to: "/app/admin/branches", label: "All branches", icon: MapPinned, hint: "Every branch on Google Maps" },
           { to: "/app/admin/users", label: "Users", icon: Users },
@@ -109,13 +119,14 @@ export function AppLayout() {
         { title: "Account", items: [
           ...(isOwner ? [{ to: "/app/billing", label: "Plan and billing", icon: CreditCard }] : []),
           { to: "/app/usage", label: "AI usage", icon: Gauge, hint: "Tokens the AI used for you" },
+          ...(!viewing ? [{ to: "/app/agency", label: "All your restaurants", icon: Store, hint: "Agencies and groups: several restaurants, one login" }] : []),
           { to: "/app/settings", label: "Settings", icon: Settings },
           { to: "/app/support", label: "Help and support", icon: LifeBuoy },
           { to: "/app/feedback", label: "Share feedback", icon: MessageSquareHeart, hint: "Ideas, problems, how easy it is" },
         ] },
       ];
   const items = groups.flatMap((g) => g.items);
-  const mobileMain = adminHome ? [0, 2, 7, 12].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
+  const mobileMain = adminHome ? [0, 2, 7, 13].map((i) => items[i]).filter((x): x is NavItem => Boolean(x)) : items.slice(0, 4);
   const bell = adminHome ? <AdminBell align="left" /> : <NotificationBell onDark align="left" />;
   const trialEnds = !viewing && user?.organization?.plan === "trial" && !user.organization.is_demo ? user.organization.trial_ends_at : null;
   // Unpaid: the account stays signed in, but only Plan and billing (and Help) open until the payment lands.
@@ -138,7 +149,17 @@ export function AppLayout() {
           <Link to={adminHome ? "/app/admin" : "/app"}><Logo onDark /></Link>
           {bell}
         </div>
-        <p className="mt-5 px-3 text-xs font-semibold text-turmeric">{adminHome ? "Platform admin" : org?.name}</p>
+        {!adminHome && !viewing && (user?.organizations?.length ?? 0) > 1 ? (
+          <label className="mt-5 block px-2">
+            <span className="sr-only">Restaurant open now</span>
+            <select value={org?.id ?? ""} onChange={(e) => switchTo(Number(e.target.value))}
+              className="w-full cursor-pointer rounded-[10px] border border-white/15 bg-white/[0.06] px-2.5 py-1.5 text-sm font-semibold text-turmeric focus:outline-none focus-visible:ring-2 focus-visible:ring-turmeric">
+              {user?.organizations?.map((o) => <option key={o.id} value={o.id} className="text-ink">{o.name}{o.city ? `, ${o.city}` : ""}</option>)}
+            </select>
+          </label>
+        ) : (
+          <p className="mt-5 px-3 text-xs font-semibold text-turmeric">{adminHome ? "Platform admin" : org?.name}</p>
+        )}
         <nav className="-mx-1 mt-3 min-h-0 flex-1 overflow-y-auto px-1 pb-2" aria-label="Main">
           {groups.map((g) => (
             <div key={g.title} className="mb-3">

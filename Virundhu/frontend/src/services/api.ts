@@ -6,6 +6,7 @@ import type {
 
 const SIGNED_IN = "vr_signed_in"; // only a "1": tells the page to try restoring the session. Not a secret.
 const VIEW_ORG = "vr_view_org";
+const CLIENT_ORG = "vr_client_org"; // agencies: which of their own restaurants is open (an id + name, not a secret)
 const OLD_KEYS = ["vr_access", "vr_refresh"]; // older versions kept tokens here; wiped on load
 function resolveApiUrl(): string {
   const configured: string = import.meta.env.VITE_API_URL ?? "http://localhost:8450";
@@ -35,7 +36,7 @@ export const tokens = {
   },
   clear: (): void => {
     accessToken = null;
-    try { store()?.removeItem(SIGNED_IN); store()?.removeItem(VIEW_ORG); } catch { /* storage off */ }
+    try { store()?.removeItem(SIGNED_IN); store()?.removeItem(VIEW_ORG); store()?.removeItem(CLIENT_ORG); } catch { /* storage off */ }
   },
 };
 
@@ -49,13 +50,28 @@ export const viewAs = {
   },
 };
 
+/** Agencies: the client restaurant open now. The server only accepts restaurants this login belongs to. */
+export const clientOrg = {
+  get: (): { id: number; name: string } | null => {
+    try { const raw = store()?.getItem(CLIENT_ORG); return raw ? (JSON.parse(raw) as { id: number; name: string }) : null; } catch { return null; }
+  },
+  set: (org: { id: number; name: string } | null): void => {
+    try { if (org) store()?.setItem(CLIENT_ORG, JSON.stringify(org)); else store()?.removeItem(CLIENT_ORG); } catch { /* storage off */ }
+  },
+};
+
 export const api = axios.create({ baseURL: API_URL, timeout: 30000, withCredentials: true });
 
 api.interceptors.request.use((config) => {
   const token = tokens.access();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   const view = viewAs.get();
-  if (view && !config.url?.includes("/admin/") && !config.url?.includes("/auth/")) config.headers["X-Org-Id"] = String(view.id);
+  const url = config.url ?? "";
+  if (view && !url.includes("/admin/") && !url.includes("/auth/")) config.headers["X-Org-Id"] = String(view.id);
+  else {
+    const client = clientOrg.get();
+    if (client && !url.includes("/admin/") && (!url.includes("/auth/") || url.endsWith("/auth/me"))) config.headers["X-Org-Id"] = String(client.id);
+  }
   return config;
 });
 
@@ -113,14 +129,24 @@ export const authApi = {
     api.post<TokenResponse>("/api/v1/auth/register", body).then((r) => r.data),
   forgot: (email: string) => api.post<{ message: string }>("/api/v1/auth/forgot-password", { email }).then((r) => r.data),
   reset: (token: string, password: string) => api.post("/api/v1/auth/reset-password", { token, password }).then((r) => r.data),
-  me: () => api.get<CurrentUser>("/api/v1/auth/me").then((r) => r.data),
+  me: async (): Promise<CurrentUser> => {
+    try { return (await api.get<CurrentUser>("/api/v1/auth/me")).data; } catch (e) {
+      // the client restaurant saved in this browser is no longer one of theirs: open their first one instead
+      if (clientOrg.get() && (e as AxiosError).response?.status === 404) { clientOrg.set(null); return (await api.get<CurrentUser>("/api/v1/auth/me")).data; }
+      throw e;
+    }
+  },
   logout: () => api.post("/api/v1/auth/logout", {}),
   refresh: refreshAccess,
 };
 
 export const accountApi = {
   changePassword: (current_password: string, new_password: string) =>
-    api.post<{ message: string }>("/api/v1/account/password", { current_password, new_password }).then((r) => r.data),
+    api.post<{ message: string; access_token?: string }>("/api/v1/account/password", { current_password, new_password }).then((r) => {
+      if (r.data.access_token) tokens.save({ access_token: r.data.access_token }); // this device stays signed in
+      return r.data;
+    }),
+  signOutEverywhere: () => api.post("/api/v1/account/sign-out-everywhere").then((r) => r.data),
   exportCsv: () => api.get<Blob>("/api/v1/account/export", { responseType: "blob" }).then((r) => r.data),
   deleteCheck: () => api.get<{ balance_due: number; plan: string; paid_until: string | null; paid_days_left: number; last_payment: { amount: number; invoice_no: string | null; date: string } | null }>("/api/v1/account/delete-check").then((r) => r.data),
   deleteAll: (confirm_name: string, password: string) => api.post("/api/v1/account/delete", { confirm_name, password }).then((r) => r.data),
@@ -160,7 +186,7 @@ export interface RazorpayOrder { order_id: string; amount: number; currency: str
 export interface Lead { id: number; name: string; restaurant: string; phone: string | null; email: string | null; city: string | null; outlets: number | null; message: string | null; status: string; created_at: string }
 
 export const siteApi = {
-  contact: (body: { name: string; restaurant: string; phone: string; email: string; city: string; outlets: number | null; message: string; website: string; meet_mode: string }) =>
+  contact: (body: { name: string; restaurant: string; phone: string; email: string; city: string; outlets: number | null; message: string; website: string; meet_mode: string; maps_link?: string }) =>
     api.post("/api/v1/public/contact", body).then((r) => r.data),
 };
 
@@ -396,6 +422,23 @@ export const usageApi = { mine: () => api.get<OwnerTokens>("/api/v1/usage/tokens
 export const adminTokensApi = {
   total: (days: number) => api.get<AdminTokens>("/api/v1/admin/tokens", { params: { days } }).then((r) => r.data),
   restaurants: () => api.get<RestaurantTokens[]>("/api/v1/admin/tokens/restaurants").then((r) => r.data),
+};
+
+// ---------- Agencies (one login, many client restaurants) ----------
+export interface ClientRow { id: number; name: string; city: string | null; role: string; plan: string; trial_ends_at: string | null; locked: boolean; outlets: number; reviews_7d: number; avg_rating_7d: number | null; waiting: number; overdue: number; pct_within: number | null }
+export const agencyApi = {
+  list: () => api.get<{ items: ClientRow[]; total: number; waiting: number; overdue: number }>("/api/v1/agency/restaurants").then((r) => r.data),
+  add: (body: { name: string; city: string; outlets?: number | null }) => api.post<ClientRow>("/api/v1/agency/restaurants", body).then((r) => r.data),
+};
+
+// ---------- Demo prep (admin) ----------
+export interface PrepReview { author?: string; rating: number | null; text: string; when?: string; reply?: string; summary?: string; language?: string; urgency?: string; sentiment?: string }
+export interface DemoPrepRow { id: number; lead_id: number | null; restaurant: string; maps_link: string | null; place_name: string | null; rating: number | null; rating_count: number | null; tone: string; status: "queued" | "ready" | "failed"; error: string | null; reviews: PrepReview[]; created_at: string }
+export const demoPrepApi = {
+  list: () => api.get<DemoPrepRow[]>("/api/v1/admin/demo-preps").then((r) => r.data),
+  create: (body: { restaurant: string; maps_link: string; tone: string; reviews: { text: string; rating: number | null }[] }) =>
+    api.post<DemoPrepRow>("/api/v1/admin/demo-preps", body).then((r) => r.data),
+  remove: (id: number) => api.delete(`/api/v1/admin/demo-preps/${id}`),
 };
 
 // ---------- Reply promise and branches (admin) ----------

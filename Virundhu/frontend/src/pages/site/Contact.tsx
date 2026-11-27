@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/misc";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { errorMessage, siteApi } from "@/services/api";
 
-const EMPTY = { name: "", restaurant: "", phone: "", email: "", city: "", outlets: "", message: "", website: "", meet_mode: "meet" };
+const EMPTY = { name: "", restaurant: "", phone: "", email: "", city: "", outlets: "", message: "", website: "", meet_mode: "meet", maps_link: "" };
 const MODES: [string, string][] = [["meet", "Google Meet"], ["zoom", "Zoom"], ["teams", "Microsoft Teams"], ["phone", "Phone call"], ["in_person", "In person, Coimbatore"]];
 
 function Input({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
@@ -40,7 +40,7 @@ export default function Contact() {
 
   return (
     <>
-      <PageHero title="Talk to us" intro="Want a demo with your own reviews? Send this and within a minute Nila, our demo agent, emails you times to pick from. One tap books it." />
+      <PageHero title="Talk to us" intro="Want a demo with your own reviews? Add your Google Maps link and we arrive with replies already written to your newest ones. Within a minute you get demo times to pick from." />
       <section className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1.2fr_0.8fr] lg:py-20">
         <div className="rounded-[24px] border-2 border-night bg-white p-6 shadow-[8px_8px_0_#0c3b2e] sm:p-8">
           {sent ? (
@@ -59,6 +59,10 @@ export default function Contact() {
                 <Input label="Email (we send the demo times here)" value={form.email} onChange={set("email")} type="email" autoComplete="email" required />
                 <Input label="City" value={form.city} onChange={set("city")} placeholder="Coimbatore" />
                 <Input label="Number of outlets" value={form.outlets} onChange={set("outlets")} inputMode="numeric" />
+              </div>
+              <div>
+                <Input label="Your Google Maps link (optional)" value={form.maps_link} onChange={set("maps_link")} inputMode="url" placeholder="https://maps.app.goo.gl/…" />
+                <p className="mt-1 text-xs text-ink-soft">Open your restaurant on Google Maps, tap Share and paste the link. We'll come to the demo with replies already written to your three newest reviews.</p>
               </div>
               <fieldset>
                 <legend className="text-sm font-semibold">How would you like to meet?</legend>
