@@ -38,7 +38,7 @@ langchain-openai>=0.3
 # ---------- Dev / test ----------
 pytest>=8.3
 pytest-cov>=5.0
-ruff>=0.6
+ruff>=0.17.6
 dodopayments>=1.126
 fpdf2>=2.8
 pyotp==2.9.0
