@@ -1,0 +1,28 @@
+# Outside uptime check: every 10 minutes GitHub opens the live site. If it is down, this run fails and GitHub emails
+# the repository owner (Settings → Notifications → Actions: "Send notifications for failed workflows").
+name: Virundhu uptime
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Website and API are up
+        run: |
+          set -e
+          site=https://virundhu.sathishsakthivel.tech
+          for i in 1 2 3; do
+            home=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$site/") || home=000
+            health=$(curl -s --max-time 20 "$site/health" || true)
+            echo "attempt $i: home $home, health $health"
+            if [ "$home" = "200" ] && echo "$health" | grep -q '"database":"ok"' && echo "$health" | grep -q '"redis":"ok"'; then
+              echo "Virundhu is up"; exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::Virundhu looks down: home $home, health $health"; exit 1

@@ -1,4 +1,4 @@
-import { KeyRound, Lock, Server, ShieldCheck, Trash2, UserCheck } from "lucide-react";
+import { BellRing, DatabaseBackup, KeyRound, Lock, Server, ShieldCheck, Smartphone, Trash2, UserCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { PageHero } from "@/components/site/SiteLayout";
@@ -307,9 +307,12 @@ export function RefundsPage() {
 const SECURITY: { icon: typeof Lock; title: string; body: string }[] = [
   { icon: Lock, title: "Encrypted connections", body: "Every page and API call runs over HTTPS. Browser safety headers stop the app being framed or sniffed." },
   { icon: KeyRound, title: "Passwords never stored", body: "Only a one-way bcrypt hash. Reset links work once and expire in 30 minutes. Changing your password signs out every other device at once." },
-  { icon: ShieldCheck, title: "Your restaurant, only yours", body: "Every request is checked against your restaurant, not just your login. Before each release, automated tests act as an attacker: they try every ID-based page and API call with another restaurant's IDs, every admin route with an owner's login, and every private route signed out." },
+  { icon: Smartphone, title: "Two-step sign-in", body: "Switch on a code from an authenticator app in Settings. The admin console can't be opened without one." },
+  { icon: ShieldCheck, title: "Your restaurant, only yours", body: "Every request is checked against your restaurant, not just your login, and the database itself refuses another restaurant's rows. Every release must pass automated tests that act as an attacker: every page and API call tried with another restaurant's IDs, every admin route with an owner's login, every private route signed out." },
   { icon: Server, title: "Encrypted Google access", body: "Your Google connection is stored encrypted and used only for your reviews. Disconnect any time." },
   { icon: UserCheck, title: "Payments verified at the source", body: "Card and UPI details stay with Dodo Payments. A plan turns on only after we confirm the payment with them." },
+  { icon: DatabaseBackup, title: "Backed up every night", body: "The database is backed up every night and kept for 30 days." },
+  { icon: BellRing, title: "Watched day and night", body: "The site is checked from outside every 10 minutes, and any server error alerts us straight away." },
   { icon: Trash2, title: "Export or delete, any time", body: "Download all your data as a spreadsheet, or delete your restaurant and everything in it, from Settings." },
 ];
 

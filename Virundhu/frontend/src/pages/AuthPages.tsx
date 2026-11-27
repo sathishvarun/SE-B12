@@ -2,7 +2,7 @@ import { takeNext } from "@/lib/next";
 import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react";
 import { Kolam } from "@/components/motion/Kolam";
 import { RiseWords } from "@/components/motion/Reveal";
-import { Building2, Lock, Mail, MapPin, User, Phone } from "lucide-react";
+import { Building2, Lock, Mail, MapPin, User, Phone, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { LiveBoard } from "@/components/landing/LiveBoard";
@@ -13,7 +13,7 @@ import { Spinner } from "@/components/ui/misc";
 import { useAuth } from "@/context/AuthContext";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { cn } from "@/lib/utils";
-import { API_URL, api, authApi, errorMessage } from "@/services/api";
+import { API_URL, api, authApi, errorMessage, needsTwoStep } from "@/services/api";
 
 /** Split screen: form on the left, the live board on the right (desktop). */
 const PANEL_LINES = [
@@ -169,6 +169,8 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"login" | null>(null);
+  const [askCode, setAskCode] = useState(false);
+  const [code, setCode] = useState("");
   const [params] = useSearchParams();
   const justReset = params.get("reset") === "1";
   const timedOut = params.get("timeout");
@@ -177,8 +179,16 @@ export function LoginPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!email || !password) { setError("Enter your email and password."); return; }
+    if (askCode && code.trim().length < 6) { setError("Enter the 6-digit code from your authenticator app."); return; }
     setBusy("login"); setError(null);
-    try { const u = await login(email.trim(), password); afterLogin(u); } catch (err) { setError(errorMessage(err)); setBusy(null); }
+    try { const u = await login(email.trim(), password, askCode ? code.trim() : undefined); afterLogin(u); }
+    catch (err) {
+      if (needsTwoStep(err) === "required") {
+        if (askCode) setError(errorMessage(err));
+        setAskCode(true);
+      } else setError(errorMessage(err));
+      setBusy(null);
+    }
   }
 
   return (
@@ -195,9 +205,16 @@ export function LoginPage() {
         <Field id="password" label="Password" type="password" autoComplete="current-password" icon={<Lock className="h-[18px] w-[18px]" />}
           value={password} onChange={(e) => setPassword(e.target.value)} />
         <p className="-mt-1 text-right text-sm"><Link to="/forgot-password" className="font-semibold text-ink-soft underline-offset-4 hover:text-ink hover:underline">Forgot password?</Link></p>
+        {askCode ? (
+          <div className="rounded-[14px] bg-jasmine-2 p-4">
+            <Field id="otp" label="6-digit code from your authenticator app" inputMode="numeric" autoComplete="one-time-code" autoFocus
+              hint="Lost your phone? Type one of your recovery codes instead." icon={<ShieldCheck className="h-[18px] w-[18px]" />}
+              value={code} onChange={(e) => setCode(e.target.value)} maxLength={20} />
+          </div>
+        ) : null}
         <ErrorBox message={error} />
         <Button type="submit" size="lg" className="w-full" disabled={busy !== null}>
-          {busy === "login" ? <><Spinner /> Signing in...</> : "Sign in"}
+          {busy === "login" ? <><Spinner /> Signing in...</> : askCode ? "Verify and sign in" : "Sign in"}
         </Button>
       </form>
     </AuthShell>

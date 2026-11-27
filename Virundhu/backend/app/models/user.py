@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +22,12 @@ class User(TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # Access tokens issued before this moment are refused (password change/reset). Migration 0024.
     sessions_valid_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Two-step sign-in (migration 0026, services/two_step.py). Secrets are stored encrypted.
+    totp_secret: Mapped[str | None] = mapped_column(String(300))
+    totp_pending: Mapped[str | None] = mapped_column(String(300))
+    totp_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    totp_recovery: Mapped[list | None] = mapped_column(JSONB)
+    totp_last_step: Mapped[int | None] = mapped_column(BigInteger)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_superadmin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     oauth_provider: Mapped[str | None] = mapped_column(String(32))

@@ -22,9 +22,17 @@ from app.worker.jobs import (
 )
 
 
+async def _startup(ctx: dict) -> None:
+    """Worker errors (failed jobs, crons) email the admin too."""
+    from app.services import error_alerts
+
+    error_alerts.install()
+
+
 class WorkerSettings:
     """Functions the worker can run, plus scheduled jobs (times in UTC)."""
 
+    on_startup = _startup
     functions = [analyze_job, demo_prep_job]
     cron_jobs = [
         cron(agent_tick, second={0}, run_at_startup=True),  # AI agent team: demos and support, every minute

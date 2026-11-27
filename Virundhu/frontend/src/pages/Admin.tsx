@@ -9,6 +9,7 @@ import { SecretInput } from "@/components/ui/input";
 import { StatusPill, Thread, type Ticket } from "@/pages/Support";
 import { TokensByRestaurantPanel, TokensTotalPanel } from "@/pages/AdminTokens";
 import { AccountsPanel } from "@/pages/AdminAccounts";
+import { TwoStepCard } from "@/components/security/TwoStepCard";
 import { BranchesPanel, ReplyPromisePanel } from "@/pages/AdminPromise";
 import { DemoPrepPanel } from "@/pages/AdminDemoPrep";
 import { quoteFrom } from "@/components/site/PriceCalculator";
@@ -441,6 +442,21 @@ function DataTools() {
           </>
         )}
       </section>
+    </div>
+  );
+}
+
+/** Until the admin switches on two-step sign-in, the overview keeps a short reminder with the set-up inline. */
+function AdminTwoStepNudge() {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  if (user?.two_step) return null;
+  return (
+    <div className="mt-4 rounded-[16px] border-2 border-turmeric bg-jasmine p-4">
+      {open ? <TwoStepCard compact /> : (
+        <p className="flex flex-wrap items-center gap-3 text-sm"><b>Protect the admin account with a code from your phone.</b> Anyone with only the password won't get in.
+          <button type="button" onClick={() => setOpen(true)} className="cursor-pointer rounded-full bg-night px-3 py-1.5 font-semibold text-jasmine">Set up two-step sign-in</button></p>
+      )}
     </div>
   );
 }
@@ -956,6 +972,7 @@ function AdminPanel() {
         <h1 className="text-[2.3rem] font-bold">{title}</h1>
         <AdminPassword />
       </div>
+      {tab === "overview" ? <AdminTwoStepNudge /> : null}
       {tab === "overview" ? <p className="mt-1 max-w-3xl text-ink-soft">You run Virundhu. Every customer restaurant, subscription, user and review count is here; pick a section on the left.
         Customers never see these pages. Click <b>Open</b> on a restaurant to see it exactly as its owner does.</p> : null}
       <div className="mt-6">

@@ -11,6 +11,30 @@ if [ -d "$SRC/.git" ]; then git -C "$SRC" fetch -q --depth 1 origin main && git 
   git clone -q --depth 1 --filter=blob:none --sparse https://github.com/sathishvarun/SE-B12 "$SRC"
   git -C "$SRC" sparse-checkout set Virundhu
 fi
+# Release gate: deploy only code whose tests passed on GitHub ("Virundhu tests": every test, including the
+# attacker's-view security tests). Waits while the run is still going. FORCE_DEPLOY=1 skips it in an emergency.
+SHA=$(git -C "$SRC" rev-parse HEAD)
+if [ "${FORCE_DEPLOY:-0}" != "1" ]; then
+  python3 - "$SHA" <<'PY' || { echo "Not deployed. Fix the failing tests (see GitHub > Actions), or FORCE_DEPLOY=1 in an emergency."; exit 1; }
+import json, sys, time, urllib.request
+sha, repo = sys.argv[1], "sathishvarun/SE-B12"
+api = f"https://api.github.com/repos/{repo}/actions/workflows/virundhu-ci.yml/runs"
+def get(url):
+    req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "virundhu-deploy"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.load(r)["workflow_runs"]
+for _ in range(60):  # up to 15 minutes
+    runs = get(f"{api}?head_sha={sha}&per_page=5") or get(f"{api}?branch=main&status=completed&per_page=1")
+    if not runs:
+        print("Release gate: no test run found on GitHub yet; waiting..."); time.sleep(15); continue
+    run = runs[0]
+    if run["status"] != "completed":
+        print(f"Release gate: tests still running for {run['head_sha'][:7]}; waiting..."); time.sleep(15); continue
+    print(f"Release gate: tests {run['conclusion']} for {run['head_sha'][:7]} ({run['html_url']})")
+    sys.exit(0 if run["conclusion"] == "success" else 1)
+print("Release gate: gave up waiting for the tests"); sys.exit(1)
+PY
+fi
 mkdir -p "$APP"
 rsync -a --delete --exclude .env --exclude deploy/vps/.env --exclude backups --exclude logs "$SRC/Virundhu/" "$APP/"
 cd "$APP"

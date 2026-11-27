@@ -28,7 +28,7 @@ from app.config import settings
 from app.database import get_db
 from app.limiter import limiter
 from app.models import Membership, Organization, Outlet, PasswordResetToken, RefreshToken, Review, ReviewAnalysis, User
-from app.services import activity
+from app.services import activity, two_step
 from app.services.auth_service import issue_tokens
 from app.services.emailer import send_email
 
@@ -146,8 +146,11 @@ def change_password(
     # This device stays signed in with a fresh session; every other device (and any stolen token) is out.
     fresh = issue_tokens(db, user)
     set_refresh_cookie(response, fresh.refresh_token or "")
-    return {"ok": True, "message": "Password changed. Other devices have been signed out.",
-            "access_token": fresh.access_token}
+    return {
+        "ok": True,
+        "message": "Password changed. Other devices have been signed out.",
+        "access_token": fresh.access_token,
+    }
 
 
 @router.post("/account/sign-out-everywhere")
@@ -157,8 +160,9 @@ def sign_out_everywhere(
 ) -> dict:
     """Lost a phone? Every device, this one included, has to sign in again."""
     _sign_out_everywhere(db, user.id)
-    activity.record(db, "signed_out_everywhere", email=user.email, detail="From Settings", **_org_of(db, user),
-                    commit=False)
+    activity.record(
+        db, "signed_out_everywhere", email=user.email, detail="From Settings", **_org_of(db, user), commit=False
+    )
     db.commit()
     clear_refresh_cookie(response)
     return {"ok": True}
@@ -347,4 +351,75 @@ def delete_account(
         + "\nPayment records are kept only as long as tax law requires. "
         "If you didn't ask for this, reply to this email straight away.\n\nThank you for trying Virundhu.\n- Virundhu",
     )
+    return {"ok": True}
+
+
+# ---------------- Two-step sign-in (authenticator app) ----------------
+class CodeIn(BaseModel):
+    code: str = Field(min_length=6, max_length=20)
+
+
+class OffIn(BaseModel):
+    password: str = Field(default="", max_length=128)
+    code: str = Field(min_length=6, max_length=20)
+
+
+@router.get("/account/two-step")
+def two_step_status(user: User = Depends(get_current_user)) -> dict:
+    return {
+        "enabled": two_step.enabled(user),
+        "enabled_at": user.totp_enabled_at,
+        "recovery_left": len(user.totp_recovery or []),
+        "required": two_step.required_for(user),
+    }
+
+
+@router.post("/account/two-step/start")
+@limiter.limit("10/hour")
+def two_step_start(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    """A QR code to scan with Google Authenticator, Microsoft Authenticator or Authy."""
+    if two_step.enabled(user):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Two-step sign-in is already on.")
+    out = two_step.start(user)
+    db.commit()
+    return out
+
+
+@router.post("/account/two-step/confirm")
+@limiter.limit("10/minute")
+def two_step_confirm(
+    request: Request,
+    response: Response,
+    body: CodeIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Switch it on with the first code. The recovery codes are shown once: keep them somewhere safe."""
+    codes = two_step.confirm(user, body.code)
+    _sign_out_everywhere(db, user.id)  # other devices signed in without the code are signed out
+    activity.record(
+        db, "two_step_on", email=user.email, detail="Authenticator app added", **_org_of(db, user), commit=False
+    )
+    db.commit()
+    fresh = issue_tokens(db, user)
+    set_refresh_cookie(response, fresh.refresh_token or "")
+    return {"recovery_codes": codes, "access_token": fresh.access_token}
+
+
+@router.post("/account/two-step/off")
+@limiter.limit("5/minute")
+def two_step_off(
+    request: Request, body: OffIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> dict:
+    """Needs the password (if the account has one) and a current code."""
+    if user.hashed_password and not verify_password(body.password, user.hashed_password):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Your password isn't right.")
+    if not two_step.check(user, body.code):
+        db.commit()
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "That code didn't match.")
+    two_step.disable(user)
+    activity.record(
+        db, "two_step_off", email=user.email, detail="Switched off in Settings", **_org_of(db, user), commit=False
+    )
+    db.commit()
     return {"ok": True}

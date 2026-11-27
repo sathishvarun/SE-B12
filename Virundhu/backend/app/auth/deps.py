@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, object_session
 
 from app.auth.security import decode_access_token
-from app.database import get_db
+from app.database import get_db, set_tenant
 from app.models import Membership, Organization, Subscription, User
 
 bearer = HTTPBearer(auto_error=False)
@@ -100,6 +100,7 @@ def get_org_context(
         org = db.get(Organization, x_org_id)
         if org is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Restaurant not found.")
+        set_tenant(db, org.id)
         return OrgContext(user=user, org=org, role="owner")
     membership = membership_for(db, user, x_org_id)
     if membership is None:
@@ -118,6 +119,7 @@ def get_org_context(
             "Pay on the Plan and billing page to unlock everything.",
         )
     scope = None if membership.role == "owner" else (membership.outlet_ids or None)
+    set_tenant(db, org.id)  # second lock: PostgreSQL now returns only this restaurant's rows
     return OrgContext(user=user, org=org, role=membership.role, outlet_ids=scope)
 
 
@@ -161,4 +163,12 @@ def require_superadmin(user: User = Depends(get_current_user)) -> User:
     """Platform owner only."""
     if not user.is_superadmin:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Admins only.")
+    from app.services import two_step
+
+    if two_step.required_for(user):  # ADMIN_REQUIRE_TWO_STEP: the console opens once the app code is set up
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Switch on two-step sign-in first (Change my password → Two-step sign-in).",
+            headers={"X-Two-Step": "setup"},
+        )
     return user

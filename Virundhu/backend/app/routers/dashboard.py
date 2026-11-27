@@ -8,6 +8,7 @@ from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.auth.deps import OrgContext, get_org_context
+from app.config import settings
 from app.database import get_db
 from app.models import Outlet, Review, ReviewAnalysis
 from app.services import reply_promise
@@ -250,5 +251,163 @@ def overview(
             )
             for r, a in urgent_rows
         ],
+        as_of=today,
+    )
+
+
+# ---------------- At a glance: the owner's / CEO's one screen ----------------
+
+
+class Period(BaseModel):
+    """Reviews written in a period, by how guests felt, and replies sent in it."""
+
+    reviews: int
+    positive: int
+    neutral: int
+    negative: int
+    avg_rating: float | None
+    replied: int
+
+
+class SplitRow(BaseModel):
+    key: str
+    this_month: int
+    last_month: int
+    positive: int
+    negative: int
+    avg_rating: float | None
+
+
+class Summary(BaseModel):
+    today: Period
+    waiting: int  # reviews still waiting for a reply (any age)
+    this_month: Period
+    last_month_to_date: Period  # 1st to the same day last month: a fair comparison mid-month
+    last_month: Period
+    by_platform: list[SplitRow]
+    by_outlet: list[SplitRow]
+    month_label: str
+    last_month_label: str
+    as_of: date
+
+
+def _month_bounds(today: date) -> tuple[date, date, date, date]:
+    first = today.replace(day=1)
+    last_end = first - timedelta(days=1)
+    last_first = last_end.replace(day=1)
+    same_day = last_first.replace(day=min(today.day, last_end.day))
+    return first, last_first, last_end, same_day
+
+
+@router.get("/summary", response_model=Summary)
+def summary(
+    outlet_id: int | None = None, ctx: OrgContext = Depends(get_org_context), db: Session = Depends(get_db)
+) -> Summary:
+    """At a glance: today, this month vs last month, by platform and by branch. Counted in SQL, never by the AI."""
+    org = ctx.org.id
+    today = today_local()
+    first, last_first, last_end, same_day = _month_bounds(today)
+    tz = settings.TIMEZONE
+
+    def scoped(stmt):  # noqa: ANN001, ANN202
+        stmt = stmt.where(Review.organization_id == org)
+        if ctx.outlet_ids is not None:
+            stmt = stmt.where(Review.outlet_id.in_(ctx.outlet_ids))
+        return stmt.where(Review.outlet_id == outlet_id) if outlet_id else stmt
+
+    base = select().select_from(Review).outerjoin(ReviewAnalysis, ReviewAnalysis.review_id == Review.id)
+    sent = ReviewAnalysis.sentiment
+    feel = [
+        func.count(Review.id),
+        func.count(case((sent == "positive", 1))),
+        func.count(case((sent == "neutral", 1))),
+        func.count(case((sent == "negative", 1))),
+        func.avg(Review.rating),
+    ]
+    replied_day = func.date(func.timezone(tz, Review.replied_at))
+
+    def period(start: date, end: date) -> Period:
+        n, pos, neu, neg, avg = db.execute(
+            scoped(base.add_columns(*feel).where(Review.review_date.between(start, end)))
+        ).one()
+        replied = db.scalar(
+            scoped(select(func.count(Review.id)).where(Review.replied_at.is_not(None), replied_day.between(start, end)))
+        )
+        return Period(
+            reviews=n,
+            positive=pos,
+            neutral=neu,
+            negative=neg,
+            avg_rating=round(float(avg), 2) if avg is not None else None,
+            replied=replied or 0,
+        )
+
+    waiting = db.scalar(scoped(select(func.count(Review.id)).where(Review.workflow_status.in_(PENDING)))) or 0
+
+    def split(col):  # noqa: ANN001, ANN202
+        rows = db.execute(
+            scoped(
+                base.add_columns(
+                    col,
+                    func.count(case((Review.review_date >= first, 1))),
+                    func.count(case((Review.review_date.between(last_first, last_end), 1))),
+                    func.count(case(((Review.review_date >= first) & (sent == "positive"), 1))),
+                    func.count(case(((Review.review_date >= first) & (sent == "negative"), 1))),
+                    func.avg(case((Review.review_date >= first, Review.rating))),
+                ).where(Review.review_date.between(last_first, today))
+            ).group_by(col)
+        ).all()
+        out = [
+            SplitRow(
+                key=str(k or "Not set"),
+                this_month=t,
+                last_month=lm,
+                positive=p,
+                negative=ng,
+                avg_rating=round(float(a), 2) if a is not None else None,
+            )
+            for k, t, lm, p, ng, a in rows
+        ]
+        return sorted(out, key=lambda r: (-r.this_month, -r.last_month, r.key))
+
+    outlet_name = func.coalesce(Outlet.name, "Not set")
+    rows = db.execute(
+        scoped(
+            base.outerjoin(Outlet, Outlet.id == Review.outlet_id)
+            .add_columns(
+                outlet_name,
+                func.count(case((Review.review_date >= first, 1))),
+                func.count(case((Review.review_date.between(last_first, last_end), 1))),
+                func.count(case(((Review.review_date >= first) & (sent == "positive"), 1))),
+                func.count(case(((Review.review_date >= first) & (sent == "negative"), 1))),
+                func.avg(case((Review.review_date >= first, Review.rating))),
+            )
+            .where(Review.review_date.between(last_first, today))
+        ).group_by(outlet_name)
+    ).all()
+    by_outlet = sorted(
+        [
+            SplitRow(
+                key=k,
+                this_month=t,
+                last_month=lm,
+                positive=p,
+                negative=ng,
+                avg_rating=round(float(a), 2) if a is not None else None,
+            )
+            for k, t, lm, p, ng, a in rows
+        ],
+        key=lambda r: (-r.this_month, -r.last_month, r.key),
+    )
+    return Summary(
+        today=period(today, today),
+        waiting=waiting,
+        this_month=period(first, today),
+        last_month_to_date=period(last_first, same_day),
+        last_month=period(last_first, last_end),
+        by_platform=split(Review.platform),
+        by_outlet=by_outlet,
+        month_label=first.strftime("%B %Y"),
+        last_month_label=last_first.strftime("%B %Y"),
         as_of=today,
     )

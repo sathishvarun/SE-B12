@@ -27,6 +27,7 @@ class LoginIn(BaseModel):
     # Plain string on purpose: sign-in must accept local addresses such as admin@virundhu.local
     email: str = Field(min_length=3, max_length=255, pattern=r"^[^@\s]+@[^@\s]+$")
     password: str = Field(min_length=1, max_length=128)
+    code: str | None = Field(default=None, max_length=20)  # two-step: 6-digit app code or a recovery code
 
 
 class RefreshIn(BaseModel):
@@ -63,6 +64,8 @@ class MeOut(BaseModel):
     outlet_names: list[str] | None = None  # None = all outlets
     # Every restaurant this login can open (agencies run several). The one above is the one open now.
     organizations: list[OrgChoice] = []
+    two_step: bool = False  # sign-in needs an authenticator code
+    two_step_required: bool = False  # admin must set it up before the console opens
 
 
 

@@ -30,7 +30,7 @@ def login(request: Request, response: Response, body: LoginIn, db: Session = Dep
     """Sign in with email and password."""
     ip = request.client.host if request.client else None
     device = request.headers.get("user-agent")
-    return to_cookie(response, auth_service.login(db, body.email, body.password, ip, device))
+    return to_cookie(response, auth_service.login(db, body.email, body.password, ip, device, body.code))
 
 
 @router.post("/refresh", response_model=TokenOut, response_model_exclude_none=True)

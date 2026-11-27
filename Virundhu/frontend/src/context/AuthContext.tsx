@@ -6,7 +6,7 @@ import type { CurrentUser } from "@/types";
 interface AuthState {
   user: CurrentUser | null;
   ready: boolean;
-  login: (email: string, password: string) => Promise<CurrentUser>;
+  login: (email: string, password: string, code?: string) => Promise<CurrentUser>;
   refreshUser: () => Promise<void>;
   acceptTokens: (data: { access_token: string }) => Promise<CurrentUser>;
   register: (body: { full_name: string; organization_name: string; city?: string; email: string; password: string; accept_terms: boolean; phone?: string; outlets?: number }) => Promise<CurrentUser>;
@@ -45,8 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { alive = false; };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const data = await authApi.login(email, password);
+  const login = useCallback(async (email: string, password: string, code?: string) => {
+    const data = await authApi.login(email, password, code);
     tokens.save(data);
     setUser(data.user);
     return data.user;

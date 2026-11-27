@@ -6,6 +6,7 @@ import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContaine
 import { buttonVariants } from "@/components/ui/button";
 import { Chip, Skeleton, Stars } from "@/components/ui/misc";
 import { useAuth } from "@/context/AuthContext";
+import { AtAGlance } from "@/components/dashboard/AtAGlance";
 import { useOverview } from "@/hooks/useOverview";
 import { categoryLabel, greeting, platformLabel, shortDate } from "@/lib/copy";
 import { useCountUp } from "@/lib/useCountUp";
@@ -221,6 +222,7 @@ function RestaurantDashboard() {
         </section>
       ) : (
         <>
+          <AtAGlance outletId={outletId} />
           {data?.promise ? <PromiseBand p={data.promise} /> : null}
           <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="This week">
             {isLoading || !k ? Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[138px]" />) : (

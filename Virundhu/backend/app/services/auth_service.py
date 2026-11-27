@@ -15,7 +15,7 @@ from app.auth.security import create_access_token, hash_password, hash_token, ne
 from app.config import settings
 from app.models import AlertRule, Membership, Organization, Outlet, RefreshToken, Subscription, User
 from app.schemas.auth import MeOut, OrgChoice, OrgOut, RegisterIn, TokenOut
-from app.services import activity
+from app.services import activity, two_step
 
 TRIAL_DAYS = 14
 
@@ -53,6 +53,8 @@ def build_me(db: Session, user: User, org_id: int | None = None) -> MeOut:
         is_superadmin=user.is_superadmin,
         role=membership.role if membership else None,
         outlet_names=outlet_names,
+        two_step=two_step.enabled(user),
+        two_step_required=two_step.required_for(user),
         organizations=[OrgChoice(id=i, name=n, city=c, role=r, plan=p) for i, n, c, r, p in choices],
         organization=OrgOut(
             id=org.id,
@@ -164,7 +166,9 @@ def record_sign_in(db: Session, user: User, ip: str | None, device: str | None, 
     )
 
 
-def login(db: Session, email: str, password: str, ip: str | None = None, device: str | None = None) -> TokenOut:
+def login(
+    db: Session, email: str, password: str, ip: str | None = None, device: str | None = None, code: str | None = None
+) -> TokenOut:
     """Check the password and issue tokens.
 
     Same message and the same time for an unknown email and a wrong password, so nobody can find out which emails have
@@ -200,9 +204,25 @@ def login(db: Session, email: str, password: str, ip: str | None = None, device:
                 detail=f"Locked for 15 minutes after repeated wrong passwords; IP {ip or '-'}",
             )
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "That email and password don't match.")
-    lockout.clear(email)
     if not user.is_active:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This account has been switched off. Contact support.")
+    if two_step.enabled(user):
+        if not code:  # password right: ask for the code (the browser shows the code box on this header)
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                "Enter the 6-digit code from your authenticator app.",
+                headers={"X-Two-Step": "required"},
+            )
+        if not two_step.check(user, code):
+            lockout.record_failure(email, ip)  # wrong codes count towards the same 15-minute lock
+            db.commit()
+            activity.record(db, "login_failed", email=user.email, detail=f"Wrong two-step code; IP {ip or '-'}")
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                "That code didn't match. Use the newest code in the app, or one of your recovery codes.",
+                headers={"X-Two-Step": "required"},
+            )
+    lockout.clear(email)
     record_sign_in(db, user, ip, device)
     return issue_tokens(db, user)
 

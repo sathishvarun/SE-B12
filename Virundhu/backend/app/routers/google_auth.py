@@ -18,7 +18,7 @@ from app.database import get_db
 from app.limiter import limiter
 from app.models import User
 from app.schemas.auth import RegisterIn, TokenOut
-from app.services import auth_service, google_reviews
+from app.services import auth_service, google_reviews, two_step
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/auth/google", tags=["auth"])
@@ -127,6 +127,8 @@ def _sign_in(db: Session, request: Request, email: str, name: str | None):
         )
     if not user.is_active:
         return None
+    if two_step.enabled(user):  # Google can't ask for the code: these accounts sign in with password + code
+        return None
     auth_service.record_sign_in(
         db, user, request.client.host if request.client else None, request.headers.get("user-agent"), how="Google"
     )
@@ -161,6 +163,9 @@ def id_token_sign_in(request: Request, response: Response, body: IdTokenIn, db: 
     email = str(claims.get("email", "")).lower()
     if not email or not claims.get("email_verified"):
         raise HTTPException(401, "Your Google email isn't verified.")
+    existing = db.scalar(select(User).where(User.email == email))
+    if existing is not None and two_step.enabled(existing):
+        raise HTTPException(403, "This account uses two-step sign-in. Sign in with your email, password and code.")
     tokens = _sign_in(db, request, email, claims.get("name"))
     if tokens is None:
         raise HTTPException(403, "This account is switched off. Please contact us.")

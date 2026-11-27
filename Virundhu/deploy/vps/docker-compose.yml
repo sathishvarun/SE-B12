@@ -7,6 +7,8 @@ x-backend: &backend
   env_file: ../../.env
   environment:
     FORWARDED_ALLOW_IPS: "*"
+    ERROR_ALERTS: "${ERROR_ALERTS:-true}"  # email the admin when something breaks
+    ADMIN_REQUIRE_TWO_STEP: "${ADMIN_REQUIRE_TWO_STEP:-true}"  # admin console needs an authenticator code
   restart: unless-stopped
   depends_on:
     db: { condition: service_healthy }

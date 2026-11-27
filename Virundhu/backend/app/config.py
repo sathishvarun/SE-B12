@@ -24,6 +24,15 @@ class Settings(BaseSettings):
 
     # Required: set in .env (generate with: openssl rand -hex 32)
     SECRET_KEY: str = Field(min_length=32)
+    # Two-step sign-in: when true the admin console opens only after the admin switches it on.
+    ADMIN_REQUIRE_TWO_STEP: bool = False
+    # Email the admin about server errors (services/error_alerts.py). On in the VPS compose file.
+    ERROR_ALERTS: bool = False
+    ERROR_ALERTS_PER_HOUR: int = 10
+    # Off-server backups (app/tools/offsite_backup.py): encrypted copy emailed daily; keep the passphrase elsewhere.
+    BACKUP_PASSPHRASE: str = ""
+    BACKUP_EMAIL_TO: str = ""
+    BACKUP_EMAIL_MAX_MB: int = 20
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7

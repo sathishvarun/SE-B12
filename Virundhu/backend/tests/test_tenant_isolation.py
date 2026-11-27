@@ -341,3 +341,29 @@ def test_agency_switches_only_between_its_own_clients(client):
     rows = client.get("/api/v1/agency/restaurants", headers=agency).json()
     assert {r["id"] for r in rows["items"]} == {agency_org, client_id}
     assert [r["id"] for r in client.get("/api/v1/agency/restaurants", headers=other).json()["items"]] == [other_org]
+
+
+def test_database_itself_refuses_other_restaurants_rows(client, two_restaurants):
+    """Second lock (migration 0025): even a query with no restaurant filter returns only the open restaurant's rows."""
+    from sqlalchemy import func
+
+    from app.database import rls_ready, set_tenant
+
+    if not rls_ready():
+        pytest.skip("database user may not create roles here")
+    t = two_restaurants
+    with SessionLocal() as db:
+        set_tenant(db, t["b_org"])
+        # a careless query: no WHERE organization_id at all
+        orgs = set(db.scalars(select(Review.organization_id).distinct()))
+        assert orgs <= {t["b_org"]}
+        assert db.get(Review, t["ids"]["review_id"]) is None
+        assert db.scalar(select(func.count(Outlet.id)).where(Outlet.id == t["ids"]["outlet_id"])) == 0
+        from sqlalchemy.exc import ProgrammingError
+
+        db.add(Outlet(organization_id=t["a_org"], name="Planted by B"))
+        with pytest.raises(ProgrammingError):  # writing into A's restaurant is refused by PostgreSQL
+            db.commit()
+        db.rollback()
+    with SessionLocal() as db:  # background jobs and the admin console (no restaurant open) still see everything
+        assert db.get(Review, t["ids"]["review_id"]) is not None

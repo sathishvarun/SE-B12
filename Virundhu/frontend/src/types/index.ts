@@ -31,6 +31,8 @@ export interface CurrentUser {
   organization: Organization | null;
   outlet_names?: string[] | null;
   organizations?: { id: number; name: string; city: string | null; role: Role; plan: string }[];
+  two_step?: boolean;
+  two_step_required?: boolean;
 }
 
 export interface TokenResponse { access_token: string; user: CurrentUser }

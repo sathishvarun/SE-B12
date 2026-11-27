@@ -1,0 +1,69 @@
+# Virundhu: every push runs all tests (including the attacker's-view security tests) and checks the libraries for
+# known security holes. deploy/vps/install.sh refuses to deploy a commit whose run failed.
+name: Virundhu tests
+
+on:
+  push:
+    branches: [main]
+    paths: ["Virundhu/**", ".github/workflows/virundhu-ci.yml"]
+  pull_request:
+    paths: ["Virundhu/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: virundhu-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests and security
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults: { run: { working-directory: Virundhu/backend } }
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: virundhu, POSTGRES_PASSWORD: virundhu, POSTGRES_DB: virundhu }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U virundhu" --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql+psycopg2://virundhu:virundhu@localhost:5432/virundhu
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: ci-only-key-0a9f3b7c1e5d8a2f6b4c0e9d7a3f1b5c
+      SUPERADMIN_EMAIL: admin@ci.virundhu.test
+      SUPERADMIN_PASSWORD: ci-admin-password-1234
+      DEMO_PASSWORD: ci-demo-password-1234
+      APP_URL: http://localhost:5450
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: Virundhu/backend/requirements.txt }
+      - run: pip install -r requirements.txt pip-audit
+      - name: Lint
+        run: ruff check .
+      - name: Libraries with known security holes
+        run: pip-audit -r requirements.txt
+      - name: Database
+        run: alembic upgrade head && SEED_DEMO_RESTAURANT=true python -m app.seed
+      - name: All tests (tenant isolation, two-step sign-in, billing, ...)
+        run: pytest -q
+
+  frontend:
+    name: Frontend lint, types and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults: { run: { working-directory: Virundhu/frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: Virundhu/frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - name: Libraries with known security holes
+        run: npm audit --omit=dev --audit-level=high
+      - run: npm run build

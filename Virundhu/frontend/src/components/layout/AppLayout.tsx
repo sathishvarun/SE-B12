@@ -15,6 +15,7 @@ import { NotificationBell } from "@/components/layout/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
 import { useOverview } from "@/hooks/useOverview";
 import { cn } from "@/lib/utils";
+import { TwoStepCard } from "@/components/security/TwoStepCard";
 import { useWorkspace } from "@/lib/workspace";
 import { clientOrg, viewAs } from "@/services/api";
 
@@ -239,7 +240,13 @@ export function AppLayout() {
         <AnimatePresence mode="wait" initial={false}>
           <m.div key={pathname} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}>
-            <Outlet />
+            {user?.two_step_required ? (
+              <div className="mx-auto max-w-3xl">
+                <h1 className="text-[2.3rem] font-bold">One more step to protect the admin console</h1>
+                <p className="mb-5 mt-1 text-ink-soft">The admin account can see every restaurant and every payment, so it needs a code from your phone as well as the password. Set it up once; it takes a minute.</p>
+                <TwoStepCard />
+              </div>
+            ) : <Outlet />}
             <IdleSignOut />
             {!adminHome ? <EasePrompt /> : null}
             {!adminHome ? <QuickHelp signedIn /> : null}

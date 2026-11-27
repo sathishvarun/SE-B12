@@ -8,6 +8,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Field } from "@/components/ui/input";
 import { Skeleton, Spinner } from "@/components/ui/misc";
 import { cn } from "@/lib/utils";
+import { TwoStepCard } from "@/components/security/TwoStepCard";
 import { useWorkspace } from "@/lib/workspace";
 import { accountApi, appApi, errorMessage } from "@/services/api";
 import type { OrgSettings, Outlet, OutletInput } from "@/types";
@@ -360,6 +361,8 @@ function AccountTab() {
           <button type="button" onClick={() => void signOutAll()} className="cursor-pointer text-sm font-semibold text-[#b32f12] hover:underline">Lost a phone? Sign out of every device</button>
         </div>
       </form>
+
+      <TwoStepCard />
 
       {user?.role === "owner" ? <AgencyAccess /> : null}
 

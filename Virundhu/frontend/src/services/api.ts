@@ -112,6 +112,12 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
 });
 
 /** One clear sentence for any API error. */
+/** True when the server says "password fine, now the authenticator code" (or "set up two-step first"). */
+export function needsTwoStep(err: unknown): "required" | "setup" | null {
+  const v = (err as AxiosError | undefined)?.response?.headers?.["x-two-step"];
+  return v === "required" || v === "setup" ? v : null;
+}
+
 export function errorMessage(err: unknown): string {
   if (err instanceof AxiosError) {
     if (!err.response) return "Can't reach Virundhu right now. Check your internet and try again.";
@@ -124,7 +130,7 @@ export function errorMessage(err: unknown): string {
 }
 
 export const authApi = {
-  login: (email: string, password: string) => api.post<TokenResponse>("/api/v1/auth/login", { email, password }).then((r) => r.data),
+  login: (email: string, password: string, code?: string) => api.post<TokenResponse>("/api/v1/auth/login", { email, password, ...(code ? { code } : {}) }).then((r) => r.data),
   register: (body: { full_name: string; organization_name: string; city?: string; email: string; password: string; accept_terms: boolean; phone?: string; outlets?: number }) =>
     api.post<TokenResponse>("/api/v1/auth/register", body).then((r) => r.data),
   forgot: (email: string) => api.post<{ message: string }>("/api/v1/auth/forgot-password", { email }).then((r) => r.data),
@@ -146,6 +152,13 @@ export const accountApi = {
       if (r.data.access_token) tokens.save({ access_token: r.data.access_token }); // this device stays signed in
       return r.data;
     }),
+  twoStep: () => api.get<{ enabled: boolean; enabled_at: string | null; recovery_left: number; required: boolean }>("/api/v1/account/two-step").then((r) => r.data),
+  twoStepStart: () => api.post<{ otpauth_uri: string; secret: string; qr_svg_base64: string }>("/api/v1/account/two-step/start").then((r) => r.data),
+  twoStepConfirm: (code: string) => api.post<{ recovery_codes: string[]; access_token: string }>("/api/v1/account/two-step/confirm", { code }).then((r) => {
+    tokens.save({ access_token: r.data.access_token });
+    return r.data;
+  }),
+  twoStepOff: (password: string, code: string) => api.post("/api/v1/account/two-step/off", { password, code }).then((r) => r.data),
   signOutEverywhere: () => api.post("/api/v1/account/sign-out-everywhere").then((r) => r.data),
   exportCsv: () => api.get<Blob>("/api/v1/account/export", { responseType: "blob" }).then((r) => r.data),
   deleteCheck: () => api.get<{ balance_due: number; plan: string; paid_until: string | null; paid_days_left: number; last_payment: { amount: number; invoice_no: string | null; date: string } | null }>("/api/v1/account/delete-check").then((r) => r.data),
@@ -220,7 +233,16 @@ export const adminBankApi = {
     api.post<{ ok: boolean; message: string }>(`/api/v1/admin/organizations/${orgId}/bank-payment`, body).then((r) => r.data),
 };
 
+export interface GlancePeriod { reviews: number; positive: number; neutral: number; negative: number; avg_rating: number | null; replied: number }
+export interface GlanceSplit { key: string; this_month: number; last_month: number; positive: number; negative: number; avg_rating: number | null }
+export interface Glance {
+  today: GlancePeriod; waiting: number; this_month: GlancePeriod; last_month_to_date: GlancePeriod; last_month: GlancePeriod;
+  by_platform: GlanceSplit[]; by_outlet: GlanceSplit[]; month_label: string; last_month_label: string; as_of: string;
+}
+
 export const appApi = {
+  summary: (outletId?: number) =>
+    api.get<Glance>("/api/v1/dashboard/summary", { params: outletId ? { outlet_id: outletId } : {} }).then((r) => r.data),
   overview: (outletId?: number) =>
     api.get<Overview>("/api/v1/dashboard/overview", { params: outletId ? { outlet_id: outletId } : {} }).then((r) => r.data),
   reviews: (params: { view: InboxView; q?: string; outlet_id?: number; page?: number }) =>

@@ -1,0 +1,14 @@
+# Weekly pull requests when a library Virundhu uses gets a fix (security fixes arrive as soon as they're published).
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /Virundhu/backend
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /Virundhu/frontend
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }

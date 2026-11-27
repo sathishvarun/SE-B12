@@ -4,6 +4,7 @@ import logging
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -41,6 +42,7 @@ from app.routers import (
     team,
     usage,
 )
+from app.services import error_alerts
 
 _FMT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 logging.basicConfig(level=logging.INFO, format=_FMT)
@@ -65,6 +67,16 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+error_alerts.install()
+
+
+@app.exception_handler(Exception)
+async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
+    """Any crash: logged with its traceback (which emails the admin, see error_alerts) and a plain answer."""
+    logging.getLogger("app.unhandled").error(
+        "Unhandled error on %s %s", request.method, request.url.path, exc_info=(type(exc), exc, exc.__traceback__)
+    )
+    return JSONResponse({"detail": "Something went wrong on our side. We've been told and are looking at it."}, 500)
 
 
 @app.middleware("http")
@@ -92,6 +104,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Two-Step"],  # the sign-in page shows the code box when the server asks for it
 )
 
 app.include_router(health.router)

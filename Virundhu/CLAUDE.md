@@ -45,7 +45,7 @@ Virundhu/
 │   │                  # SettingsPage, Billing, Admin, Feedback (public /f/:token), JoinPages, NotFound
 │   ├── components/    # layout/ (AppLayout, bells, Logo), landing/, ui/, review/
 │   ├── services/api.ts, context/AuthContext.tsx, lib/ (workspace, time, tones, copy), types/
-├── deploy/github-ci.yml        # move to .github/workflows/ when pushing
+├── ../.github/workflows/        # virundhu-ci.yml (tests on every push), virundhu-uptime.yml (10-minute ping)
 ├── start.sh / stop.sh          # one-command local run (ports 8450 API, 5450 web)
 ├── skills/ agents/ PRPs/ claude-commands/ samples/
 ```
@@ -424,3 +424,25 @@ general-purpose agents using the matching skill file.
   form's optional `maps_link`, drafts replies to the restaurant's 3 newest Google reviews (Places API) or to up to 3
   pasted reviews, in the worker (`demo_prep_job`). Only https links on Google's own hosts are accepted, and short-link
   redirects are followed by hand and must stay on those hosts (no SSRF).
+
+### Production hardening (migrations 0025-0026)
+- CEO view: `GET /dashboard/summary` → "At a glance" at the top of the dashboard: today, this month vs the same days
+  last month and all of last month (reviews, positive, neutral, negative, rating, replied), waiting, by platform and
+  by branch. Counted in SQL.
+- Row-level security (0025): requests with a restaurant open run as role `virundhu_tenant` with `app.org_id`
+  (`database.set_tenant`, called in `get_org_context`); PostgreSQL policies `tenant_only` on every restaurant table
+  (children through their parent). Workers, sign-in and the admin console run as the normal role. New restaurant table →
+  add it to the policy list in a new migration. Skipped (app still works) if the DB user can't create roles.
+- Two-step sign-in (0026, `services/two_step.py`): TOTP (pyotp) + 8 single-use recovery codes, secret encrypted, codes
+  can't be replayed. Login returns 401 + header `X-Two-Step: required` until `code` is sent. Google sign-in refused for
+  these accounts. `ADMIN_REQUIRE_TWO_STEP` (true on the VPS): admin routes answer 403 + `X-Two-Step: setup` and the app
+  shows the set-up screen first. Settings → Account has the card for everyone.
+- Error alerts (`services/error_alerts.py`): root logging handler, ERROR → one email per error per hour to the admin,
+  max `ERROR_ALERTS_PER_HOUR`; unhandled API errors answer a plain 500. On with `ERROR_ALERTS` (VPS compose).
+- Backups: nightly `deploy/vps/backup.sh` (30 days on the server) then `app.tools.offsite_backup send` emails a Fernet-
+  encrypted copy (needs `BACKUP_PASSPHRASE`), and `BACKUP_RCLONE_REMOTE` in deploy/vps/.env copies to any cloud folder.
+  Restore: `python -m app.tools.offsite_backup decrypt X.enc backup.sql.gz`, then `tools/backup/restore.sh`.
+- CI (`.github/workflows/virundhu-ci.yml`): ruff, pip-audit, migrations on a fresh DB, all pytest, eslint, types,
+  npm audit, build. `deploy/vps/install.sh` deploys only a commit whose run succeeded (waits up to 15 min;
+  `FORCE_DEPLOY=1` for emergencies). Uptime: `.github/workflows/virundhu-uptime.yml` every 10 minutes (failure emails the
+  repo owner). Dependabot weekly.
