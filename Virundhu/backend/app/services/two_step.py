@@ -7,8 +7,8 @@ Authenticator, Authy). Any account can switch it on; the admin console asks the 
 """
 
 import base64
-import io
 import hashlib
+import io
 import secrets
 from datetime import UTC, datetime
 
